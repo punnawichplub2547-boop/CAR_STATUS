@@ -149,24 +149,43 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillRadarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.15)" />
-                <PolarAngleAxis dataKey="category" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#64748b" />
+                <PolarGrid stroke="var(--border-color)" />
+                <PolarAngleAxis
+                  dataKey="category"
+                  stroke="var(--text-muted)"
+                  tick={{ fontSize: 11, fill: 'var(--text-main)', fontWeight: 600 }}
+                />
+                <PolarRadiusAxis
+                  angle={30}
+                  domain={[0, 100]}
+                  stroke="var(--text-dim)"
+                  tick={{ fill: 'var(--text-dim)', fontSize: 10 }}
+                />
                 <Radar
                   name="Target (เป้าหมาย)"
                   dataKey="Target"
-                  stroke="#3b82f6"
+                  stroke="#2563eb"
                   fill="#3b82f6"
-                  fillOpacity={0.25}
+                  fillOpacity={0.3}
+                  strokeWidth={2}
                 />
                 <Radar
                   name="Actual (ผลจริง)"
                   dataKey="Actual"
-                  stroke="#10b981"
+                  stroke="#059669"
                   fill="#10b981"
-                  fillOpacity={0.4}
+                  fillOpacity={0.5}
+                  strokeWidth={2.5}
                 />
-                <Tooltip />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 10,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                    color: 'var(--text-main)',
+                  }}
+                />
               </RadarChart>
             </ResponsiveContainer>
           </div>

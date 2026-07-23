@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Eye, RefreshCw, Target } from 'lucide-react';
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
+import { Eye, RefreshCw, Target, X } from 'lucide-react';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
 import type { Employee, SkillStandard, SkillEvaluation } from '../types';
 
 interface SkillMatrixViewProps {
@@ -174,38 +174,64 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
 
       {/* Radar Chart Modal */}
       {showRadarModal && activeEmpForRadar && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 650 }}>
+        <div className="modal-overlay" onClick={() => setShowRadarModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Competency Radar Chart: {activeEmpForRadar.name}</h3>
-              <button className="btn-icon" onClick={() => setShowRadarModal(false)}>✕</button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowRadarModal(false)}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
             </div>
             <div className="modal-body" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                ตำแหน่ง: {activeEmpForRadar.position} ({activeEmpForRadar.department}) • รอบประเมิน: {selectedCycle}
+              <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-muted)', marginBottom: 20 }}>
+                ตำแหน่ง: <strong style={{ color: 'var(--text-main)' }}>{activeEmpForRadar.position}</strong> ({activeEmpForRadar.department}) • รอบประเมิน: {selectedCycle}
               </div>
 
-              <div style={{ width: '100%', height: 320 }}>
+              <div style={{ width: '100%', height: 350 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="75%" data={getEmployeeRadarData(activeEmpForRadar)}>
-                    <PolarGrid stroke="rgba(255,255,255,0.15)" />
-                    <PolarAngleAxis dataKey="skill" stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                    <PolarRadiusAxis angle={30} domain={[0, 100]} stroke="#64748b" />
+                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={getEmployeeRadarData(activeEmpForRadar)}>
+                    <PolarGrid stroke="var(--border-color)" />
+                    <PolarAngleAxis
+                      dataKey="skill"
+                      stroke="var(--text-muted)"
+                      tick={{ fontSize: 11, fill: 'var(--text-main)', fontWeight: 600 }}
+                    />
+                    <PolarRadiusAxis
+                      angle={30}
+                      domain={[0, 100]}
+                      stroke="var(--text-dim)"
+                      tick={{ fill: 'var(--text-dim)', fontSize: 10 }}
+                    />
                     <Radar
                       name="Target Standard (F-HR-005)"
                       dataKey="Target"
-                      stroke="#3b82f6"
+                      stroke="#2563eb"
                       fill="#3b82f6"
-                      fillOpacity={0.2}
+                      fillOpacity={0.3}
+                      strokeWidth={2.5}
                     />
                     <Radar
                       name="Actual Skill (F-HR-014)"
                       dataKey="Actual"
-                      stroke="#10b981"
+                      stroke="#059669"
                       fill="#10b981"
-                      fillOpacity={0.4}
+                      fillOpacity={0.5}
+                      strokeWidth={2.5}
                     />
-                    <Tooltip />
+                    <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem' }} />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 12,
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                        color: 'var(--text-main)',
+                      }}
+                    />
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
