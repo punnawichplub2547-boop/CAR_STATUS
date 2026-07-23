@@ -58,24 +58,27 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   };
 
   return (
-    <div className="employee-page">
+    <div className="employee-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <Users size={14} /> EMPLOYEE DIRECTORY • ทะเบียนพนักงานและโครงสร้างองค์กร
+          </div>
           <h1 className="page-title gradient-text">ข้อมูลประวัติพนักงาน & โครงสร้างองค์กร</h1>
           <p className="page-subtitle">
             ฐานข้อมูลกลางรายบุคคล แสดงประวัติ ตำแหน่ง แผนก อายุงาน และสายการบังคับบัญชา
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div className="btn-group" style={{ display: 'flex', gap: 6, background: 'rgba(255,255,255,0.05)', padding: 4, borderRadius: 10 }}>
+        <div className="header-actions">
+          <div className="btn-group" style={{ display: 'flex', gap: 6, background: 'var(--bg-card)', border: '1px solid var(--border-color)', padding: 4, borderRadius: 12 }}>
             <button
-              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn btn-sm ${viewMode === 'list' ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => setViewMode('list')}
             >
               <Users size={16} /> รายชื่อพนักงาน
             </button>
             <button
-              className={`btn btn-sm ${viewMode === 'orgChart' ? 'btn-primary' : 'btn-secondary'}`}
+              className={`btn btn-sm ${viewMode === 'orgChart' ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => setViewMode('orgChart')}
             >
               <Network size={16} /> โครงสร้างองค์กร (Org Chart)

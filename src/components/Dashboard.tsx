@@ -8,6 +8,7 @@ import {
   TrendingUp,
   FileCheck2,
   ShieldCheck,
+  LayoutDashboard,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -62,9 +63,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
   ];
 
   return (
-    <div className="dashboard-page">
+    <div className="dashboard-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <LayoutDashboard size={14} /> EXECUTIVE DASHBOARD • ภาพรวมทักษะและการฝึกอบรม
+          </div>
           <h1 className="page-title gradient-text">Executive Dashboard</h1>
           <p className="page-subtitle">
             ระบบบริหารจัดการทักษะและการฝึกอบรมพนักงาน บจก. คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง (CAR)

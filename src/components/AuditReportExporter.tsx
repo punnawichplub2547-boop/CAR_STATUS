@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, FileSpreadsheet } from 'lucide-react';
 import type { Employee, SkillEvaluation, OjtRecord, Certificate, TrainingCourse } from '../types';
 
 interface AuditReportExporterProps {
@@ -28,16 +28,19 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   };
 
   return (
-    <div className="audit-report-page">
+    <div className="audit-report-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <FileSpreadsheet size={14} /> ISO/IATF 16949 REPORT • รวบรวมและส่งออกรายงาน AUDIT
+          </div>
           <h1 className="page-title gradient-text">รายงานรองรับการตรวจประเมิน ISO / IATF 16949</h1>
           <p className="page-subtitle">
             1-Click Export เอกสารประวัติการฝึกอบรม Skill Matrix และ Certificate สำหรับ Audit (บริษัท CAR)
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="header-actions">
           <button className="btn btn-secondary" onClick={handlePrint}>
             <Printer size={18} /> พิมพ์รายงาน (Print)
           </button>

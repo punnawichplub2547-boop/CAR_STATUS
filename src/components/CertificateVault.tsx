@@ -54,17 +54,22 @@ export const CertificateVault: React.FC<CertificateVaultProps> = ({
   };
 
   return (
-    <div className="certificate-page">
+    <div className="certificate-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <Award size={14} /> CERTIFICATE VAULT • คลังใบรับรองและใบอนุญาต
+          </div>
           <h1 className="page-title gradient-text">คลังจัดเก็บใบรับรอง (Certificate Vault)</h1>
           <p className="page-subtitle">
             จัดเก็บ Certificate รายบุคคล กำหนดวันหมดอายุ พร้อมระบบแจ้งเตือนอัตโนมัติก่อนเอกสารหมดอายุ
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowUploadModal(true)}>
-          <Plus size={18} /> อัปโหลด Certificate ใหม่
-        </button>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={() => setShowUploadModal(true)}>
+            <Plus size={18} /> อัปโหลด Certificate ใหม่
+          </button>
+        </div>
       </div>
 
       {/* Filters Bar */}

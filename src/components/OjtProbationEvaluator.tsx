@@ -100,9 +100,12 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
   };
 
   return (
-    <div className="evaluations-page">
+    <div className="evaluations-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <ClipboardCheck size={14} /> OJT & PROBATION • แบบบันทึกการประเมินเฉพาะงานและทดลองงาน
+          </div>
           <h1 className="page-title gradient-text">ระบบประเมิน OJT & ประเมินผลทดลองงาน</h1>
           <p className="page-subtitle">
             บันทึกแบบฟอร์ม F-HR-004 Form(A/B) และ F-HR-009 แบบประเมินทดลองงานพร้อมคำนวณเกรดอัตโนมัติ
