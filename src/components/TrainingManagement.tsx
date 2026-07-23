@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, CheckCircle2, User, QrCode } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, User, QrCode, GraduationCap } from 'lucide-react';
 import type { TrainingCourse, TrainingAttendance } from '../types';
 
 interface TrainingManagementProps {
@@ -18,17 +18,22 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
   const courseAttendances = attendances.filter((a) => a.courseId === selectedCourse?.id);
 
   return (
-    <div className="training-page">
+    <div className="training-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <GraduationCap size={14} /> TRAINING MANAGEMENT • บันทึกการอบรม (F-HR-002)
+          </div>
           <h1 className="page-title gradient-text">ระบบบันทึกการฝึกอบรม (F-HR-002)</h1>
           <p className="page-subtitle">
             บันทึกประวัติการอบรมประจำหลักสูตร เช็กชื่อเข้าอบรมย้อนหลัง และสรุปชั่วโมงฝึกอบรมสะสม
           </p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowQrModal(true)}>
-          <QrCode size={18} /> จำลองสแกน QR Code เช็กชื่อ
-        </button>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={() => setShowQrModal(true)}>
+            <QrCode size={18} /> จำลองสแกน QR Code เช็กชื่อ
+          </button>
+        </div>
       </div>
 
       {/* Courses List Grid */}
@@ -70,12 +75,12 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
       {/* Selected Course Attendance Sheet (Form F-HR-002 Display) */}
       {selectedCourse && (
         <div className="glass-card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>ใบบันทึกรายชื่อผู้เข้ารับการฝึกอบรม (F-HR-002 Rev.6)</div>
-              <h2>{selectedCourse.title}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: 4 }}>ใบบันทึกรายชื่อผู้เข้ารับการฝึกอบรม (F-HR-002 Rev.6)</div>
+              <h2 style={{ fontSize: '1.35rem', lineHeight: 1.35, wordBreak: 'break-word' }}>{selectedCourse.title}</h2>
             </div>
-            <span className="badge badge-blue" style={{ fontSize: '0.85rem', padding: '6px 12px' }}>
+            <span className="badge badge-blue" style={{ fontSize: '0.85rem', padding: '6px 14px', flexShrink: 0, marginTop: 4 }}>
               รวมทั้งสิ้น {courseAttendances.length} คน
             </span>
           </div>

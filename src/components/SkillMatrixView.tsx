@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, RefreshCw } from 'lucide-react';
+import { Eye, RefreshCw, Target } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 import type { Employee, SkillStandard, SkillEvaluation } from '../types';
 
@@ -44,15 +44,18 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   };
 
   return (
-    <div className="skill-matrix-page">
+    <div className="skill-matrix-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <Target size={14} /> SKILL MATRIX & GAP • ตารางประเมินทักษะตามมาตรฐาน (F-HR-014)
+          </div>
           <h1 className="page-title gradient-text">ระบบมาตรฐานและประเมินทักษะ (Skill Matrix)</h1>
           <p className="page-subtitle">
             ตารางเปรียบเทียบมาตรฐานทักษะ (F-HR-005) และบันทึกผลการประเมินทักษะความสามารถประจำรอบ (F-HR-014)
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="header-actions">
           <span className="badge badge-purple" style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
             <RefreshCw size={14} /> รอบประเมิน: มกราคม & กรกฎาคม
           </span>

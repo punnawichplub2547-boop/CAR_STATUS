@@ -85,9 +85,12 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({
   };
 
   return (
-    <div className="exam-page">
+    <div className="exam-page content-container">
       <div className="page-header">
         <div>
+          <div className="eyebrow-tag">
+            <FileCheck2 size={14} /> ONLINE EXAMINATION • ข้อสอบปฐมนิเทศพนักงานใหม่
+          </div>
           <h1 className="page-title gradient-text">ระบบแบบทดสอบปฐมนิเทศพนักงานใหม่ออนไลน์</h1>
           <p className="page-subtitle">
             แบบทดสอบกฎระเบียบข้อบังคับ และความปลอดภัย อาชีวอนามัย (เกณฑ์ผ่าน $\ge 80\%$)
