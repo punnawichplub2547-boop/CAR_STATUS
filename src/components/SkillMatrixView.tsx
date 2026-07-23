@@ -83,7 +83,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
       </div>
 
       {/* Skill Matrix Grid Table (Form F-HR-014 Layout) */}
-      <div className="glass-card table-responsive" style={{ padding: 20, marginBottom: 24 }}>
+      <div className="glass-card" style={{ padding: 20, marginBottom: 24, overflow: 'hidden' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h3>F-HR-014 SKILL MATRIX EVALUATION RECORD FORM</h3>
@@ -93,81 +93,83 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           </div>
         </div>
 
-        <table className="custom-table">
-          <thead>
-            <tr>
-              <th rowSpan={2}>รายชื่อพนักงาน / ตำแหน่ง</th>
-              {deptStandards.map((std) => (
-                <th key={std.id} colSpan={2} style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>
-                  {std.skillName}
-                  <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'none' }}>
-                    (Target: {std.targetLevel}%)
-                  </div>
-                </th>
-              ))}
-              <th rowSpan={2} style={{ textAlign: 'center' }}>กราฟ Radar</th>
-            </tr>
-            <tr>
-              {deptStandards.map((std) => (
-                <React.Fragment key={`sub-${std.id}`}>
-                  <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(59,130,246,0.1)' }}>
-                    เป้าหมาย
+        <div className="table-responsive">
+          <table className="custom-table" style={{ width: '100%', minWidth: 900 }}>
+            <thead>
+              <tr>
+                <th rowSpan={2} className="sticky-col" style={{ minWidth: 160 }}>รายชื่อพนักงาน / ตำแหน่ง</th>
+                {deptStandards.map((std) => (
+                  <th key={std.id} colSpan={2} style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', minWidth: 140 }}>
+                    {std.skillName}
+                    <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'none' }}>
+                      (Target: {std.targetLevel}%)
+                    </div>
                   </th>
-                  <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(16,185,129,0.1)' }}>
-                    ผลจริง
-                  </th>
-                </React.Fragment>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {deptEmployees.map((emp) => (
-              <tr key={emp.id}>
-                <td>
-                  <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {emp.empCode} • {emp.position}
-                  </div>
-                </td>
-
-                {deptStandards.map((std) => {
-                  const actual = getEvalResult(emp.id, std.skillName);
-                  const isGap = actual !== null && actual < std.targetLevel;
-
-                  return (
-                    <React.Fragment key={`cell-${emp.id}-${std.id}`}>
-                      <td style={{ textAlign: 'center', fontWeight: 600, color: '#60a5fa' }}>
-                        {std.targetLevel}%
-                      </td>
-                      <td
-                        style={{
-                          textAlign: 'center',
-                          fontWeight: 700,
-                          color: isGap ? 'var(--danger)' : 'var(--success)',
-                          background: isGap ? 'rgba(239, 68, 68, 0.1)' : undefined,
-                        }}
-                      >
-                        {actual !== null ? `${actual}%` : '-'}
-                      </td>
-                    </React.Fragment>
-                  );
-                })}
-
-                <td style={{ textAlign: 'center' }}>
-                  <button
-                    className="btn btn-sm btn-secondary"
-                    onClick={() => {
-                      setActiveEmpForRadar(emp);
-                      setShowRadarModal(true);
-                    }}
-                  >
-                    <Eye size={14} /> ดู Radar Chart
-                  </button>
-                </td>
+                ))}
+                <th rowSpan={2} style={{ textAlign: 'center', minWidth: 130 }}>กราฟ Radar</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+              <tr>
+                {deptStandards.map((std) => (
+                  <React.Fragment key={`sub-${std.id}`}>
+                    <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(59,130,246,0.1)' }}>
+                      เป้าหมาย
+                    </th>
+                    <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(16,185,129,0.1)' }}>
+                      ผลจริง
+                    </th>
+                  </React.Fragment>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {deptEmployees.map((emp) => (
+                <tr key={emp.id}>
+                  <td className="sticky-col">
+                    <div style={{ fontWeight: 600 }}>{emp.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {emp.empCode} • {emp.position}
+                    </div>
+                  </td>
+
+                  {deptStandards.map((std) => {
+                    const actual = getEvalResult(emp.id, std.skillName);
+                    const isGap = actual !== null && actual < std.targetLevel;
+
+                    return (
+                      <React.Fragment key={`cell-${emp.id}-${std.id}`}>
+                        <td style={{ textAlign: 'center', fontWeight: 600, color: '#60a5fa' }}>
+                          {std.targetLevel}%
+                        </td>
+                        <td
+                          style={{
+                            textAlign: 'center',
+                            fontWeight: 700,
+                            color: isGap ? 'var(--danger)' : 'var(--success)',
+                            background: isGap ? 'rgba(239, 68, 68, 0.1)' : undefined,
+                          }}
+                        >
+                          {actual !== null ? `${actual}%` : '-'}
+                        </td>
+                      </React.Fragment>
+                    );
+                  })}
+
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      className="btn btn-sm btn-secondary"
+                      onClick={() => {
+                        setActiveEmpForRadar(emp);
+                        setShowRadarModal(true);
+                      }}
+                    >
+                      <Eye size={14} /> Radar Chart
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Radar Chart Modal */}
