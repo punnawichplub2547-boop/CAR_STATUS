@@ -10,6 +10,7 @@ import { SkillMatrixView } from './components/SkillMatrixView';
 import { CertificateVault } from './components/CertificateVault';
 import { ExamEngine } from './components/ExamEngine';
 import { AuditReportExporter } from './components/AuditReportExporter';
+import { TestLoginModal } from './components/TestLoginModal';
 
 import {
   INITIAL_EMPLOYEES,
@@ -29,6 +30,7 @@ import type { Employee, OjtRecord, ProbationEvaluation, Certificate, SkillEvalua
 export function App() {
   const [currentUser, setCurrentUser] = useState<Employee>(INITIAL_EMPLOYEES[0]); // Default: คุณสมหญิง ใจดี (Admin)
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
+  const [showTestLoginModal, setShowTestLoginModal] = useState(false);
 
   // App Master States
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
@@ -98,6 +100,7 @@ export function App() {
         onSwitchUser={setCurrentUser}
         notifications={notifications}
         onMarkNotificationRead={handleMarkNotifRead}
+        onOpenLoginTest={() => setShowTestLoginModal(true)}
       />
 
       {/* Main Body with Sidebar & Content Area */}
@@ -179,6 +182,16 @@ export function App() {
           )}
         </main>
       </div>
+
+      {/* Test Login Screen Modal */}
+      <TestLoginModal
+        isOpen={showTestLoginModal}
+        onClose={() => setShowTestLoginModal(false)}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+        }}
+        allUsers={employees}
+      />
     </div>
   );
 }

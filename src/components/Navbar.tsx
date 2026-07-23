@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon } from 'lucide-react';
+import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn } from 'lucide-react';
 import type { Employee, NotificationItem } from '../types';
 
 interface NavbarProps {
@@ -8,6 +8,7 @@ interface NavbarProps {
   onSwitchUser: (user: Employee) => void;
   notifications: NotificationItem[];
   onMarkNotificationRead: (id: string) => void;
+  onOpenLoginTest?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -16,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSwitchUser,
   notifications,
   onMarkNotificationRead,
+  onOpenLoginTest,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -51,6 +53,18 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="navbar-actions">
+        {/* Test Login Screen Trigger */}
+        {onOpenLoginTest && (
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={onOpenLoginTest}
+            title="ทดสอบหน้าต่างเข้าสู่ระบบ (Demo Login Screen)"
+            style={{ borderRadius: 12, padding: '8px 14px' }}
+          >
+            <LogIn size={16} /> ทดสอบหน้า Login
+          </button>
+        )}
+
         {/* Theme Switcher Button */}
         <button
           className="notif-btn"
