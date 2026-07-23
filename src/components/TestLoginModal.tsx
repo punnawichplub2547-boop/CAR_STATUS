@@ -15,7 +15,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
   onLoginSuccess,
   allUsers,
 }) => {
-  const [email, setEmail] = useState('EMP-1001@example.com');
+  const [email, setEmail] = useState('somying.j@example.com');
   const [password, setPassword] = useState('demo1234');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
