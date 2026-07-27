@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Eye, RefreshCw, Target, X } from 'lucide-react';
+import { Eye, RefreshCw, Target, X, Edit3, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
-import type { Employee, SkillStandard, SkillEvaluation } from '../types';
+import type { Employee, SkillStandard, SkillEvaluation, SkillLevel } from '../types';
 
 interface SkillMatrixViewProps {
   employees: Employee[];
@@ -14,11 +14,19 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   employees,
   standards,
   evaluations,
+  onUpdateEvaluation,
 }) => {
   const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
   const [selectedCycle, setSelectedCycle] = useState<'2026-01' | '2026-07'>('2026-07');
   const [showRadarModal, setShowRadarModal] = useState(false);
   const [activeEmpForRadar, setActiveEmpForRadar] = useState<Employee | null>(null);
+
+  // Edit Modal State
+  const [editingCell, setEditingCell] = useState<{
+    emp: Employee;
+    std: SkillStandard;
+    currentResult: SkillLevel;
+  } | null>(null);
 
   const deptEmployees = employees.filter((e) => e.department === selectedDept);
   const deptStandards = standards.filter((s) => s.department === selectedDept);
@@ -146,9 +154,22 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
                             fontWeight: 700,
                             color: isGap ? 'var(--danger)' : 'var(--success)',
                             background: isGap ? 'rgba(239, 68, 68, 0.1)' : undefined,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
                           }}
+                          onClick={() => {
+                            setEditingCell({
+                              emp,
+                              std,
+                              currentResult: (actual ?? std.targetLevel) as SkillLevel,
+                            });
+                          }}
+                          title="คลิกเพื่อประเมินระดับทักษะความสามารถ (Edit Skill Level)"
                         >
-                          {actual !== null ? `${actual}%` : '-'}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                            {actual !== null ? `${actual}%` : '-'}
+                            <Edit3 size={12} style={{ opacity: 0.5 }} />
+                          </div>
                         </td>
                       </React.Fragment>
                     );
@@ -171,6 +192,114 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Interactive Skill Level Evaluator Modal */}
+      {editingCell && (
+        <div className="modal-overlay" onClick={() => setEditingCell(null)}>
+          <div className="modal-content" style={{ maxWidth: 580 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>F-HR-014 บันทึกผลประเมินทักษะ</h3>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setEditingCell(null)}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div className="glass-card" style={{ padding: 16, marginBottom: 20, background: 'rgba(59, 130, 246, 0.06)' }}>
+                <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary)' }}>
+                  {editingCell.emp.name} ({editingCell.emp.empCode})
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  ตำแหน่ง: {editingCell.emp.position} • แผนก: {editingCell.emp.department}
+                </div>
+                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>หัวข้อทักษะ: <strong style={{ color: 'var(--text-main)' }}>{editingCell.std.skillName}</strong></span>
+                  <span className="badge badge-blue">Target Standard: {editingCell.std.targetLevel}%</span>
+                </div>
+              </div>
+
+              <label className="form-label" style={{ marginBottom: 12, display: 'block', fontWeight: 600 }}>
+                เลือกระดับผลการประเมินทักษะจริง (รอบประเมิน {selectedCycle}):
+              </label>
+
+              <div className="grid-cols-5" style={{ gap: 8, marginBottom: 20 }}>
+                {([0, 25, 50, 75, 100] as SkillLevel[]).map((lvl) => (
+                  <div
+                    key={lvl}
+                    className={`glass-card glass-card-interactive ${editingCell.currentResult === lvl ? 'active' : ''}`}
+                    style={{
+                      padding: 12,
+                      textAlign: 'center',
+                      border: editingCell.currentResult === lvl ? '2px solid var(--primary)' : undefined,
+                    }}
+                    onClick={() => setEditingCell({ ...editingCell, currentResult: lvl })}
+                  >
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: lvl >= editingCell.std.targetLevel ? 'var(--success)' : 'var(--warning)' }}>
+                      {lvl}%
+                    </div>
+                    <div style={{ fontSize: '0.68rem', marginTop: 4, color: 'var(--text-muted)' }}>
+                      {lvl === 0 && 'ไม่ผ่าน'}
+                      {lvl === 25 && 'ควบคุม'}
+                      {lvl === 50 && 'คอยตรวจ'}
+                      {lvl === 75 && 'ทำได้เอง'}
+                      {lvl === 100 && 'สอนงานได้'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">ผู้ประเมิน (Assessor Name)</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  defaultValue="นางสาว สมหญิง ใจดี (Admin/Supervisor)"
+                  id="eval-assessor-input"
+                />
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setEditingCell(null)}>
+                ยกเลิก
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const assessorInput = (document.getElementById('eval-assessor-input') as HTMLInputElement)?.value || 'Admin';
+                  const existingEval = evaluations.find(
+                    (e) => e.employeeId === editingCell.emp.id && e.skillName === editingCell.std.skillName && e.cycle === selectedCycle
+                  );
+
+                  const updated: SkillEvaluation = {
+                    id: existingEval ? existingEval.id : `eval-${Date.now()}`,
+                    employeeId: editingCell.emp.id,
+                    employeeName: editingCell.emp.name,
+                    position: editingCell.emp.position,
+                    department: editingCell.emp.department,
+                    skillName: editingCell.std.skillName,
+                    category: editingCell.std.category,
+                    targetLevel: editingCell.std.targetLevel,
+                    resultLevel: editingCell.currentResult,
+                    cycle: selectedCycle,
+                    evaluatedAt: new Date().toISOString().split('T')[0],
+                    assessorName: assessorInput,
+                  };
+
+                  onUpdateEvaluation(updated);
+                  setEditingCell(null);
+                }}
+              >
+                <CheckCircle2 size={16} /> บันทึกการประเมินทักษะ (Save Evaluation)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Radar Chart Modal */}
       {showRadarModal && activeEmpForRadar && (

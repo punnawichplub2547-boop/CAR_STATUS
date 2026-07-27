@@ -87,8 +87,8 @@ export const CertificateVault: React.FC<CertificateVaultProps> = ({
           <AlertTriangle size={14} /> ใกล้หมดอายุ ({certificates.filter((c) => c.status === 'EXPIRING_SOON').length})
         </button>
         <button
-          className={`btn btn-sm ${filterStatus === 'EXPIRED' ? 'btn-secondary' : 'btn-secondary'}`}
-          style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}
+          className={`btn btn-sm ${filterStatus === 'EXPIRED' ? 'btn-danger' : 'btn-secondary'}`}
+          style={{ borderColor: 'var(--danger)', color: filterStatus === 'EXPIRED' ? '#ffffff' : 'var(--danger)' }}
           onClick={() => setFilterStatus('EXPIRED')}
         >
           หมดอายุแล้ว ({certificates.filter((c) => c.status === 'EXPIRED').length})

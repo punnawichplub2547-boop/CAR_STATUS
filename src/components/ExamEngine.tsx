@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileCheck2, Clock, CheckCircle2, AlertTriangle, Trophy, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { ExamQuestion, Employee, ExamSubmission } from '../types';
@@ -21,27 +21,16 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({
   const [finalScore, setFinalScore] = useState(0);
   const [finalPercentage, setFinalPercentage] = useState(0);
 
-  // Timer countdown
-  useEffect(() => {
-    let timer: any = null;
-    if (examStarted && !examCompleted && timeLeftSeconds > 0) {
-      timer = setInterval(() => {
-        setTimeLeftSeconds((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeftSeconds === 0 && examStarted && !examCompleted) {
-      handleSubmitExam();
-    }
-    return () => clearInterval(timer);
-  }, [examStarted, examCompleted, timeLeftSeconds]);
-
   const handleSelectOption = (questionId: number, optionIdx: number) => {
-    setSelectedAnswers({
-      ...selectedAnswers,
+    setSelectedAnswers((prev) => ({
+      ...prev,
       [questionId]: optionIdx,
-    });
+    }));
   };
 
-  const handleSubmitExam = () => {
+  const handleSubmitExam = useCallback(() => {
+    if (!questions.length) return;
+
     let correctCount = 0;
     questions.forEach((q) => {
       if (selectedAnswers[q.id] === q.correctAnswer) {
@@ -49,7 +38,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({
       }
     });
 
-    const pct = Math.round((correctCount / questions.length) * 100);
+    const pct = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
     setFinalScore(correctCount);
     setFinalPercentage(pct);
     setExamCompleted(true);
@@ -76,7 +65,20 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({
       submittedAt: new Date().toLocaleString(),
     };
     onSaveSubmission(sub);
-  };
+  }, [questions, selectedAnswers, currentUser, timeLeftSeconds, onSaveSubmission]);
+
+  // Timer countdown
+  useEffect(() => {
+    let timer: any = null;
+    if (examStarted && !examCompleted && timeLeftSeconds > 0) {
+      timer = setInterval(() => {
+        setTimeLeftSeconds((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeftSeconds === 0 && examStarted && !examCompleted) {
+      handleSubmitExam();
+    }
+    return () => clearInterval(timer);
+  }, [examStarted, examCompleted, timeLeftSeconds, handleSubmitExam]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);

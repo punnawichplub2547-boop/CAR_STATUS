@@ -27,6 +27,31 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
     window.print();
   };
 
+  const handleExportCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+    csvContent += "รหัสพนักงาน,ชื่อ-นามสกุล,แผนก,ตำแหน่ง,ทักษะมาตรฐาน,ระดับเป้าหมาย (%),ระดับประเมินจริง (%),สถานะ ISO/IATF\n";
+
+    employees.forEach((emp) => {
+      const empSkills = skillEvaluations.filter((s) => s.employeeId === emp.id);
+      if (empSkills.length === 0) {
+        csvContent += `"${emp.empCode}","${emp.name}","${emp.department}","${emp.position}","ไม่มีข้อมูล",0,0,"รอดำเนินการ"\n`;
+      } else {
+        empSkills.forEach((sk) => {
+          const status = sk.resultLevel >= sk.targetLevel ? "ผ่านเกณฑ์มาตรฐาน (Passed)" : "ต้องพัฒนาทักษะ (Gap)";
+          csvContent += `"${emp.empCode}","${emp.name}","${emp.department}","${emp.position}","${sk.skillName}",${sk.targetLevel},${sk.resultLevel},"${status}"\n`;
+        });
+      }
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `ISO_IATF_16949_Skill_Matrix_Audit_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="audit-report-page content-container">
       <div className="page-header">
@@ -46,9 +71,10 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
           </button>
           <button
             className="btn btn-success"
-            onClick={() => alert(`จำลองส่งออกไฟล์ Excel/PDF สำหรับ ISO/IATF Audit เรียบร้อย!`)}
+            onClick={handleExportCSV}
+            title="ดาวน์โหลดรายงานสรุปทักษะพนักงานเป็นไฟล์ CSV สำหรับ Excel"
           >
-            <Download size={18} /> Export PDF / Excel
+            <Download size={18} /> Export Excel (CSV)
           </button>
         </div>
       </div>

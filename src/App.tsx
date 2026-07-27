@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
@@ -27,21 +27,51 @@ import {
 
 import type { Employee, OjtRecord, ProbationEvaluation, Certificate, SkillEvaluation, TrainingCourse, NotificationItem, ExamSubmission } from './types';
 
+function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const saved = localStorage.getItem(`hrskill_${key}`);
+      return saved ? JSON.parse(saved) : initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`hrskill_${key}`, JSON.stringify(state));
+    } catch (e) {
+      console.error(`Failed to save hrskill_${key}`, e);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
 export function App() {
-  const [currentUser, setCurrentUser] = useState<Employee>(INITIAL_EMPLOYEES[0]); // Default: คุณสมหญิง ใจดี (Admin)
+  const [currentUser, setCurrentUser] = usePersistentState<Employee>('currentUser', INITIAL_EMPLOYEES[0]);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [showTestLoginModal, setShowTestLoginModal] = useState(false);
 
-  // App Master States
-  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
+  // App Master States with Persistence
+  const [employees, setEmployees] = usePersistentState<Employee[]>('employees', INITIAL_EMPLOYEES);
   const [skillStandards] = useState(INITIAL_SKILL_STANDARDS);
-  const [skillEvaluations, setSkillEvaluations] = useState<SkillEvaluation[]>(INITIAL_SKILL_EVALUATIONS);
-  const [ojtRecords, setOjtRecords] = useState<OjtRecord[]>(INITIAL_OJT_RECORDS);
-  const [probationEvaluations, setProbationEvaluations] = useState<ProbationEvaluation[]>(INITIAL_PROBATION_EVALUATIONS);
-  const [certificates, setCertificates] = useState<Certificate[]>(INITIAL_CERTIFICATES);
-  const [courses, setCourses] = useState<TrainingCourse[]>(INITIAL_COURSES);
+  const [skillEvaluations, setSkillEvaluations] = usePersistentState<SkillEvaluation[]>('skillEvaluations', INITIAL_SKILL_EVALUATIONS);
+  const [ojtRecords, setOjtRecords] = usePersistentState<OjtRecord[]>('ojtRecords', INITIAL_OJT_RECORDS);
+  const [probationEvaluations, setProbationEvaluations] = usePersistentState<ProbationEvaluation[]>('probationEvaluations', INITIAL_PROBATION_EVALUATIONS);
+  const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', INITIAL_CERTIFICATES);
+  const [courses, setCourses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
   const [attendances] = useState(INITIAL_ATTENDANCES);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
+
+  // Reset Demo Data
+  const handleResetDemoData = () => {
+    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?')) {
+      const keys = ['currentUser', 'employees', 'skillEvaluations', 'ojtRecords', 'probationEvaluations', 'certificates', 'courses', 'notifications'];
+      keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
+      window.location.reload();
+    }
+  };
 
   // Handlers
   const handleAddEmployee = (newEmp: Employee) => {
@@ -101,6 +131,7 @@ export function App() {
         notifications={notifications}
         onMarkNotificationRead={handleMarkNotifRead}
         onOpenLoginTest={() => setShowTestLoginModal(true)}
+        onResetDemoData={handleResetDemoData}
       />
 
       {/* Main Body with Sidebar & Content Area */}

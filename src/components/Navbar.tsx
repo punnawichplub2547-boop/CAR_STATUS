@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn } from 'lucide-react';
+import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn, RotateCcw } from 'lucide-react';
 import type { Employee, NotificationItem } from '../types';
 
 interface NavbarProps {
@@ -9,6 +9,7 @@ interface NavbarProps {
   notifications: NotificationItem[];
   onMarkNotificationRead: (id: string) => void;
   onOpenLoginTest?: () => void;
+  onResetDemoData?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   notifications,
   onMarkNotificationRead,
   onOpenLoginTest,
+  onResetDemoData,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -53,6 +55,18 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       <div className="navbar-actions">
+        {/* Reset Demo Data Button */}
+        {onResetDemoData && (
+          <button
+            className="btn btn-sm btn-ghost"
+            onClick={onResetDemoData}
+            title="รีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้น (Reset Demo Data)"
+            style={{ borderRadius: 12, padding: '8px 12px', color: 'var(--text-muted)' }}
+          >
+            <RotateCcw size={15} /> รีเซ็ตข้อมูล
+          </button>
+        )}
+
         {/* Test Login Screen Trigger */}
         {onOpenLoginTest && (
           <button
