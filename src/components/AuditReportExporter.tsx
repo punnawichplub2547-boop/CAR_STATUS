@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Download, Printer, FileSpreadsheet } from 'lucide-react';
+import { Printer, FileSpreadsheet } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import type { Employee, SkillEvaluation, OjtSession, OjtParticipant, Certificate, TrainingCourse } from '../types';
 import { computeCertificateStatus } from '../utils/certificateStatus';
 
@@ -75,29 +76,42 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
     window.print();
   };
 
-  const handleExportCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-    csvContent += "รหัสพนักงาน,ชื่อ-นามสกุล,แผนก,ตำแหน่ง,ทักษะมาตรฐาน,ระดับเป้าหมาย (%),ระดับประเมินจริง (%),สถานะ ISO/IATF\n";
+  const handleExportExcel = () => {
+    const fileName = `ISO_IATF_16949_Skill_Matrix_Audit_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    const data: any[][] = [];
+    data.push(["รหัสพนักงาน", "ชื่อ-นามสกุล", "แผนก", "ตำแหน่ง", "ทักษะมาตรฐาน", "ระดับเป้าหมาย (%)", "ระดับประเมินจริง (%)", "สถานะ ISO/IATF"]);
 
     employees.forEach((emp) => {
       const empSkills = skillEvaluations.filter((s) => s.employeeId === emp.id);
       if (empSkills.length === 0) {
-        csvContent += `"${emp.empCode}","${emp.name}","${emp.department}","${emp.position}","ไม่มีข้อมูล",0,0,"รอดำเนินการ"\n`;
+        data.push([emp.empCode, emp.name, emp.department, emp.position, "ไม่มีข้อมูล", "0%", "0%", "รอดำเนินการ"]);
       } else {
         empSkills.forEach((sk) => {
           const status = sk.resultLevel >= sk.targetLevel ? "ผ่านเกณฑ์มาตรฐาน (Passed)" : "ต้องพัฒนาทักษะ (Gap)";
-          csvContent += `"${emp.empCode}","${emp.name}","${emp.department}","${emp.position}","${sk.skillName}",${sk.targetLevel},${sk.resultLevel},"${status}"\n`;
+          data.push([emp.empCode, emp.name, emp.department, emp.position, sk.skillName, `${sk.targetLevel}%`, `${sk.resultLevel}%`, status]);
         });
       }
     });
 
-    const encodedUri = encodeURI(csvContent);
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Skill Matrix");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `ISO_IATF_16949_Skill_Matrix_Audit_${new Date().toISOString().split('T')[0]}.csv`);
+    link.href = url;
+    link.setAttribute("download", fileName);
+    link.download = fileName;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   return (
@@ -119,10 +133,10 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
           </button>
           <button
             className="btn btn-success"
-            onClick={handleExportCSV}
-            title="ดาวน์โหลดรายงานสรุปทักษะพนักงานเป็นไฟล์ CSV สำหรับ Excel"
+            onClick={handleExportExcel}
+            title="ดาวน์โหลดรายงานสรุปทักษะพนักงานเป็นไฟล์ Excel (.xlsx)"
           >
-            <Download size={18} /> Export Excel (CSV)
+            <FileSpreadsheet size={18} /> Export Excel (.xlsx)
           </button>
         </div>
       </div>

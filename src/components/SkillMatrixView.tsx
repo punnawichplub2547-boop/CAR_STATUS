@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Eye, RefreshCw, Target, X, Edit3, CheckCircle2 } from 'lucide-react';
+import { Eye, RefreshCw, Target, X, Edit3, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
+import * as XLSX from 'xlsx';
 import type {
   Employee,
   SkillStandard,
@@ -68,6 +69,56 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
       Actual: getLatestResult(emp.id, std.skillName),
     }));
 
+  const handleExportMatrixExcel = () => {
+    const safeDept = selectedDept.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const safeCycle = selectedCycle.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const fileName = `F-HR-014_Skill_Matrix_${safeDept}_${safeCycle}.xlsx`;
+
+    const data: any[][] = [];
+
+    // Title rows
+    data.push([`ตารางประเมินทักษะพนักงาน (F-HR-014) - แผนก ${selectedDept} - รอบ ${selectedCycle}`]);
+    data.push([]); // blank row
+
+    // Header row
+    const headers = ["รหัสพนักงาน", "ชื่อ-นามสกุล", "ตำแหน่ง", "แผนก"];
+    deptStandards.forEach((std) => {
+      headers.push(`${std.skillName} (เป้าหมาย %)`);
+      headers.push(`${std.skillName} (ผลจริง %)`);
+    });
+    data.push(headers);
+
+    // Data rows
+    deptEmployees.forEach((emp) => {
+      const row: any[] = [emp.empCode, emp.name, emp.position, emp.department];
+      deptStandards.forEach((std) => {
+        const actual = getLatestResult(emp.id, std.skillName);
+        row.push(`${std.targetLevel}%`);
+        row.push(`${actual}%`);
+      });
+      data.push(row);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Skill Matrix");
+
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", fileName);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  };
+
   return (
     <div className="skill-matrix-page content-container">
       <div className="page-header">
@@ -80,10 +131,13 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
             ตารางเปรียบเทียบมาตรฐานทักษะ (F-HR-005) และบันทึกผลการประเมินทักษะความสามารถประจำรอบ (F-HR-014)
           </p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <span className="badge badge-purple" style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
             <RefreshCw size={14} /> รอบประเมิน: มกราคม & กรกฎาคม
           </span>
+          <button className="btn btn-success" onClick={handleExportMatrixExcel} title="ดาวน์โหลดชีท Skill Matrix แผนกนี้เป็นไฟล์ Excel (.xlsx)">
+            <FileSpreadsheet size={16} /> Export Skill Sheet (Excel)
+          </button>
         </div>
       </div>
 

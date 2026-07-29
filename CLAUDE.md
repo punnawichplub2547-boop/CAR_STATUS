@@ -81,6 +81,11 @@ d:\HrSkill\app\
 - Never store or commit real employee names, personal emails, or telephone numbers to repository.
 - Use fictional placeholder names (e.g., "สมชาย ใจดี", "สมศักดิ์ มั่นคง") in `src/data/mockData.ts`.
 
+### 📊 Excel Export & File Download Best Practices
+- **Native Excel (.xlsx) Export:** Always use SheetJS (`xlsx`) to write native `.xlsx` binary buffers via `XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })`.
+- **Explicit OpenXML MIME Type:** When creating a Blob for browser download, MUST explicitly specify `type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'`. Without this explicit MIME type, Chromium browsers categorize the blob as `application/octet-stream` and strip the filename into a random GUID string (e.g., `2138157d-7c12...`).
+- **Filename Sanitization:** Always sanitize dynamic filename variables (such as department names like `QA/QC` or `HR&GA`) by replacing slashes `/`, spaces, and special symbols with underscores `_` (e.g., `selectedDept.replace(/[^a-zA-Z0-9-_]/g, '_')`). Slashes in filename attributes trigger Chromium path traversal protection, causing the download manager to reject the custom filename.
+
 ---
 
 ## 6. Verification Checklist Before Commit
