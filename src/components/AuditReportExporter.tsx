@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Download, Printer, FileSpreadsheet } from 'lucide-react';
-import type { Employee, SkillEvaluation, OjtRecord, Certificate, TrainingCourse } from '../types';
+import type { Employee, SkillEvaluation, OjtSession, OjtParticipant, Certificate, TrainingCourse } from '../types';
+import { computeCertificateStatus } from '../utils/certificateStatus';
 
 interface AuditReportExporterProps {
   employees: Employee[];
   skillEvaluations: SkillEvaluation[];
-  ojtRecords: OjtRecord[];
+  ojtSessions: OjtSession[];
+  ojtParticipants: OjtParticipant[];
   certificates: Certificate[];
   courses: TrainingCourse[];
 }
@@ -13,15 +15,61 @@ interface AuditReportExporterProps {
 export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   employees,
   skillEvaluations,
-  ojtRecords,
+  ojtSessions,
+  ojtParticipants,
   certificates,
 }) => {
   const [reportType, setReportType] = useState<'individual' | 'department_matrix' | 'certs_compliance'>('individual');
   const [selectedEmpId, setSelectedEmpId] = useState(employees[2]?.id || employees[0]?.id);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId);
-  const empOjt = ojtRecords.filter((o) => o.employeeId === selectedEmpId);
-  const empSkills = skillEvaluations.filter((s) => s.employeeId === selectedEmpId);
+  const empOjt = ojtParticipants
+    .filter((p) => p.employeeId === selectedEmpId)
+    .map((participant) => ({ participant, session: ojtSessions.find((s) => s.id === participant.sessionId) }))
+    .filter((row): row is { participant: OjtParticipant; session: OjtSession } => !!row.session);
+
+  // Dedupe to the latest attempt per employee+skill+cycle — a skill that was
+  // re-evaluated (failed attempt 1, passed attempt 2) must show only once,
+  // otherwise the audit card shows two seemingly-conflicting rows for the
+  // same skill.
+  const latestEvals = (() => {
+    const map = new Map<string, SkillEvaluation>();
+    skillEvaluations.forEach((s) => {
+      const key = `${s.employeeId}|${s.skillName}|${s.cycle}`;
+      const existing = map.get(key);
+      if (!existing || s.attemptNumber > existing.attemptNumber) map.set(key, s);
+    });
+    return [...map.values()];
+  })();
+
+  const empSkills = latestEvals.filter((s) => s.employeeId === selectedEmpId);
+
+  const departmentGroups = latestEvals.reduce<Record<string, SkillEvaluation[]>>((acc, s) => {
+    (acc[s.department] ||= []).push(s);
+    return acc;
+  }, {});
+
+  const buildSkillRows = (evals: SkillEvaluation[]) => {
+    const bySkill = evals.reduce<Record<string, SkillEvaluation[]>>((acc, s) => {
+      (acc[s.skillName] ||= []).push(s);
+      return acc;
+    }, {});
+    return Object.entries(bySkill).map(([skillName, rows]) => {
+      const total = rows.length;
+      const passed = rows.filter((r) => r.resultLevel >= r.targetLevel).length;
+      const avgTarget = Math.round(rows.reduce((sum, r) => sum + r.targetLevel, 0) / total);
+      const avgResult = Math.round(rows.reduce((sum, r) => sum + r.resultLevel, 0) / total);
+      return { skillName, total, passed, gap: total - passed, avgTarget, avgResult, passRate: Math.round((passed / total) * 100) };
+    });
+  };
+
+  // --- Tab 3: Certificate compliance readiness ---
+  const certRows = certificates
+    .map((c) => ({ ...c, liveStatus: computeCertificateStatus(c.expiryDate) }))
+    .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate));
+  const certActive = certRows.filter((c) => c.liveStatus === 'ACTIVE').length;
+  const certExpiringSoon = certRows.filter((c) => c.liveStatus === 'EXPIRING_SOON').length;
+  const certExpired = certRows.filter((c) => c.liveStatus === 'EXPIRED').length;
 
   const handlePrint = () => {
     window.print();
@@ -170,14 +218,14 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  empOjt.map((o) => (
-                    <tr key={o.id}>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{o.courseName}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{o.instructor}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{o.evalDate}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{o.instructorScorePercent}%</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8, color: o.isPassed ? '#166534' : '#991b1b', fontWeight: 700 }}>
-                        {o.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED'}
+                  empOjt.map(({ participant, session }) => (
+                    <tr key={participant.id}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.courseName}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.instructor}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.trainingDateTo}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{participant.instructorScorePercent}%</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, color: participant.isPassed ? '#166534' : '#991b1b', fontWeight: 700 }}>
+                        {participant.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED'}
                       </td>
                     </tr>
                   ))
@@ -197,18 +245,30 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
                   <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Target Standard</th>
                   <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Result (%)</th>
                   <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>รอบการประเมิน</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ครั้งที่ประเมิน</th>
                 </tr>
               </thead>
               <tbody>
-                {empSkills.map((s) => (
+                {empSkills.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                      ยังไม่มีผลประเมินทักษะบันทึก
+                    </td>
+                  </tr>
+                ) : (
+                empSkills.map((s) => (
                   <tr key={s.id}>
                     <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{s.skillName}</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.category}</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.targetLevel}%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700, color: '#1e40af' }}>{s.resultLevel}%</td>
                     <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.cycle}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>
+                      {s.attemptNumber === 2 ? 'ครั้งที่ 2 (ประเมินซ้ำ)' : 'ครั้งที่ 1'}
+                    </td>
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
 
@@ -232,6 +292,155 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             </div>
           </div>
         </>
+      )}
+
+      {reportType === 'department_matrix' && (
+        <div className="glass-card" style={{ padding: 32, background: '#ffffff', color: '#0f172a', borderRadius: 16 }} id="printable-area">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ width: 48, height: 48, background: '#1d4ed8', color: '#fff', fontWeight: 900, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                CAR
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.15rem', color: '#0f172a' }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
+                  SKILL MATRIX DEPARTMENT SUMMARY REPORT (F-HR-014)
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#64748b' }}>
+              <div>Document No: CAR-HR-REC-14</div>
+              <div>ISO 9001 / IATF 16949 Compliant</div>
+            </div>
+          </div>
+
+          {Object.keys(departmentGroups).length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#64748b', padding: 24 }}>ยังไม่มีข้อมูลการประเมินทักษะ</div>
+          ) : (
+            Object.entries(departmentGroups).map(([dept, evals]) => {
+              const rows = buildSkillRows(evals);
+              return (
+                <div key={dept} style={{ marginBottom: 28 }}>
+                  <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: 10, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 }}>
+                    แผนก {dept}
+                  </h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f1f5f9' }}>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>หัวข้อทักษะ</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>จำนวนคนที่ประเมิน</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>เป้าหมายเฉลี่ย</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผลจริงเฉลี่ย</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผ่านเกณฑ์</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ต่ำกว่าเกณฑ์ (Gap)</th>
+                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>% ผ่านเกณฑ์</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r) => (
+                        <tr key={r.skillName}>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{r.skillName}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.total}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.avgTarget}%</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700, color: '#1e40af' }}>{r.avgResult}%</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: '#166534', fontWeight: 700 }}>{r.passed}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: r.gap > 0 ? '#991b1b' : '#64748b', fontWeight: 700 }}>{r.gap}</td>
+                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700 }}>{r.passRate}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {reportType === 'certs_compliance' && (
+        <div className="glass-card" style={{ padding: 32, background: '#ffffff', color: '#0f172a', borderRadius: 16 }} id="printable-area">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ width: 48, height: 48, background: '#1d4ed8', color: '#fff', fontWeight: 900, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                CAR
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.15rem', color: '#0f172a' }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
+                  CERTIFICATE COMPLIANCE READINESS REPORT
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#64748b' }}>
+              <div>Document No: CAR-HR-REC-15</div>
+              <div>ISO 9001 / IATF 16949 Compliant</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{certRows.length}</div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ใบรับรองทั้งหมด</div>
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#166534' }}>{certActive}</div>
+              <div style={{ fontSize: '0.8rem', color: '#166534' }}>ใช้งานได้ปกติ</div>
+            </div>
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#92400e' }}>{certExpiringSoon}</div>
+              <div style={{ fontSize: '0.8rem', color: '#92400e' }}>ใกล้หมดอายุ (30 วัน)</div>
+            </div>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#991b1b' }}>{certExpired}</div>
+              <div style={{ fontSize: '0.8rem', color: '#991b1b' }}>หมดอายุแล้ว</div>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ background: '#f1f5f9' }}>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>ชื่อใบรับรอง</th>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>พนักงาน</th>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>แผนก</th>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถาบันออกใบรับรอง</th>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>วันหมดอายุ</th>
+                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {certRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                    ยังไม่มีใบรับรองบันทึกไว้
+                  </td>
+                </tr>
+              ) : (
+                certRows.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{c.certName}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{c.employeeName} ({c.empCode})</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.department}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{c.issuingOrg}</td>
+                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.expiryDate}</td>
+                    <td
+                      style={{
+                        border: '1px solid #cbd5e1',
+                        padding: 8,
+                        textAlign: 'center',
+                        fontWeight: 700,
+                        color: c.liveStatus === 'ACTIVE' ? '#166534' : c.liveStatus === 'EXPIRING_SOON' ? '#92400e' : '#991b1b',
+                      }}
+                    >
+                      {c.liveStatus === 'ACTIVE' ? 'ใช้งานได้ปกติ' : c.liveStatus === 'EXPIRING_SOON' ? 'ใกล้หมดอายุ' : 'หมดอายุแล้ว'}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

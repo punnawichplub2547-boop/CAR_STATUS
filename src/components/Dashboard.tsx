@@ -24,6 +24,7 @@ import {
   Radar,
 } from 'recharts';
 import type { Employee, Certificate } from '../types';
+import { computeCertificateStatus } from '../utils/certificateStatus';
 
 interface DashboardProps {
   employees: Employee[];
@@ -37,9 +38,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onNavigate,
 }) => {
   const probationCount = employees.filter((e) => e.status === 'PROBATION').length;
-  const expiringCertsCount = certificates.filter(
-    (c) => c.status === 'EXPIRING_SOON' || c.status === 'EXPIRED'
-  ).length;
+  const expiringCertsCount = certificates.filter((c) => {
+    const status = computeCertificateStatus(c.expiryDate);
+    return status === 'EXPIRING_SOON' || status === 'EXPIRED';
+  }).length;
 
   // Chart Data: Training Hours by Month
   const trainingChartData = [

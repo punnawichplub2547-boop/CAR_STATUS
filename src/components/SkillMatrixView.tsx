@@ -1,55 +1,72 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Eye, RefreshCw, Target, X, Edit3, CheckCircle2 } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
-import type { Employee, SkillStandard, SkillEvaluation, SkillLevel } from '../types';
+import type {
+  Employee,
+  SkillStandard,
+  SkillEvaluation,
+  SkillEvaluationRound,
+  SkillLevel,
+  EvaluationAttempt,
+  EvaluationCycle,
+} from '../types';
+import { SignaturePad } from './SignaturePad';
 
 interface SkillMatrixViewProps {
   employees: Employee[];
   standards: SkillStandard[];
   evaluations: SkillEvaluation[];
+  evaluationRounds: SkillEvaluationRound[];
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
+  onSaveRound: (round: SkillEvaluationRound) => void;
 }
+
+const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
+const LEVEL_LABEL: Record<SkillLevel, string> = {
+  0: 'ไม่ผ่าน',
+  25: 'ควบคุม',
+  50: 'คอยตรวจ',
+  75: 'ทำได้เอง',
+  100: 'สอนงานได้',
+};
+
+const PieIcon: React.FC<{ level: SkillLevel }> = ({ level }) => <span className="pie-icon" data-lvl={level} />;
 
 export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   employees,
   standards,
   evaluations,
+  evaluationRounds,
   onUpdateEvaluation,
+  onSaveRound,
 }) => {
   const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
-  const [selectedCycle, setSelectedCycle] = useState<'2026-01' | '2026-07'>('2026-07');
+  const [selectedCycle, setSelectedCycle] = useState<EvaluationCycle>('2026-07');
   const [showRadarModal, setShowRadarModal] = useState(false);
   const [activeEmpForRadar, setActiveEmpForRadar] = useState<Employee | null>(null);
-
-  // Edit Modal State
-  const [editingCell, setEditingCell] = useState<{
-    emp: Employee;
-    std: SkillStandard;
-    currentResult: SkillLevel;
-  } | null>(null);
 
   const deptEmployees = employees.filter((e) => e.department === selectedDept);
   const deptStandards = standards.filter((s) => s.department === selectedDept);
 
-  // Helper to find evaluation result for employee & skill
-  const getEvalResult = (empId: string, skillName: string) => {
-    const ev = evaluations.find(
-      (e) => e.employeeId === empId && e.skillName === skillName && e.cycle === selectedCycle
+  // Radar chart uses the latest known result per skill (attempt 2 if it exists, else attempt 1)
+  const getLatestResult = (empId: string, skillName: string) => {
+    const attempt2 = evaluations.find(
+      (e) => e.employeeId === empId && e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 2
     );
-    return ev ? ev.resultLevel : null;
+    if (attempt2) return attempt2.resultLevel;
+    const attempt1 = evaluations.find(
+      (e) => e.employeeId === empId && e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 1
+    );
+    return attempt1 ? attempt1.resultLevel : 0;
   };
 
-  // Build Radar Chart data for selected employee
-  const getEmployeeRadarData = (emp: Employee) => {
-    return deptStandards.map((std) => {
-      const actual = getEvalResult(emp.id, std.skillName) ?? 0;
-      return {
-        skill: std.skillName,
-        Target: std.targetLevel,
-        Actual: actual,
-      };
-    });
-  };
+  const getEmployeeRadarData = (emp: Employee) =>
+    deptStandards.map((std) => ({
+      skill: std.skillName,
+      Target: std.targetLevel,
+      Actual: getLatestResult(emp.id, std.skillName),
+    }));
 
   return (
     <div className="skill-matrix-page content-container">
@@ -77,229 +94,46 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           <select className="form-control" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}>
             <option value="FMG-A">FMG-A (แผนกผลิตยางรถยนต์)</option>
             <option value="QA/QC">QA/QC (แผนกควบคุมคุณภาพ)</option>
+            <option value="HR&GA">HR&GA (แผนกบุคคลและธุรการ)</option>
             <option value="HR&GA IT">HR&GA IT</option>
           </select>
         </div>
 
         <div className="form-group" style={{ margin: 0 }}>
           <label className="form-label">รอบการประเมิน (Evaluation Cycle)</label>
-          <select className="form-control" value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value as any)}>
+          <select className="form-control" value={selectedCycle} onChange={(e) => setSelectedCycle(e.target.value as EvaluationCycle)}>
             <option value="2026-07">รอบ กรกฎาคม 2026 (July 2026)</option>
             <option value="2026-01">รอบ มกราคม 2026 (January 2026)</option>
           </select>
         </div>
       </div>
 
-      {/* Skill Matrix Grid Table (Form F-HR-014 Layout) */}
-      <div className="glass-card" style={{ padding: 20, marginBottom: 24, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div>
-            <h3>F-HR-014 SKILL MATRIX EVALUATION RECORD FORM</h3>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              เกณฑ์ระดับทักษะ: 0% (ไม่ผ่าน/OJT ซ้ำ), 25% (ฝึกอบรมใต้การควบคุม), 50% (คอยตรวจ), 75% (ทำงานได้เอง - ผ่านเกณฑ์), 100% (สอนงานผู้อื่นได้)
-            </span>
-          </div>
-        </div>
-
-        <div className="table-responsive">
-          <table className="custom-table" style={{ width: '100%', minWidth: 900 }}>
-            <thead>
-              <tr>
-                <th rowSpan={2} className="sticky-col" style={{ minWidth: 160 }}>รายชื่อพนักงาน / ตำแหน่ง</th>
-                {deptStandards.map((std) => (
-                  <th key={std.id} colSpan={2} style={{ textAlign: 'center', borderLeft: '1px solid var(--border-color)', minWidth: 140 }}>
-                    {std.skillName}
-                    <div style={{ fontSize: '0.7rem', color: 'var(--primary)', textTransform: 'none' }}>
-                      (Target: {std.targetLevel}%)
-                    </div>
-                  </th>
-                ))}
-                <th rowSpan={2} style={{ textAlign: 'center', minWidth: 130 }}>กราฟ Radar</th>
-              </tr>
-              <tr>
-                {deptStandards.map((std) => (
-                  <React.Fragment key={`sub-${std.id}`}>
-                    <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(59,130,246,0.1)' }}>
-                      เป้าหมาย
-                    </th>
-                    <th style={{ fontSize: '0.7rem', textTransform: 'none', textAlign: 'center', background: 'rgba(16,185,129,0.1)' }}>
-                      ผลจริง
-                    </th>
-                  </React.Fragment>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {deptEmployees.map((emp) => (
-                <tr key={emp.id}>
-                  <td className="sticky-col">
-                    <div style={{ fontWeight: 600 }}>{emp.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      {emp.empCode} • {emp.position}
-                    </div>
-                  </td>
-
-                  {deptStandards.map((std) => {
-                    const actual = getEvalResult(emp.id, std.skillName);
-                    const isGap = actual !== null && actual < std.targetLevel;
-
-                    return (
-                      <React.Fragment key={`cell-${emp.id}-${std.id}`}>
-                        <td style={{ textAlign: 'center', fontWeight: 600, color: '#60a5fa' }}>
-                          {std.targetLevel}%
-                        </td>
-                        <td
-                          style={{
-                            textAlign: 'center',
-                            fontWeight: 700,
-                            color: isGap ? 'var(--danger)' : 'var(--success)',
-                            background: isGap ? 'rgba(239, 68, 68, 0.1)' : undefined,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                          }}
-                          onClick={() => {
-                            setEditingCell({
-                              emp,
-                              std,
-                              currentResult: (actual ?? std.targetLevel) as SkillLevel,
-                            });
-                          }}
-                          title="คลิกเพื่อประเมินระดับทักษะความสามารถ (Edit Skill Level)"
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                            {actual !== null ? `${actual}%` : '-'}
-                            <Edit3 size={12} style={{ opacity: 0.5 }} />
-                          </div>
-                        </td>
-                      </React.Fragment>
-                    );
-                  })}
-
-                  <td style={{ textAlign: 'center' }}>
-                    <button
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => {
-                        setActiveEmpForRadar(emp);
-                        setShowRadarModal(true);
-                      }}
-                    >
-                      <Eye size={14} /> Radar Chart
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '8px 0 14px' }}>
+        F-HR-014 • พนักงานในแผนก · {deptEmployees.length} คน
       </div>
 
-      {/* Interactive Skill Level Evaluator Modal */}
-      {editingCell && (
-        <div className="modal-overlay" onClick={() => setEditingCell(null)}>
-          <div className="modal-content" style={{ maxWidth: 580 }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>F-HR-014 บันทึกผลประเมินทักษะ</h3>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setEditingCell(null)}
-                style={{ padding: 6, borderRadius: '50%' }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-body">
-              <div className="glass-card" style={{ padding: 16, marginBottom: 20, background: 'rgba(59, 130, 246, 0.06)' }}>
-                <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--primary)' }}>
-                  {editingCell.emp.name} ({editingCell.emp.empCode})
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                  ตำแหน่ง: {editingCell.emp.position} • แผนก: {editingCell.emp.department}
-                </div>
-                <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>หัวข้อทักษะ: <strong style={{ color: 'var(--text-main)' }}>{editingCell.std.skillName}</strong></span>
-                  <span className="badge badge-blue">Target Standard: {editingCell.std.targetLevel}%</span>
-                </div>
-              </div>
-
-              <label className="form-label" style={{ marginBottom: 12, display: 'block', fontWeight: 600 }}>
-                เลือกระดับผลการประเมินทักษะจริง (รอบประเมิน {selectedCycle}):
-              </label>
-
-              <div className="grid-cols-5" style={{ gap: 8, marginBottom: 20 }}>
-                {([0, 25, 50, 75, 100] as SkillLevel[]).map((lvl) => (
-                  <div
-                    key={lvl}
-                    className={`glass-card glass-card-interactive ${editingCell.currentResult === lvl ? 'active' : ''}`}
-                    style={{
-                      padding: 12,
-                      textAlign: 'center',
-                      border: editingCell.currentResult === lvl ? '2px solid var(--primary)' : undefined,
-                    }}
-                    onClick={() => setEditingCell({ ...editingCell, currentResult: lvl })}
-                  >
-                    <div style={{ fontSize: '1.15rem', fontWeight: 800, color: lvl >= editingCell.std.targetLevel ? 'var(--success)' : 'var(--warning)' }}>
-                      {lvl}%
-                    </div>
-                    <div style={{ fontSize: '0.68rem', marginTop: 4, color: 'var(--text-muted)' }}>
-                      {lvl === 0 && 'ไม่ผ่าน'}
-                      {lvl === 25 && 'ควบคุม'}
-                      {lvl === 50 && 'คอยตรวจ'}
-                      {lvl === 75 && 'ทำได้เอง'}
-                      {lvl === 100 && 'สอนงานได้'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">ผู้ประเมิน (Assessor Name)</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  defaultValue="นางสาว สมหญิง ใจดี (Admin/Supervisor)"
-                  id="eval-assessor-input"
-                />
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setEditingCell(null)}>
-                ยกเลิก
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  const assessorInput = (document.getElementById('eval-assessor-input') as HTMLInputElement)?.value || 'Admin';
-                  const existingEval = evaluations.find(
-                    (e) => e.employeeId === editingCell.emp.id && e.skillName === editingCell.std.skillName && e.cycle === selectedCycle
-                  );
-
-                  const updated: SkillEvaluation = {
-                    id: existingEval ? existingEval.id : `eval-${Date.now()}`,
-                    employeeId: editingCell.emp.id,
-                    employeeName: editingCell.emp.name,
-                    position: editingCell.emp.position,
-                    department: editingCell.emp.department,
-                    skillName: editingCell.std.skillName,
-                    category: editingCell.std.category,
-                    targetLevel: editingCell.std.targetLevel,
-                    resultLevel: editingCell.currentResult,
-                    cycle: selectedCycle,
-                    evaluatedAt: new Date().toISOString().split('T')[0],
-                    assessorName: assessorInput,
-                  };
-
-                  onUpdateEvaluation(updated);
-                  setEditingCell(null);
-                }}
-              >
-                <CheckCircle2 size={16} /> บันทึกการประเมินทักษะ (Save Evaluation)
-              </button>
-            </div>
-          </div>
+      {deptEmployees.length === 0 && (
+        <div className="glass-card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+          ไม่มีพนักงานในแผนกนี้
         </div>
       )}
+
+      {deptEmployees.map((emp) => (
+        <EmployeeEvalCard
+          key={emp.id}
+          emp={emp}
+          standards={deptStandards}
+          cycle={selectedCycle}
+          evaluations={evaluations}
+          evaluationRounds={evaluationRounds}
+          onUpdateEvaluation={onUpdateEvaluation}
+          onSaveRound={onSaveRound}
+          onOpenRadar={() => {
+            setActiveEmpForRadar(emp);
+            setShowRadarModal(true);
+          }}
+        />
+      ))}
 
       {/* Radar Chart Modal */}
       {showRadarModal && activeEmpForRadar && (
@@ -336,19 +170,19 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
                       tick={{ fill: 'var(--text-dim)', fontSize: 10 }}
                     />
                     <Radar
-                      name="Target Standard (F-HR-005)"
-                      dataKey="Target"
-                      stroke="#2563eb"
-                      fill="#3b82f6"
-                      fillOpacity={0.3}
-                      strokeWidth={2.5}
-                    />
-                    <Radar
                       name="Actual Skill (F-HR-014)"
                       dataKey="Actual"
                       stroke="#059669"
                       fill="#10b981"
                       fillOpacity={0.5}
+                      strokeWidth={2.5}
+                    />
+                    <Radar
+                      name="Target Standard (F-HR-005)"
+                      dataKey="Target"
+                      stroke="#2563eb"
+                      fill="#3b82f6"
+                      fillOpacity={0.15}
                       strokeWidth={2.5}
                     />
                     <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem' }} />
@@ -374,5 +208,294 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+// ---- one F-HR-014 form-card per employee ----
+const EmployeeEvalCard: React.FC<{
+  emp: Employee;
+  standards: SkillStandard[];
+  cycle: EvaluationCycle;
+  evaluations: SkillEvaluation[];
+  evaluationRounds: SkillEvaluationRound[];
+  onUpdateEvaluation: (updated: SkillEvaluation) => void;
+  onSaveRound: (round: SkillEvaluationRound) => void;
+  onOpenRadar: () => void;
+}> = ({ emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound, onOpenRadar }) => {
+  const [attempt, setAttempt] = useState<EvaluationAttempt>(1);
+
+  const attempt1Done = standards.length > 0 && standards.every((std) =>
+    evaluations.some((e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1)
+  );
+  const attempt1HasGap = standards.some((std) => {
+    const ev = evaluations.find((e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1);
+    return ev && ev.resultLevel < std.targetLevel;
+  });
+
+  return (
+    <div className="glass-card" style={{ marginBottom: 22, overflow: 'hidden', padding: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', padding: '18px 20px', borderBottom: '1px solid var(--border-color)' }}>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{emp.name}</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 3 }}>
+            {emp.empCode} • {emp.position}
+          </div>
+        </div>
+        <button className="btn btn-sm btn-secondary" onClick={onOpenRadar}>
+          <Eye size={14} /> Radar Chart
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, padding: '14px 20px 0' }}>
+        <button
+          className={`btn btn-sm ${attempt === 1 ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setAttempt(1)}
+        >
+          ครั้งที่ 1 {attempt1Done && !attempt1HasGap ? '✓' : ''}
+        </button>
+        <button
+          className={`btn btn-sm ${attempt === 2 ? 'btn-primary' : 'btn-ghost'}`}
+          onClick={() => setAttempt(2)}
+        >
+          ครั้งที่ 2 {attempt1HasGap ? '(ประเมินซ้ำ)' : ''}
+        </button>
+      </div>
+
+      <RoundPanel
+        key={attempt}
+        attempt={attempt}
+        emp={emp}
+        standards={standards}
+        cycle={cycle}
+        evaluations={evaluations}
+        evaluationRounds={evaluationRounds}
+        onUpdateEvaluation={onUpdateEvaluation}
+        onSaveRound={onSaveRound}
+      />
+    </div>
+  );
+};
+
+// ---- the Action Period / skill grid / sign-off block for one attempt ----
+const RoundPanel: React.FC<{
+  attempt: EvaluationAttempt;
+  emp: Employee;
+  standards: SkillStandard[];
+  cycle: EvaluationCycle;
+  evaluations: SkillEvaluation[];
+  evaluationRounds: SkillEvaluationRound[];
+  onUpdateEvaluation: (updated: SkillEvaluation) => void;
+  onSaveRound: (round: SkillEvaluationRound) => void;
+}> = ({ attempt, emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound }) => {
+  const roundId = `${emp.id}_${cycle}_${attempt}`;
+  const existingRound = evaluationRounds.find((r) => r.id === roundId);
+
+  const [actionFrom, setActionFrom] = useState(existingRound?.actionPeriodFrom ?? '');
+  const [actionTo, setActionTo] = useState(existingRound?.actionPeriodTo ?? '');
+  const [assessorName, setAssessorName] = useState(existingRound?.assessorName ?? 'นางสาว สมหญิง ใจดี');
+  const [assessorSig, setAssessorSig] = useState<string | null>(existingRound?.assessorSignature ?? null);
+  const [deptManagerName, setDeptManagerName] = useState(existingRound?.deptManagerName ?? '');
+  const [deptManagerSig, setDeptManagerSig] = useState<string | null>(existingRound?.deptManagerSignature ?? null);
+  const [hrDeptName, setHrDeptName] = useState(existingRound?.hrDeptName ?? '');
+  const [hrDeptSig, setHrDeptSig] = useState<string | null>(existingRound?.hrDeptSignature ?? null);
+  const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+
+  const openScorePopover = (skillId: string, triggerEl: HTMLElement) => {
+    if (editingSkillId === skillId) {
+      setEditingSkillId(null);
+      setPopoverPos(null);
+      return;
+    }
+    const rect = triggerEl.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const popoverHeight = 56;
+    const top = spaceBelow < popoverHeight + 12 ? rect.top - popoverHeight - 8 : rect.bottom + 8;
+    setPopoverPos({ top, left: rect.left + rect.width / 2 });
+    setEditingSkillId(skillId);
+  };
+
+  const closeScorePopover = () => {
+    setEditingSkillId(null);
+    setPopoverPos(null);
+  };
+
+  const findEval = (skillName: string) =>
+    evaluations.find((e) => e.employeeId === emp.id && e.skillName === skillName && e.cycle === cycle && e.attemptNumber === attempt);
+
+  const handleScoreSelect = (std: SkillStandard, level: SkillLevel) => {
+    const existing = findEval(std.skillName);
+    onUpdateEvaluation({
+      id: existing?.id ?? `eval-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      roundId,
+      employeeId: emp.id,
+      employeeName: emp.name,
+      position: emp.position,
+      department: emp.department,
+      skillName: std.skillName,
+      category: std.category,
+      targetLevel: std.targetLevel,
+      resultLevel: level,
+      cycle,
+      attemptNumber: attempt,
+      evaluatedAt: new Date().toISOString().split('T')[0],
+      assessorName,
+      remark: existing?.remark,
+    });
+    closeScorePopover();
+  };
+
+  const handleRemarkBlur = (std: SkillStandard, value: string) => {
+    const existing = findEval(std.skillName);
+    if (!existing) return;
+    onUpdateEvaluation({ ...existing, remark: value });
+  };
+
+  const handleSaveRound = () => {
+    onSaveRound({
+      id: roundId,
+      employeeId: emp.id,
+      cycle,
+      attemptNumber: attempt,
+      actionPeriodFrom: actionFrom,
+      actionPeriodTo: actionTo,
+      assessorName,
+      assessorSignature: assessorSig ?? undefined,
+      deptManagerName,
+      deptManagerSignature: deptManagerSig ?? undefined,
+      hrDeptName,
+      hrDeptSignature: hrDeptSig ?? undefined,
+      signedAt: new Date().toISOString().split('T')[0],
+    });
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', padding: '16px 20px 0' }}>
+        <div className="form-group" style={{ margin: 0 }}>
+          <label className="form-label">Action Period จาก</label>
+          <input type="date" className="form-control" value={actionFrom} onChange={(e) => setActionFrom(e.target.value)} />
+        </div>
+        <div className="form-group" style={{ margin: 0 }}>
+          <label className="form-label">ถึง</label>
+          <input type="date" className="form-control" value={actionTo} onChange={(e) => setActionTo(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="table-responsive" style={{ padding: '16px 20px 0' }}>
+        <table className="custom-table" style={{ width: '100%' }}>
+          <thead>
+            <tr>
+              <th style={{ width: '38%' }}>หัวข้อทักษะ</th>
+              <th style={{ textAlign: 'center' }}>เป้าหมาย</th>
+              <th style={{ textAlign: 'center' }}>ผลจริง</th>
+              <th>หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {standards.map((std) => {
+              const ev = findEval(std.skillName);
+              const actual = ev ? ev.resultLevel : null;
+              const isEditing = editingSkillId === std.id;
+              return (
+                <tr key={std.id}>
+                  <td>
+                    {std.skillName}
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{std.category}</div>
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <PieIcon level={std.targetLevel} />
+                  </td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      style={{ all: 'unset', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      onClick={(e) => openScorePopover(std.id, e.currentTarget)}
+                      title="คลิกเพื่อประเมินระดับทักษะ"
+                    >
+                      <PieIcon level={actual ?? 0} />
+                      <Edit3 size={12} style={{ opacity: 0.5 }} />
+                    </button>
+                    {isEditing &&
+                      popoverPos &&
+                      createPortal(
+                        <>
+                          <div className="score-popover-backdrop" onClick={closeScorePopover} />
+                          <div
+                            className="score-popover"
+                            style={{ position: 'fixed', top: popoverPos.top, left: popoverPos.left, transform: 'translateX(-50%)', marginTop: 0 }}
+                          >
+                            {LEVELS.map((lvl) => (
+                              <button
+                                key={lvl}
+                                className={`score-popover-btn ${actual === lvl ? 'active' : ''}`}
+                                title={LEVEL_LABEL[lvl]}
+                                onClick={() => handleScoreSelect(std, lvl)}
+                              >
+                                {lvl}
+                              </button>
+                            ))}
+                          </div>
+                        </>,
+                        document.body
+                      )}
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      className="form-control"
+                      defaultValue={ev?.remark ?? ''}
+                      disabled={!ev}
+                      placeholder={ev ? '—' : 'กรอกคะแนนก่อน'}
+                      onBlur={(e) => handleRemarkBlur(std, e.target.value)}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, padding: '20px' }}>
+        <div>
+          <SignaturePad label="Assessor" onChange={setAssessorSig} />
+          <input
+            type="text"
+            className="form-control"
+            style={{ marginTop: 8 }}
+            value={assessorName}
+            onChange={(e) => setAssessorName(e.target.value)}
+          />
+        </div>
+        <div>
+          <SignaturePad label="Dept. Manager" onChange={setDeptManagerSig} />
+          <input
+            type="text"
+            className="form-control"
+            style={{ marginTop: 8 }}
+            placeholder="ชื่อผู้จัดการแผนก"
+            value={deptManagerName}
+            onChange={(e) => setDeptManagerName(e.target.value)}
+          />
+        </div>
+        <div>
+          <SignaturePad label="HR Dept." onChange={setHrDeptSig} />
+          <input
+            type="text"
+            className="form-control"
+            style={{ marginTop: 8 }}
+            placeholder="ชื่อฝ่ายบุคคล"
+            value={hrDeptName}
+            onChange={(e) => setHrDeptName(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '0 20px 20px' }}>
+        <button className="btn btn-primary" onClick={handleSaveRound}>
+          <CheckCircle2 size={16} /> บันทึกผลประเมิน (ครั้งที่ {attempt})
+        </button>
+      </div>
+    </>
   );
 };

@@ -1,44 +1,78 @@
 import React, { useState } from 'react';
 import { ClipboardCheck, CheckCircle2, FileText, Award } from 'lucide-react';
-import type { Employee, OjtRecord, ProbationEvaluation } from '../types';
+import type {
+  Employee,
+  OjtSession,
+  OjtContentItem,
+  OjtParticipant,
+  ProbationEvaluation,
+  ProbationCriteriaScores,
+  ProbationPeriod,
+  OjtPurposeType,
+  OjtChangeReasonCategory,
+} from '../types';
 
 interface OjtProbationEvaluatorProps {
   employees: Employee[];
-  ojtRecords: OjtRecord[];
+  ojtSessions: OjtSession[];
+  ojtContentItems: OjtContentItem[];
+  ojtParticipants: OjtParticipant[];
   probationEvaluations: ProbationEvaluation[];
-  onAddOjtRecord: (record: OjtRecord) => void;
+  onAddOjtSession: (session: OjtSession, contentItems: OjtContentItem[], participants: OjtParticipant[]) => void;
   onAddProbationEval: (evalRec: ProbationEvaluation) => void;
 }
 
+const PROBATION_CRITERIA: { key: keyof ProbationCriteriaScores; label: string }[] = [
+  { key: 'knowledge', label: '1. ความรู้ในงานของพนักงานใหม่ (Knowledge of work)' },
+  { key: 'diligence', label: '2. ความขยัน / การอุทิศตนต่องาน (Diligence / Devotion)' },
+  { key: 'responsibility', label: '3. ความรับผิดชอบและการติดตามงาน (Responsibility)' },
+  { key: 'teamwork', label: '4. ความร่วมมือและการทำงานเป็นทีม (Teamwork)' },
+  { key: 'attitude', label: '5. ทัศนคติและการตอบสนองต่อนโยบายบริษัท (Attitude)' },
+  { key: 'regulationCompliance', label: '6. การปฏิบัติตามกฎระเบียบบริษัท / ความมีวินัย (Regulation)' },
+  { key: 'problemSolving', label: '7. การวิเคราะห์และการแก้ปัญหา (Problem Solving)' },
+  { key: 'learningAbility', label: '8. ความสามารถปรับตัวและการเรียนรู้งาน (Learning Ability)' },
+  { key: 'ppeUse', label: '9. การใช้อุปกรณ์ความปลอดภัยในงาน (PPE Use)' },
+  { key: 'activityParticipation', label: '10. การเข้าร่วมกิจกรรม 5ส./ISO 14001/IATF16949 (Activity)' },
+];
+
 export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
   employees,
-  onAddOjtRecord,
+  onAddOjtSession,
   onAddProbationEval,
 }) => {
   const [activeFormTab, setActiveFormTab] = useState<'ojt_a' | 'ojt_b' | 'probation'>('ojt_a');
 
-  // Form A State (1 Month OJT New Hire)
+  // Form A / B State (F-HR-004)
   const [selectedEmpId, setSelectedEmpId] = useState(employees[2]?.id || employees[0]?.id);
   const [courseContent, setCourseContent] = useState('การควบคุมเครื่องฉีดอัดยาง และการตบแต่ง Part ชิ้นงานยางรถยนต์');
   const [instructorLevel, setInstructorLevel] = useState<0 | 25 | 50 | 75 | 100>(75);
+  const [purposeType, setPurposeType] = useState<OjtPurposeType>('NEW_HIRE');
+  const [changeReasonCategory, setChangeReasonCategory] = useState<OjtChangeReasonCategory>('METHOD');
 
-  // Probation Form State
+  // Probation Form State (F-HR-009)
   const [probEmpId, setProbEmpId] = useState(employees[2]?.id || employees[0]?.id);
-  const [period, setPeriod] = useState<'30_DAYS' | '60_DAYS' | '90_DAYS'>('30_DAYS');
-  const [scores, setScores] = useState({
+  const [period, setPeriod] = useState<ProbationPeriod>('30_DAYS');
+  const [scores, setScores] = useState<ProbationCriteriaScores>({
     knowledge: 4,
     diligence: 4,
     responsibility: 5,
     teamwork: 4,
     attitude: 5,
+    regulationCompliance: 4,
+    problemSolving: 4,
+    learningAbility: 5,
+    ppeUse: 5,
+    activityParticipation: 4,
   });
+  const [attendancePercentage, setAttendancePercentage] = useState(95);
 
   const targetEmp = employees.find((e) => e.id === selectedEmpId);
   const probTargetEmp = employees.find((e) => e.id === probEmpId);
 
-  // Calculate probation total score (Max 50) and Grade
-  const rawTotal = (scores.knowledge + scores.diligence + scores.responsibility + scores.teamwork + scores.attitude) * 2;
-  const percentage = (rawTotal / 50) * 100;
+  // Criteria total: 10 items x 1-5 x weight 2 = max 100. Result = criteria(80%) + attendance(20%)
+  const criteriaTotalScore = PROBATION_CRITERIA.reduce((sum, c) => sum + scores[c.key], 0) * 2;
+  const criteriaPercentage = criteriaTotalScore;
+  const resultScore = Math.round((criteriaPercentage * 0.8 + attendancePercentage * 0.2) * 10) / 10;
 
   const getProbationGrade = (pct: number) => {
     if (pct >= 86) return 'A+';
@@ -50,33 +84,56 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
 
   const handleSaveOjt = () => {
     if (!targetEmp) return;
-    const newRecord: OjtRecord = {
-      id: `ojt-${Date.now()}`,
+    const now = new Date().toISOString().split('T')[0];
+    const sessionId = `ojt-session-${Date.now()}`;
+
+    const newSession: OjtSession = {
+      id: sessionId,
+      formType: activeFormTab === 'ojt_a' ? 'A_NEW_HIRE' : 'B_CHANGE',
+      department: targetEmp.department,
+      position: targetEmp.position,
+      courseName: activeFormTab === 'ojt_a' ? 'แบบบันทึกการฝึกอบรมเฉพาะงาน (Form A)' : 'แบบบันทึกการฝึกอบรมเฉพาะงาน (Form B)',
+      instructor: 'นาย มานพ ตั้งมั่น',
+      location: 'LINE FMG-A โรงงาน CAR',
+      trainingDateFrom: now,
+      trainingDateTo: now,
+      timeRange: '08.00 - 17.00 น.',
+      evaluationMethod: 'PRACTICAL',
+      hasAttachment: false,
+      purposeType: activeFormTab === 'ojt_a' ? purposeType : undefined,
+      changeReasonCategory: activeFormTab === 'ojt_b' ? changeReasonCategory : undefined,
+      assessorName: 'นาย มานพ ตั้งมั่น',
+      managerName: 'นางสาว สมหญิง ใจดี',
+    };
+
+    const newContentItem: OjtContentItem = {
+      id: `ojt-content-${Date.now()}`,
+      sessionId,
+      sequence: 1,
+      description: courseContent,
+      instructorSignedDate: now,
+      resultPercent: instructorLevel,
+    };
+
+    const newParticipant: OjtParticipant = {
+      id: `ojt-participant-${Date.now()}`,
+      sessionId,
       employeeId: targetEmp.id,
       employeeName: targetEmp.name,
       empCode: targetEmp.empCode,
-      department: targetEmp.department,
-      position: targetEmp.position,
-      formType: activeFormTab === 'ojt_a' ? 'A_NEW_HIRE' : 'B_CHANGE',
-      courseName: activeFormTab === 'ojt_a' ? 'แบบบันทึกการฝึกอบรมเฉพาะงาน (Form A)' : 'แบบบันทึกการฝึกอบรมเฉพาะงาน (Form B)',
-      courseContent,
-      instructor: 'นาย มานพ ตั้งมั่น',
-      location: 'LINE FMG-A โรงงาน CAR',
-      evalDate: new Date().toISOString().split('T')[0],
       preScore: 40,
       postScore: 75,
       instructorScorePercent: instructorLevel,
       isPassed: instructorLevel >= 75,
-      assessorName: 'นาย มานพ ตั้งมั่น',
-      managerName: 'นางสาว สมหญิง ใจดี',
     };
-    onAddOjtRecord(newRecord);
+
+    onAddOjtSession(newSession, [newContentItem], [newParticipant]);
     alert('บันทึกผลการประเมิน OJT เรียบร้อยแล้ว!');
   };
 
   const handleSaveProbation = () => {
     if (!probTargetEmp) return;
-    const grade = getProbationGrade(percentage);
+    const grade = getProbationGrade(resultScore);
     const newEval: ProbationEvaluation = {
       id: `prob-${Date.now()}`,
       employeeId: probTargetEmp.id,
@@ -88,15 +145,17 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
       startingDate: probTargetEmp.startingDate,
       evalDate: new Date().toISOString().split('T')[0],
       scores,
-      totalScore: rawTotal,
-      percentage,
+      criteriaTotalScore,
+      criteriaPercentage,
+      attendancePercentage,
+      resultScore,
       grade,
-      isPassed: percentage >= 56,
+      isPassed: resultScore >= 56,
       comments: 'พนักงานมีความสนใจเรียนรู้และปฏิบัติงานได้อย่างเรียบร้อย',
       assessorName: 'นาย มานพ ตั้งมั่น',
     };
     onAddProbationEval(newEval);
-    alert(`บันทึกผลประเมินทดลองงานเรียบร้อย! ได้คะแนน ${rawTotal}/50 (${percentage}%) เกรด ${grade}`);
+    alert(`บันทึกผลประเมินทดลองงานเรียบร้อย! ผลคะแนนสุทธิ ${resultScore}% เกรด ${grade}`);
   };
 
   return (
@@ -131,7 +190,7 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
           className={`btn ${activeFormTab === 'probation' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setActiveFormTab('probation')}
         >
-          <Award size={18} /> แบบประเมินทดลองงาน 30/60/90 วัน (F-HR-009)
+          <Award size={18} /> แบบประเมินทดลองงาน 30/90/119 วัน (F-HR-009)
         </button>
       </div>
 
@@ -158,15 +217,32 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
               </select>
             </div>
 
-            {activeFormTab === 'ojt_b' && (
+            {activeFormTab === 'ojt_a' ? (
+              <div className="form-group">
+                <label className="form-label">วัตถุประสงค์ที่อบรม</label>
+                <select
+                  className="form-control"
+                  value={purposeType}
+                  onChange={(e) => setPurposeType(e.target.value as OjtPurposeType)}
+                >
+                  <option value="NEW_HIRE">พนักงานเข้าใหม่</option>
+                  <option value="TRANSFER">โยกย้าย/สับเปลี่ยนตำแหน่งงาน</option>
+                </select>
+              </div>
+            ) : (
               <div className="form-group">
                 <label className="form-label">สาเหตุที่อบรม (4M1E Change)</label>
-                <select className="form-control">
-                  <option>เปลี่ยนแปลงวิธีทำงาน</option>
-                  <option>เปลี่ยนแปลงเอกสารการทำงาน</option>
-                  <option>เปลี่ยนแปลงวัตถุดิบ</option>
-                  <option>เปลี่ยนแปลงเครื่องจักร/เครื่องมือ</option>
-                  <option>ทบทวนประจำปี (Annual Review)</option>
+                <select
+                  className="form-control"
+                  value={changeReasonCategory}
+                  onChange={(e) => setChangeReasonCategory(e.target.value as OjtChangeReasonCategory)}
+                >
+                  <option value="METHOD">เปลี่ยนแปลงวิธีทำงาน</option>
+                  <option value="DOCUMENT">เปลี่ยนแปลงเอกสารการทำงาน</option>
+                  <option value="MATERIAL">เปลี่ยนแปลงวัตถุดิบ</option>
+                  <option value="MACHINE">เปลี่ยนแปลงเครื่องจักร/เครื่องมือ</option>
+                  <option value="ANNUAL_REVIEW">ทบทวนประจำปี (Annual Review)</option>
+                  <option value="OTHER">อื่นๆ</option>
                 </select>
               </div>
             )}
@@ -204,7 +280,7 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
                     textAlign: 'center',
                     border: instructorLevel === item.lvl ? `2px solid ${item.isPass ? 'var(--success)' : 'var(--danger)'}` : undefined,
                   }}
-                  onClick={() => setInstructorLevel(item.lvl as any)}
+                  onClick={() => setInstructorLevel(item.lvl as 0 | 25 | 50 | 75 | 100)}
                 >
                   <div style={{ fontSize: '1.2rem', fontWeight: 700, color: item.isPass ? 'var(--success)' : 'var(--danger)' }}>
                     {item.lvl}%
@@ -248,25 +324,19 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
 
             <div className="form-group">
               <label className="form-label">รอบการประเมิน</label>
-              <select className="form-control" value={period} onChange={(e) => setPeriod(e.target.value as any)}>
+              <select className="form-control" value={period} onChange={(e) => setPeriod(e.target.value as ProbationPeriod)}>
                 <option value="30_DAYS">ครบกำหนด 30 วัน</option>
-                <option value="60_DAYS">ครบกำหนด 60 วัน</option>
-                <option value="90_DAYS">ครบกำหนด 90 วัน / 119 วัน</option>
+                <option value="90_DAYS">ครบกำหนด 90 วัน</option>
+                <option value="119_DAYS">ครบกำหนด 119 วัน</option>
               </select>
             </div>
           </div>
 
-          {/* 5 Evaluation Criteria (Score 1-5 with Weight x2) */}
+          {/* 10 Evaluation Criteria (Score 1-5 with Weight x2) */}
           <div style={{ marginBottom: 24 }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: 16 }}>หัวข้อการประเมิน 5 ด้าน (คะแนนเต็มด้านละ 10 คะแนน - ตัวคูณ Weight x2):</h3>
+            <h3 style={{ fontSize: '1rem', marginBottom: 16 }}>หัวข้อการประเมิน 10 ด้าน (คะแนนเต็มด้านละ 10 คะแนน - ตัวคูณ Weight x2):</h3>
 
-            {[
-              { key: 'knowledge', label: '1. ความรู้ในงานของพนักงานใหม่ (Knowledge of work)' },
-              { key: 'diligence', label: '2. ความขยัน / การอุทิศตนต่องาน (Diligence / Devotion)' },
-              { key: 'responsibility', label: '3. ความรับผิดชอบและการติดตามงาน (Responsibility)' },
-              { key: 'teamwork', label: '4. ความร่วมมือและการทำงานเป็นทีม (Teamwork)' },
-              { key: 'attitude', label: '5. ทัศนคติและการตอบสนองต่อนโยบาย (Attitude)' },
-            ].map((item) => (
+            {PROBATION_CRITERIA.map((item) => (
               <div
                 key={item.key}
                 style={{
@@ -284,7 +354,7 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
                   <select
                     className="form-control"
                     style={{ width: 100 }}
-                    value={(scores as any)[item.key]}
+                    value={scores[item.key]}
                     onChange={(e) =>
                       setScores({ ...scores, [item.key]: parseInt(e.target.value) })
                     }
@@ -296,11 +366,37 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
                     <option value={1}>1 (ปรับปรุง)</option>
                   </select>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', width: 80, textAlign: 'right' }}>
-                    = {(scores as any)[item.key] * 2} คะแนน
+                    = {scores[item.key] * 2} คะแนน
                   </span>
                 </div>
               </div>
             ))}
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: 12,
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: 10,
+                marginTop: 4,
+              }}
+            >
+              <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>คะแนนการเข้างาน (Attendance) — น้ำหนัก 20% ของผลรวม</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="form-control"
+                  style={{ width: 100 }}
+                  value={attendancePercentage}
+                  onChange={(e) => setAttendancePercentage(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                />
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', width: 80, textAlign: 'right' }}>%</span>
+              </div>
+            </div>
           </div>
 
           {/* Result Calculation Preview */}
@@ -313,12 +409,28 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 16,
             }}
           >
             <div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>คะแนนรวมประเมินผลทดลองงานสุทธิ:</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>คะแนนเกณฑ์ 10 ด้าน (80%):</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#60a5fa' }}>
+                {criteriaTotalScore} / 100 ({criteriaPercentage}%)
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>คะแนนเข้างาน (20%):</div>
+              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#60a5fa' }}>
+                {attendancePercentage}%
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>ผลคะแนนสุทธิ (Result Score):</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#60a5fa' }}>
-                {rawTotal} / 50 คะแนน ({percentage}%)
+                {resultScore}%
               </div>
             </div>
 
@@ -328,10 +440,10 @@ export const OjtProbationEvaluator: React.FC<OjtProbationEvaluatorProps> = ({
                 style={{
                   fontSize: '2rem',
                   fontWeight: 900,
-                  color: percentage >= 76 ? 'var(--success)' : 'var(--warning)',
+                  color: resultScore >= 76 ? 'var(--success)' : 'var(--warning)',
                 }}
               >
-                Grade {getProbationGrade(percentage)}
+                Grade {getProbationGrade(resultScore)}
               </div>
             </div>
           </div>

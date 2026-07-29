@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LayoutDashboard,
   Users,
@@ -9,6 +9,7 @@ import {
   FileCheck2,
   FileSpreadsheet,
   Building2,
+  ChevronLeft,
 } from 'lucide-react';
 
 export type NavTab =
@@ -34,6 +35,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringCertsCount,
   probationCount,
 }) => {
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('hrskill_sidebarCollapsed') === '1');
+
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--sidebar-width',
+      collapsed ? 'var(--sidebar-width-collapsed)' : '270px'
+    );
+    localStorage.setItem('hrskill_sidebarCollapsed', collapsed ? '1' : '0');
+  }, [collapsed]);
+
   const navItems = [
     {
       id: 'dashboard',
@@ -91,27 +102,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="sidebar glass-card">
+    <aside className={`sidebar glass-card ${collapsed ? 'collapsed' : ''}`}>
       <div className="sidebar-section">
+        <button
+          className="sidebar-toggle"
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'ขยายเมนู' : 'ย่อเมนู'}
+        >
+          <ChevronLeft size={16} />
+        </button>
         <div className="section-title">เมนูหลัก (MAIN MENU)</div>
         <nav className="nav-list">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button
-                key={item.id}
-                className={`nav-item ${isActive ? 'active' : ''}`}
-                onClick={() => onTabChange(item.id as NavTab)}
-              >
-                <Icon size={18} className="nav-icon" />
-                <span className="nav-label">{item.label}</span>
-                {item.badge && (
-                  <span className={`badge ${item.badgeColor || 'badge-blue'} nav-badge`}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
+              <div className="nav-item-wrap" key={item.id}>
+                <button
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => onTabChange(item.id as NavTab)}
+                >
+                  <Icon size={18} className="nav-icon" />
+                  <span className="nav-label">{item.label}</span>
+                  {item.badge && (
+                    <span className={`badge ${item.badgeColor || 'badge-blue'} nav-badge`}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+                <div className="nav-tooltip">
+                  {item.label}
+                  {item.badge && (
+                    <span className={`badge ${item.badgeColor || 'badge-blue'}`} style={{ fontSize: '0.68rem' }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+              </div>
             );
           })}
         </nav>

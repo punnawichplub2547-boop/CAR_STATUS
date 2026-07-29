@@ -4,9 +4,19 @@ export type Role = 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
 export type EmploymentStatus = 'PROBATION' | 'PERMANENT' | 'RESIGNED';
 export type SkillLevel = 0 | 25 | 50 | 75 | 100;
 export type ProbationGrade = 'A+' | 'A' | 'B' | 'C' | 'D';
-export type ProbationPeriod = '30_DAYS' | '60_DAYS' | '90_DAYS';
+export type ProbationPeriod = '30_DAYS' | '90_DAYS' | '119_DAYS';
 export type OjtFormType = 'A_NEW_HIRE' | 'B_CHANGE';
+export type OjtPurposeType = 'NEW_HIRE' | 'TRANSFER';
+export type OjtChangeReasonCategory =
+  | 'DOCUMENT'
+  | 'METHOD'
+  | 'MATERIAL'
+  | 'MACHINE'
+  | 'ANNUAL_REVIEW'
+  | 'OTHER';
+export type OjtEvaluationMethod = 'PRE_POST_TEST' | 'PRACTICAL' | 'Q_AND_A';
 export type EvaluationCycle = '2026-01' | '2026-07';
+export type EvaluationAttempt = 1 | 2;
 
 export interface Employee {
   id: string;
@@ -35,6 +45,7 @@ export interface SkillStandard {
 
 export interface SkillEvaluation {
   id: string;
+  roundId: string;
   employeeId: string;
   employeeName: string;
   position: string;
@@ -44,32 +55,88 @@ export interface SkillEvaluation {
   targetLevel: SkillLevel;
   resultLevel: SkillLevel;
   cycle: EvaluationCycle;
+  attemptNumber: EvaluationAttempt;
   evaluatedAt: string;
   assessorName: string;
   remark?: string;
 }
 
-export interface OjtRecord {
+// F-HR-014: one sign-off round per employee, per cycle, per attempt (1st/2nd
+// try) — Action Period + the 3-tier sign-off (Assessor / Dept. Manager / HR
+// Dept.) apply once to every skill scored within that round.
+export interface SkillEvaluationRound {
   id: string;
+  employeeId: string;
+  cycle: EvaluationCycle;
+  attemptNumber: EvaluationAttempt;
+  actionPeriodFrom: string;
+  actionPeriodTo: string;
+  assessorName: string;
+  assessorSignature?: string; // data URL (PNG) of the hand-drawn signature
+  deptManagerName: string;
+  deptManagerSignature?: string;
+  hrDeptName: string;
+  hrDeptSignature?: string;
+  signedAt?: string;
+}
+
+// F-HR-004: one OJT session (Form A = 1 trainee, Form B = up to ~10 trainees)
+export interface OjtSession {
+  id: string;
+  formType: OjtFormType;
+  department: string;
+  position: string;
+  courseName: string;
+  instructor: string;
+  location: string;
+  trainingDateFrom: string;
+  trainingDateTo: string;
+  timeRange: string;
+  evaluationMethod: OjtEvaluationMethod;
+  hasAttachment: boolean;
+  purposeType?: OjtPurposeType; // Form A only
+  changeReasonCategory?: OjtChangeReasonCategory; // Form B only
+  assessorName: string;
+  managerName: string;
+}
+
+// Each content/topic line within a session (Form A: up to 25 lines)
+export interface OjtContentItem {
+  id: string;
+  sessionId: string;
+  sequence: number;
+  description: string;
+  instructorSignedDate?: string;
+  resultPercent?: SkillLevel; // Form A scores per content line
+  remark?: string;
+}
+
+// Each trainee attending a session (Form B: up to ~10 per session)
+export interface OjtParticipant {
+  id: string;
+  sessionId: string;
   employeeId: string;
   employeeName: string;
   empCode: string;
-  department: string;
-  position: string;
-  formType: OjtFormType;
-  courseName: string;
-  courseContent: string;
-  instructor: string;
-  location: string;
-  evalDate: string;
-  changeReason?: string; // 4M1E change for Form B
   preScore?: number;
   postScore?: number;
   instructorScorePercent: SkillLevel;
   isPassed: boolean;
   remarks?: string;
-  assessorName: string;
-  managerName: string;
+}
+
+// F-HR-009: 10 criteria, each scored 1-5 with weight x2 (max 100)
+export interface ProbationCriteriaScores {
+  knowledge: number; // ความรู้ในงานของพนักงานใหม่
+  diligence: number; // ความขยัน / การอุทิศตนต่องาน
+  responsibility: number; // ความรับผิดชอบต่องานและการติดตามงาน
+  teamwork: number; // ความร่วมมือ การประสานงาน และการทำงานเป็นทีม
+  attitude: number; // ทัศนคติและการตอบสนองต่อนโยบายบริษัท
+  regulationCompliance: number; // การปฏิบัติตามกฎระเบียบบริษัท / ความมีวินัย
+  problemSolving: number; // การวิเคราะห์และการแก้ปัญหา
+  learningAbility: number; // ความสามารถปรับตัวและการเรียนรู้งาน
+  ppeUse: number; // การใช้อุปกรณ์ความปลอดภัยในงาน
+  activityParticipation: number; // การเข้าร่วมกิจกรรม (5ส., ความปลอดภัย, ISO 14001, IATF16949)
 }
 
 export interface ProbationEvaluation {
@@ -82,15 +149,11 @@ export interface ProbationEvaluation {
   period: ProbationPeriod;
   startingDate: string;
   evalDate: string;
-  scores: {
-    knowledge: number; // 1-5 (x2 weight)
-    diligence: number; // 1-5 (x2 weight)
-    responsibility: number; // 1-5 (x2 weight)
-    teamwork: number; // 1-5 (x2 weight)
-    attitude: number; // 1-5 (x2 weight)
-  };
-  totalScore: number; // max 50
-  percentage: number;
+  scores: ProbationCriteriaScores;
+  criteriaTotalScore: number; // sum(scores) * 2, max 100
+  criteriaPercentage: number; // criteriaTotalScore, weighted 80% of result
+  attendancePercentage: number; // 0-100, weighted 20% of result
+  resultScore: number; // criteriaPercentage * 0.8 + attendancePercentage * 0.2
   grade: ProbationGrade;
   isPassed: boolean;
   comments: string;
@@ -134,7 +197,9 @@ export interface TrainingAttendance {
   department: string;
   position: string;
   checkInMorning?: string;
+  signedMorning?: string; // data URL (PNG) of the hand-drawn signature
   checkInAfternoon?: string;
+  signedAfternoon?: string;
   isPassed: boolean;
 }
 

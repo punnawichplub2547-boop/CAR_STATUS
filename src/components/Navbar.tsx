@@ -40,7 +40,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="navbar-brand">
         <div className="logo-badge">CAR</div>
         <div className="brand-text">
-          <span className="company-name">บจก. คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง</span>
+          <span className="company-name">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</span>
           <span className="app-title gradient-text">HR Skill & Competency Platform</span>
         </div>
       </div>

@@ -174,7 +174,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({
           {/* Question List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24, marginBottom: 30 }}>
             {questions.map((q, idx) => (
-              <div key={q.id} className="glass-card" style={{ padding: 18, background: 'rgba(15,23,42,0.6)' }}>
+              <div key={q.id} className="glass-card" style={{ padding: 18 }}>
                 <div style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600, marginBottom: 4 }}>
                   ข้อที่ {idx + 1} / {questions.length} • หมวด: {q.category}
                 </div>
