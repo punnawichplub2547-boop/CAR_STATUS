@@ -13,6 +13,7 @@ import {
   Search,
   Trash2,
   UserCheck,
+  PlusCircle,
 } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
 import type {
@@ -34,6 +35,7 @@ interface SkillMatrixViewProps {
   evaluationRounds: SkillEvaluationRound[];
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
+  onAddEmployee?: (newEmp: Employee) => void;
 }
 
 const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
@@ -54,16 +56,24 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   evaluationRounds,
   onUpdateEvaluation,
   onSaveRound,
+  onAddEmployee,
 }) => {
   const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
   const [selectedCycle, setSelectedCycle] = useState<EvaluationCycle>('2026-07');
   const [showRadarModal, setShowRadarModal] = useState(false);
   const [activeEmpForRadar, setActiveEmpForRadar] = useState<Employee | null>(null);
 
-  // State for cross-department added employees & search modal
+  // State for cross-department / new added employees & search modal
   const [extraEmpIds, setExtraEmpIds] = useState<string[]>([]);
   const [showAddEmpModal, setShowAddEmpModal] = useState(false);
   const [searchEmpQuery, setSearchEmpQuery] = useState('');
+
+  // Mode inside Add Employee Modal: 'SEARCH' vs 'CREATE_NEW'
+  const [addEmpMode, setAddEmpMode] = useState<'SEARCH' | 'CREATE_NEW'>('SEARCH');
+  const [newEmpCode, setNewEmpCode] = useState('');
+  const [newEmpName, setNewEmpName] = useState('');
+  const [newEmpPosition, setNewEmpPosition] = useState('');
+  const [newEmpDept, setNewEmpDept] = useState('FMG-A');
 
   // Department baseline employees & standards
   const deptEmployees = employees.filter((e) => e.department === selectedDept);
@@ -88,6 +98,39 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
 
   const handleRemoveExtraEmp = (empId: string) => {
     setExtraEmpIds((prev) => prev.filter((id) => id !== empId));
+  };
+
+  const handleCreateAndAddNewEmp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmpCode.trim() || !newEmpName.trim()) return;
+
+    const newEmp: Employee = {
+      id: `emp-${Date.now()}`,
+      empCode: newEmpCode.trim(),
+      name: newEmpName.trim(),
+      email: `${newEmpCode.toLowerCase().trim()}@car.co.th`,
+      department: newEmpDept || selectedDept,
+      section: '-',
+      position: newEmpPosition.trim() || 'พนักงานทั่วไป (ยางรถยนต์)',
+      startingDate: new Date().toISOString().split('T')[0],
+      status: 'PERMANENT',
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
+      role: 'EMPLOYEE',
+    };
+
+    if (onAddEmployee) {
+      onAddEmployee(newEmp);
+    }
+    if (!extraEmpIds.includes(newEmp.id) && newEmp.department !== selectedDept) {
+      setExtraEmpIds((prev) => [...prev, newEmp.id]);
+    }
+
+    // Reset form state & close modal
+    setNewEmpCode('');
+    setNewEmpName('');
+    setNewEmpPosition('');
+    setShowAddEmpModal(false);
+    setAddEmpMode('SEARCH');
   };
 
   // Candidates available to add (not currently displayed)
@@ -196,7 +239,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
 
       {displayedEmployees.length === 0 && (
         <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
-          ไม่มีพนักงานในตารางนี้ คลิกปุ่ม <strong>"เพิ่ม / ดึงข้อมูลพนักงาน"</strong> ด้านบนเพื่อค้นหาพนักงาน
+          ไม่มีพนักงานในตารางนี้ คลิกปุ่ม <strong>"เพิ่ม / ดึงข้อมูลพนักงาน"</strong> ด้านบนเพื่อค้นหาหรือสร้างพนักงานใหม่
         </div>
       )}
 
@@ -219,99 +262,200 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
         />
       ))}
 
-      {/* Modal: Search / Select Employee Cross-Department */}
+      {/* Modal: Search / Select / Create Employee */}
       {showAddEmpModal && (
         <div className="modal-overlay" onClick={() => setShowAddEmpModal(false)}>
           <div className="modal-content" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <UserPlus size={20} style={{ color: 'var(--primary)' }} />
-                <h3 style={{ margin: 0 }}>ดึงข้อมูลพนักงานร่วมประเมิน (Search / Select Employee)</h3>
+                <h3 style={{ margin: 0 }}>
+                  {addEmpMode === 'SEARCH' ? 'ดึงข้อมูลพนักงานร่วมประเมิน' : 'สร้างพนักงานใหม่ข้ามแผนก'}
+                </h3>
               </div>
               <button
                 className="btn btn-ghost btn-sm"
-                onClick={() => setShowAddEmpModal(false)}
+                onClick={() => {
+                  setShowAddEmpModal(false);
+                  setAddEmpMode('SEARCH');
+                }}
                 style={{ padding: 6, borderRadius: '50%' }}
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-body">
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
-                พิมพ์รหัสประจำตัวพนักงาน (EMP Code), ชื่อ-นามสกุล หรือตำแหน่ง เพื่อดึงข้อมูลพนักงานและผลการประเมิน skill เข้าสู่ตารางแผนก {selectedDept}
-              </p>
 
-              {/* Search Box */}
-              <div style={{ position: 'relative', marginBottom: 16 }}>
-                <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input
-                  type="text"
-                  className="form-control"
-                  style={{ paddingLeft: 42 }}
-                  placeholder="ค้นหาด้วยรหัสพนักงาน (เช่น EMP-1003) หรือชื่อพนักงาน..."
-                  value={searchEmpQuery}
-                  onChange={(e) => setSearchEmpQuery(e.target.value)}
-                  autoFocus
-                />
+            <div className="modal-body">
+              {/* Mode Selector Switch */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 18, background: 'rgba(0,0,0,0.04)', padding: 4, borderRadius: 10 }}>
+                <button
+                  className={`btn btn-sm ${addEmpMode === 'SEARCH' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ flex: 1, borderRadius: 8 }}
+                  onClick={() => setAddEmpMode('SEARCH')}
+                >
+                  <Search size={14} /> ค้นหาพนักงานในระบบ
+                </button>
+                <button
+                  className={`btn btn-sm ${addEmpMode === 'CREATE_NEW' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ flex: 1, borderRadius: 8 }}
+                  onClick={() => setAddEmpMode('CREATE_NEW')}
+                >
+                  <PlusCircle size={14} /> สร้างพนักงานใหม่
+                </button>
               </div>
 
-              {/* Candidate Employees List */}
-              <div style={{ maxHeight: 340, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {candidateEmployees.length === 0 ? (
-                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
-                    ไม่พบพนักงานตรงตามเงื่อนไขค้นหา หรือพนักงานถูกเลือกเข้าตารางครบแล้ว
+              {addEmpMode === 'SEARCH' ? (
+                <>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                    พิมพ์รหัสประจำตัวพนักงาน (EMP Code), ชื่อ-นามสกุล หรือตำแหน่ง เพื่อดึงข้อมูลพนักงานและผลการประเมิน skill เข้าสู่ตารางแผนก {selectedDept} และ Export Excel ได้ทันที
+                  </p>
+
+                  {/* Search Box */}
+                  <div style={{ position: 'relative', marginBottom: 16 }}>
+                    <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input
+                      type="text"
+                      className="form-control"
+                      style={{ paddingLeft: 42 }}
+                      placeholder="ค้นหาด้วยรหัสพนักงาน (เช่น EMP-1003) หรือชื่อพนักงาน..."
+                      value={searchEmpQuery}
+                      onChange={(e) => setSearchEmpQuery(e.target.value)}
+                      autoFocus
+                    />
                   </div>
-                ) : (
-                  candidateEmployees.map((cEmp) => (
-                    <div
-                      key={cEmp.id}
-                      className="glass-card"
-                      style={{
-                        padding: '12px 16px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: 12,
-                        marginBottom: 0,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div
-                          style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: '50%',
-                            background: 'var(--primary-glow)',
-                            color: 'var(--primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          {cEmp.empCode.replace(/[^0-9]/g, '') || cEmp.name.slice(0, 2)}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                            {cEmp.name} <span style={{ color: 'var(--primary)', fontSize: '0.85rem', marginLeft: 4 }}>({cEmp.empCode})</span>
-                          </div>
-                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                            {cEmp.position} • แผนก: <strong style={{ color: 'var(--text-main)' }}>{cEmp.department}</strong>
-                          </div>
+
+                  {/* Candidate Employees List */}
+                  <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {candidateEmployees.length === 0 ? (
+                      <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                        ไม่พบพนักงานตรงตามเงื่อนไขค้นหา
+                        <div style={{ marginTop: 8 }}>
+                          <button className="btn btn-sm btn-secondary" onClick={() => setAddEmpMode('CREATE_NEW')}>
+                            <PlusCircle size={14} /> คลิกตรงนี้เพื่อสร้างพนักงานใหม่
+                          </button>
                         </div>
                       </div>
+                    ) : (
+                      candidateEmployees.map((cEmp) => (
+                        <div
+                          key={cEmp.id}
+                          className="glass-card"
+                          style={{
+                            padding: '12px 16px',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 12,
+                            marginBottom: 0,
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                background: 'var(--primary-glow)',
+                                color: 'var(--primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 700,
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {cEmp.empCode.replace(/[^0-9]/g, '') || cEmp.name.slice(0, 2)}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                                {cEmp.name} <span style={{ color: 'var(--primary)', fontSize: '0.85rem', marginLeft: 4 }}>({cEmp.empCode})</span>
+                              </div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                                {cEmp.position} • แผนก: <strong style={{ color: 'var(--text-main)' }}>{cEmp.department}</strong>
+                              </div>
+                            </div>
+                          </div>
 
-                      <button className="btn btn-sm btn-primary" onClick={() => handleAddExtraEmp(cEmp.id)}>
-                        <UserCheck size={14} /> เลือกคนนี้
-                      </button>
+                          <button className="btn btn-sm btn-primary" onClick={() => handleAddExtraEmp(cEmp.id)}>
+                            <UserCheck size={14} /> เลือกคนนี้
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                /* Create New Employee Form */
+                <form onSubmit={handleCreateAndAddNewEmp} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
+                    กรอกข้อมูลพนักงานใหม่เพื่อบันทึกเข้าสู่ระบบ และดึงเข้าร่วมการประเมินทักษะในตาราง Export Excel ทันที
+                  </p>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label">รหัสพนักงาน (EMP Code) *</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="เช่น EMP-1005"
+                        value={newEmpCode}
+                        onChange={(e) => setNewEmpCode(e.target.value)}
+                        required
+                      />
                     </div>
-                  ))
-                )}
-              </div>
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label className="form-label">แผนกสังกัด (Department)</label>
+                      <select className="form-control" value={newEmpDept} onChange={(e) => setNewEmpDept(e.target.value)}>
+                        <option value="FMG-A">FMG-A (แผนกผลิตยางรถยนต์)</option>
+                        <option value="QA/QC">QA/QC (แผนกควบคุมคุณภาพ)</option>
+                        <option value="HR&GA">HR&GA (แผนกบุคคลและธุรการ)</option>
+                        <option value="HR&GA IT">HR&GA IT</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">ชื่อ-นามสกุล *</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="เช่น นาย สมชาย ขยันดี"
+                      value={newEmpName}
+                      onChange={(e) => setNewEmpName(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">ตำแหน่งงาน (Position)</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="เช่น พนักงานทั่วไป (ยางรถยนต์)"
+                      value={newEmpPosition}
+                      onChange={(e) => setNewEmpPosition(e.target.value)}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
+                    <button type="button" className="btn btn-secondary" onClick={() => setAddEmpMode('SEARCH')}>
+                      ยกเลิก
+                    </button>
+                    <button type="submit" className="btn btn-primary">
+                      <CheckCircle2 size={16} /> ยืนยันสร้างและเพิ่มเข้าตาราง
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowAddEmpModal(false)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setShowAddEmpModal(false);
+                  setAddEmpMode('SEARCH');
+                }}
+              >
                 ปิดหน้าต่าง
               </button>
             </div>

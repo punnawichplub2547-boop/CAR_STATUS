@@ -294,6 +294,7 @@ export function App() {
               evaluationRounds={skillEvaluationRounds}
               onUpdateEvaluation={handleUpdateEvaluation}
               onSaveRound={handleSaveEvaluationRound}
+              onAddEmployee={handleAddEmployee}
             />
           )}
 
