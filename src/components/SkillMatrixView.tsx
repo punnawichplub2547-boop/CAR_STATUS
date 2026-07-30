@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Eye, RefreshCw, Target, X, Edit3, CheckCircle2, FileSpreadsheet } from 'lucide-react';
+import {
+  Eye,
+  RefreshCw,
+  Target,
+  X,
+  Edit3,
+  CheckCircle2,
+  FileSpreadsheet,
+  ChevronDown,
+  UserPlus,
+  Search,
+  Trash2,
+  UserCheck,
+} from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
-import * as XLSX from 'xlsx';
 import type {
   Employee,
   SkillStandard,
@@ -13,6 +25,7 @@ import type {
   EvaluationCycle,
 } from '../types';
 import { SignaturePad } from './SignaturePad';
+import { exportExactFHR014Template } from '../utils/excelTemplateExporter';
 
 interface SkillMatrixViewProps {
   employees: Employee[];
@@ -47,8 +60,49 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   const [showRadarModal, setShowRadarModal] = useState(false);
   const [activeEmpForRadar, setActiveEmpForRadar] = useState<Employee | null>(null);
 
+  // State for cross-department added employees & search modal
+  const [extraEmpIds, setExtraEmpIds] = useState<string[]>([]);
+  const [showAddEmpModal, setShowAddEmpModal] = useState(false);
+  const [searchEmpQuery, setSearchEmpQuery] = useState('');
+
+  // Department baseline employees & standards
   const deptEmployees = employees.filter((e) => e.department === selectedDept);
+  const extraEmployees = employees.filter((e) => extraEmpIds.includes(e.id) && e.department !== selectedDept);
+  const displayedEmployees = [...deptEmployees, ...extraEmployees];
+
   const deptStandards = standards.filter((s) => s.department === selectedDept);
+
+  // Reset extra employees when department changes
+  const handleDeptChange = (dept: string) => {
+    setSelectedDept(dept);
+    setExtraEmpIds([]);
+  };
+
+  const handleAddExtraEmp = (empId: string) => {
+    if (!extraEmpIds.includes(empId)) {
+      setExtraEmpIds((prev) => [...prev, empId]);
+    }
+    setShowAddEmpModal(false);
+    setSearchEmpQuery('');
+  };
+
+  const handleRemoveExtraEmp = (empId: string) => {
+    setExtraEmpIds((prev) => prev.filter((id) => id !== empId));
+  };
+
+  // Candidates available to add (not currently displayed)
+  const candidateEmployees = employees.filter((emp) => {
+    const isAlreadyInView = displayedEmployees.some((d) => d.id === emp.id);
+    if (isAlreadyInView) return false;
+    if (!searchEmpQuery.trim()) return true;
+    const q = searchEmpQuery.toLowerCase().trim();
+    return (
+      emp.name.toLowerCase().includes(q) ||
+      emp.empCode.toLowerCase().includes(q) ||
+      emp.department.toLowerCase().includes(q) ||
+      emp.position.toLowerCase().includes(q)
+    );
+  });
 
   // Radar chart uses the latest known result per skill (attempt 2 if it exists, else attempt 1)
   const getLatestResult = (empId: string, skillName: string) => {
@@ -69,54 +123,15 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
       Actual: getLatestResult(emp.id, std.skillName),
     }));
 
-  const handleExportMatrixExcel = () => {
-    const safeDept = selectedDept.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const safeCycle = selectedCycle.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const fileName = `F-HR-014_Skill_Matrix_${safeDept}_${safeCycle}.xlsx`;
-
-    const data: any[][] = [];
-
-    // Title rows
-    data.push([`ตารางประเมินทักษะพนักงาน (F-HR-014) - แผนก ${selectedDept} - รอบ ${selectedCycle}`]);
-    data.push([]); // blank row
-
-    // Header row
-    const headers = ["รหัสพนักงาน", "ชื่อ-นามสกุล", "ตำแหน่ง", "แผนก"];
-    deptStandards.forEach((std) => {
-      headers.push(`${std.skillName} (เป้าหมาย %)`);
-      headers.push(`${std.skillName} (ผลจริง %)`);
+  const handleExportExactTemplate = () => {
+    exportExactFHR014Template({
+      employees,
+      customEmployees: displayedEmployees,
+      standards,
+      evaluations,
+      department: selectedDept,
+      cycle: selectedCycle,
     });
-    data.push(headers);
-
-    // Data rows
-    deptEmployees.forEach((emp) => {
-      const row: any[] = [emp.empCode, emp.name, emp.position, emp.department];
-      deptStandards.forEach((std) => {
-        const actual = getLatestResult(emp.id, std.skillName);
-        row.push(`${std.targetLevel}%`);
-        row.push(`${actual}%`);
-      });
-      data.push(row);
-    });
-
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Skill Matrix");
-
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
   };
 
   return (
@@ -131,21 +146,24 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
             ตารางเปรียบเทียบมาตรฐานทักษะ (F-HR-005) และบันทึกผลการประเมินทักษะความสามารถประจำรอบ (F-HR-014)
           </p>
         </div>
-        <div className="header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="header-actions" style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <span className="badge badge-purple" style={{ padding: '8px 14px', fontSize: '0.85rem' }}>
             <RefreshCw size={14} /> รอบประเมิน: มกราคม & กรกฎาคม
           </span>
-          <button className="btn btn-success" onClick={handleExportMatrixExcel} title="ดาวน์โหลดชีท Skill Matrix แผนกนี้เป็นไฟล์ Excel (.xlsx)">
-            <FileSpreadsheet size={16} /> Export Skill Sheet (Excel)
+          <button className="btn btn-primary" onClick={() => setShowAddEmpModal(true)}>
+            <UserPlus size={16} /> เพิ่ม / ดึงข้อมูลพนักงาน
+          </button>
+          <button className="btn btn-success" onClick={handleExportExactTemplate} title="ดาวน์โหลดฟอร์ม F-HR-014 Rev.4 เป็นไฟล์ Excel (.xlsx)">
+            <FileSpreadsheet size={16} /> Export F-HR-014 (Excel)
           </button>
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div className="glass-card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 20, alignItems: 'center' }}>
+      <div className="glass-card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <div className="form-group" style={{ margin: 0 }}>
-          <label className="form-label">เลือกแผนก / หน่วยงาน</label>
-          <select className="form-control" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)}>
+          <label className="form-label">เลือกแผนก / หน่วยงานหลัก</label>
+          <select className="form-control" value={selectedDept} onChange={(e) => handleDeptChange(e.target.value)}>
             <option value="FMG-A">FMG-A (แผนกผลิตยางรถยนต์)</option>
             <option value="QA/QC">QA/QC (แผนกควบคุมคุณภาพ)</option>
             <option value="HR&GA">HR&GA (แผนกบุคคลและธุรการ)</option>
@@ -160,19 +178,29 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
             <option value="2026-01">รอบ มกราคม 2026 (January 2026)</option>
           </select>
         </div>
+
+        {extraEmployees.length > 0 && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className="badge badge-purple" style={{ fontSize: '0.8rem' }}>
+              มีพนักงานดึงข้ามแผนก: {extraEmployees.length} คน
+            </span>
+          </div>
+        )}
       </div>
 
-      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '8px 0 14px' }}>
-        F-HR-014 • พนักงานในแผนก · {deptEmployees.length} คน
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 0 14px' }}>
+        <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          F-HR-014 • แสดงพนักงานประเมิน · {displayedEmployees.length} คน (คลิกที่ชื่อพนักงานเพื่อเปิด/ปิดผลประเมิน)
+        </div>
       </div>
 
-      {deptEmployees.length === 0 && (
-        <div className="glass-card" style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
-          ไม่มีพนักงานในแผนกนี้
+      {displayedEmployees.length === 0 && (
+        <div className="glass-card" style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
+          ไม่มีพนักงานในตารางนี้ คลิกปุ่ม <strong>"เพิ่ม / ดึงข้อมูลพนักงาน"</strong> ด้านบนเพื่อค้นหาพนักงาน
         </div>
       )}
 
-      {deptEmployees.map((emp) => (
+      {displayedEmployees.map((emp) => (
         <EmployeeEvalCard
           key={emp.id}
           emp={emp}
@@ -180,6 +208,8 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           cycle={selectedCycle}
           evaluations={evaluations}
           evaluationRounds={evaluationRounds}
+          isCrossDept={emp.department !== selectedDept}
+          onRemoveCrossDept={() => handleRemoveExtraEmp(emp.id)}
           onUpdateEvaluation={onUpdateEvaluation}
           onSaveRound={onSaveRound}
           onOpenRadar={() => {
@@ -188,6 +218,106 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           }}
         />
       ))}
+
+      {/* Modal: Search / Select Employee Cross-Department */}
+      {showAddEmpModal && (
+        <div className="modal-overlay" onClick={() => setShowAddEmpModal(false)}>
+          <div className="modal-content" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <UserPlus size={20} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ margin: 0 }}>ดึงข้อมูลพนักงานร่วมประเมิน (Search / Select Employee)</h3>
+              </div>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowAddEmpModal(false)}
+                style={{ padding: 6, borderRadius: '50%' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                พิมพ์รหัสประจำตัวพนักงาน (EMP Code), ชื่อ-นามสกุล หรือตำแหน่ง เพื่อดึงข้อมูลพนักงานและผลการประเมิน skill เข้าสู่ตารางแผนก {selectedDept}
+              </p>
+
+              {/* Search Box */}
+              <div style={{ position: 'relative', marginBottom: 16 }}>
+                <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  type="text"
+                  className="form-control"
+                  style={{ paddingLeft: 42 }}
+                  placeholder="ค้นหาด้วยรหัสพนักงาน (เช่น EMP-1003) หรือชื่อพนักงาน..."
+                  value={searchEmpQuery}
+                  onChange={(e) => setSearchEmpQuery(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {/* Candidate Employees List */}
+              <div style={{ maxHeight: 340, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {candidateEmployees.length === 0 ? (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                    ไม่พบพนักงานตรงตามเงื่อนไขค้นหา หรือพนักงานถูกเลือกเข้าตารางครบแล้ว
+                  </div>
+                ) : (
+                  candidateEmployees.map((cEmp) => (
+                    <div
+                      key={cEmp.id}
+                      className="glass-card"
+                      style={{
+                        padding: '12px 16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        gap: 12,
+                        marginBottom: 0,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: 'var(--primary-glow)',
+                            color: 'var(--primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          {cEmp.empCode.replace(/[^0-9]/g, '') || cEmp.name.slice(0, 2)}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                            {cEmp.name} <span style={{ color: 'var(--primary)', fontSize: '0.85rem', marginLeft: 4 }}>({cEmp.empCode})</span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                            {cEmp.position} • แผนก: <strong style={{ color: 'var(--text-main)' }}>{cEmp.department}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button className="btn btn-sm btn-primary" onClick={() => handleAddExtraEmp(cEmp.id)}>
+                        <UserCheck size={14} /> เลือกคนนี้
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setShowAddEmpModal(false)}>
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Radar Chart Modal */}
       {showRadarModal && activeEmpForRadar && (
@@ -265,67 +395,148 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   );
 };
 
-// ---- one F-HR-014 form-card per employee ----
+// ---- one F-HR-014 form-card per employee (Collapsible Accordion) ----
 const EmployeeEvalCard: React.FC<{
   emp: Employee;
   standards: SkillStandard[];
   cycle: EvaluationCycle;
   evaluations: SkillEvaluation[];
   evaluationRounds: SkillEvaluationRound[];
+  isCrossDept?: boolean;
+  onRemoveCrossDept?: () => void;
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
   onOpenRadar: () => void;
-}> = ({ emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound, onOpenRadar }) => {
+}> = ({
+  emp,
+  standards,
+  cycle,
+  evaluations,
+  evaluationRounds,
+  isCrossDept = false,
+  onRemoveCrossDept,
+  onUpdateEvaluation,
+  onSaveRound,
+  onOpenRadar,
+}) => {
   const [attempt, setAttempt] = useState<EvaluationAttempt>(1);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  const attempt1Done = standards.length > 0 && standards.every((std) =>
-    evaluations.some((e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1)
-  );
+  const attempt1Done =
+    standards.length > 0 &&
+    standards.every((std) =>
+      evaluations.some(
+        (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1
+      )
+    );
   const attempt1HasGap = standards.some((std) => {
-    const ev = evaluations.find((e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1);
+    const ev = evaluations.find(
+      (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1
+    );
     return ev && ev.resultLevel < std.targetLevel;
   });
 
   return (
-    <div className="glass-card" style={{ marginBottom: 22, overflow: 'hidden', padding: 0 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', padding: '18px 20px', borderBottom: '1px solid var(--border-color)' }}>
-        <div>
-          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>{emp.name}</div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 3 }}>
-            {emp.empCode} • {emp.position}
+    <div className="glass-card" style={{ marginBottom: 16, overflow: 'hidden', padding: 0, transition: 'all 0.2s ease' }}>
+      {/* Clickable Header Bar */}
+      <div
+        className="employee-card-header"
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 16,
+          padding: '16px 20px',
+          cursor: 'pointer',
+          borderBottom: isExpanded ? '1px solid var(--border-color)' : 'none',
+          background: isExpanded ? 'rgba(59, 130, 246, 0.04)' : 'transparent',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              color: isExpanded ? 'var(--primary)' : 'var(--text-muted)',
+              display: 'flex',
+              alignItems: 'center',
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s ease',
+            }}
+          >
+            <ChevronDown size={20} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {emp.name}
+              {isCrossDept && (
+                <span className="badge badge-purple" style={{ fontSize: '0.72rem', padding: '2px 8px' }}>
+                  ต่างแผนก ({emp.department})
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {emp.empCode} • {emp.position}
+            </div>
           </div>
         </div>
-        <button className="btn btn-sm btn-secondary" onClick={onOpenRadar}>
-          <Eye size={14} /> Radar Chart
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            className="btn btn-sm btn-secondary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenRadar();
+            }}
+          >
+            <Eye size={14} /> Radar Chart
+          </button>
+          {isCrossDept && onRemoveCrossDept && (
+            <button
+              className="btn btn-sm btn-ghost"
+              style={{ color: 'var(--danger)', padding: '6px 10px' }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemoveCrossDept();
+              }}
+              title="นำพนักงานท่านนี้ออกจากรายการในตารางแผนกนี้"
+            >
+              <Trash2 size={14} /> นำออก
+            </button>
+          )}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, padding: '14px 20px 0' }}>
-        <button
-          className={`btn btn-sm ${attempt === 1 ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setAttempt(1)}
-        >
-          ครั้งที่ 1 {attempt1Done && !attempt1HasGap ? '✓' : ''}
-        </button>
-        <button
-          className={`btn btn-sm ${attempt === 2 ? 'btn-primary' : 'btn-ghost'}`}
-          onClick={() => setAttempt(2)}
-        >
-          ครั้งที่ 2 {attempt1HasGap ? '(ประเมินซ้ำ)' : ''}
-        </button>
-      </div>
+      {/* Expanded Accordion Body with smooth dropdown animation */}
+      {isExpanded && (
+        <div className="accordion-dropdown-body">
+          <div style={{ display: 'flex', gap: 6, padding: '14px 20px 0' }}>
+            <button
+              className={`btn btn-sm ${attempt === 1 ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setAttempt(1)}
+            >
+              ครั้งที่ 1 {attempt1Done && !attempt1HasGap ? '✓' : ''}
+            </button>
+            <button
+              className={`btn btn-sm ${attempt === 2 ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setAttempt(2)}
+            >
+              ครั้งที่ 2 {attempt1HasGap ? '(ประเมินซ้ำ)' : ''}
+            </button>
+          </div>
 
-      <RoundPanel
-        key={attempt}
-        attempt={attempt}
-        emp={emp}
-        standards={standards}
-        cycle={cycle}
-        evaluations={evaluations}
-        evaluationRounds={evaluationRounds}
-        onUpdateEvaluation={onUpdateEvaluation}
-        onSaveRound={onSaveRound}
-      />
+          <RoundPanel
+            key={attempt}
+            attempt={attempt}
+            emp={emp}
+            standards={standards}
+            cycle={cycle}
+            evaluations={evaluations}
+            evaluationRounds={evaluationRounds}
+            onUpdateEvaluation={onUpdateEvaluation}
+            onSaveRound={onSaveRound}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Printer, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, SkillEvaluation, OjtSession, OjtParticipant, Certificate, TrainingCourse } from '../types';
 import { computeCertificateStatus } from '../utils/certificateStatus';
+import { downloadExcelWorkbook, formatSkillLevelWithIcon } from '../utils/excelTemplateExporter';
 
 interface AuditReportExporterProps {
   employees: Employee[];
@@ -89,7 +90,7 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
       } else {
         empSkills.forEach((sk) => {
           const status = sk.resultLevel >= sk.targetLevel ? "ผ่านเกณฑ์มาตรฐาน (Passed)" : "ต้องพัฒนาทักษะ (Gap)";
-          data.push([emp.empCode, emp.name, emp.department, emp.position, sk.skillName, `${sk.targetLevel}%`, `${sk.resultLevel}%`, status]);
+          data.push([emp.empCode, emp.name, emp.department, emp.position, sk.skillName, formatSkillLevelWithIcon(sk.targetLevel), formatSkillLevelWithIcon(sk.resultLevel), status]);
         });
       }
     });
@@ -98,20 +99,7 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Skill Matrix");
 
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", fileName);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    downloadExcelWorkbook(workbook, fileName);
   };
 
   return (

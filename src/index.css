@@ -86,6 +86,28 @@
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
+@keyframes dropdownExpand {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.accordion-dropdown-body {
+  animation: dropdownExpand 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.employee-card-header {
+  transition: background-color 0.2s ease;
+}
+.employee-card-header:hover {
+  background-color: rgba(59, 130, 246, 0.06) !important;
+}
+
 * {
   margin: 0;
   padding: 0;
