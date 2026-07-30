@@ -53,12 +53,12 @@ const circleRidMap: Record<number, string> = {
 
 let anchorCounter = 9900;
 
-// Unified Big 310274x310274 circle at perfect midpoint offset (colOff=25000) for ALL cells
+// Unified Big 310274x310274 circle at perfect cell horizontal center (colOff=130000)
 function addCircleOneCellAnchor(drawingXml: string, colIdx: number, rowIdx: number, level: number): string {
   anchorCounter++;
   const rId = circleRidMap[level] || circleRidMap[0];
   const anchorXml = `<xdr:oneCellAnchor>
-  <xdr:from><xdr:col>${colIdx}</xdr:col><xdr:colOff>25000</xdr:colOff><xdr:row>${rowIdx}</xdr:row><xdr:rowOff>2000</xdr:rowOff></xdr:from>
+  <xdr:from><xdr:col>${colIdx}</xdr:col><xdr:colOff>130000</xdr:colOff><xdr:row>${rowIdx}</xdr:row><xdr:rowOff>2000</xdr:rowOff></xdr:from>
   <xdr:ext cx="310274" cy="310274"/>
   <xdr:pic>
     <xdr:nvPicPr>
