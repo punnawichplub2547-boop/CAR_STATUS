@@ -130,18 +130,49 @@ body {
   background-attachment: fixed;
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Ultra-Sleek Floating Glass Design */
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
+
 ::-webkit-scrollbar-track {
-  background: rgba(148, 163, 184, 0.1);
+  background: transparent;
+  border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(#3b82f6, #8b5cf6);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  transition: background 0.25s ease;
 }
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #3b82f6, #6d5cf6);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox & Cross-browser subtle scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+.sidebar-section::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-section::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+}
+.sidebar-section::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
