@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Users,
   Clock,
   Award,
   AlertTriangle,
-  Target,
   TrendingUp,
   FileCheck2,
   ShieldCheck,
   LayoutDashboard,
+  CheckCircle2,
+  Sparkles,
+  ArrowUpRight,
+  Filter,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -22,6 +25,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
+  Legend,
 } from 'recharts';
 import type { Employee, Certificate } from '../types';
 import { computeCertificateStatus } from '../utils/certificateStatus';
@@ -37,11 +41,51 @@ export const Dashboard: React.FC<DashboardProps> = ({
   certificates,
   onNavigate,
 }) => {
+  const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
+
   const probationCount = employees.filter((e) => e.status === 'PROBATION').length;
   const expiringCertsCount = certificates.filter((c) => {
     const status = computeCertificateStatus(c.expiryDate);
     return status === 'EXPIRING_SOON' || status === 'EXPIRED';
   }).length;
+
+  // Department-specific Radar Chart Data
+  const radarDataByDept: Record<string, Array<{ category: string; Target: number; Actual: number }>> = {
+    'FMG-A': [
+      { category: 'ฉีดอัดยาง', Target: 75, Actual: 60 },
+      { category: 'ตกแต่ง Part', Target: 75, Actual: 75 },
+      { category: 'ประกอบชิ้นงาน', Target: 50, Actual: 50 },
+      { category: 'บันทึกรายงาน', Target: 75, Actual: 65 },
+      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 95 },
+      { category: 'ระบบ ERP', Target: 50, Actual: 40 },
+    ],
+    'FMG-B': [
+      { category: 'ฉีดอัดยาง', Target: 75, Actual: 75 },
+      { category: 'ตกแต่ง Part', Target: 100, Actual: 85 },
+      { category: 'ประกอบชิ้นงาน', Target: 75, Actual: 70 },
+      { category: 'บันทึกรายงาน', Target: 50, Actual: 50 },
+      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
+      { category: 'ระบบ ERP', Target: 50, Actual: 45 },
+    ],
+    'QA/QC': [
+      { category: 'ตรวจสอบมิติ', Target: 100, Actual: 90 },
+      { category: 'ใช้ Vernier/Caliper', Target: 100, Actual: 100 },
+      { category: 'เกณฑ์รับ/ปฏิเสธ', Target: 100, Actual: 95 },
+      { category: 'บันทึกสถิติ Cpk', Target: 75, Actual: 75 },
+      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
+      { category: 'ระบบ ERP', Target: 75, Actual: 60 },
+    ],
+    'Maintenance': [
+      { category: 'PM เครื่องฉีด', Target: 100, Actual: 85 },
+      { category: 'ซ่อมบำรุงไฟฟ้า', Target: 75, Actual: 75 },
+      { category: 'ระบบไฮดรอลิก', Target: 100, Actual: 90 },
+      { category: 'วิเคราะห์ 5G/5Why', Target: 75, Actual: 70 },
+      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
+      { category: 'ระบบ ERP', Target: 75, Actual: 65 },
+    ],
+  };
+
+  const currentRadarData = radarDataByDept[selectedDept] || radarDataByDept['FMG-A'];
 
   // Chart Data: Training Hours by Month
   const trainingChartData = [
@@ -54,18 +98,59 @@ export const Dashboard: React.FC<DashboardProps> = ({
     { month: 'ก.ค.', hours: 75 },
   ];
 
-  // Radar Chart Data: Average Skill Level vs Target
-  const skillRadarData = [
-    { category: 'ฉีดอัดยาง', Target: 75, Actual: 60 },
-    { category: 'ตกแต่ง Part', Target: 75, Actual: 75 },
-    { category: 'ประกอบชิ้นงาน', Target: 50, Actual: 50 },
-    { category: 'บันทึกรายงาน', Target: 75, Actual: 65 },
-    { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 95 },
-    { category: 'ระบบ ERP', Target: 50, Actual: 40 },
-  ];
-
   return (
     <div className="dashboard-page content-container">
+      {/* ISO Audit Readiness Banner */}
+      <div
+        className="glass-card"
+        style={{
+          padding: '20px 24px',
+          marginBottom: 24,
+          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(124, 58, 237, 0.06))',
+          borderColor: 'rgba(59, 130, 246, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#fff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 6px 18px rgba(16, 185, 129, 0.35)',
+              flexShrink: 0,
+            }}
+          >
+            <ShieldCheck size={28} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>
+                IATF 16949 / ISO 9001 Audit Readiness: <span style={{ color: '#059669' }}>96.8% Complete</span>
+              </h3>
+              <span className="badge badge-green">
+                <CheckCircle2 size={13} /> Ready for Audit
+              </span>
+            </div>
+            <p style={{ fontSize: '0.86rem', color: 'var(--text-muted)', marginTop: 4 }}>
+              เอกสาร F-HR-005, F-HR-014 (Skill Matrix), และ F-HR-016 (OJT) พร้อมสำหรับการตรวจสอบมาตรฐานสากล
+            </p>
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={() => onNavigate('audit')}>
+          <Sparkles size={16} /> ออกเอกสาร Audit ทันที <ArrowUpRight size={16} />
+        </button>
+      </div>
+
       <div className="page-header">
         <div>
           <div className="eyebrow-tag">
@@ -128,7 +213,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Charts Grid */}
       <div className="grid-cols-2" style={{ marginBottom: 24 }}>
-        {/* Radar Chart: Skill Gap Overview */}
+        {/* Radar Chart: Skill Gap Overview with Interactive Dept Switcher */}
         <div className="glass-card" style={{ padding: 20 }}>
           <div
             style={{
@@ -136,21 +221,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
               alignItems: 'center',
               justifyContent: 'space-between',
               marginBottom: 16,
+              flexWrap: 'wrap',
+              gap: 10,
             }}
           >
             <div>
               <h3 style={{ fontSize: '1.05rem' }}>ภาพรวม Competency Radar Chart</h3>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                เปรียบเทียบ Target (มาตรฐาน) vs Actual (ทักษะจริง) แผนก FMG-A
+                เปรียบเทียบ Target (มาตรฐาน) vs Actual (ทักษะจริง) ประจำแผนก {selectedDept}
               </span>
             </div>
-            <button className="btn btn-sm btn-secondary" onClick={() => onNavigate('skill_matrix')}>
-              <Target size={14} /> ดูรายละเอียด
-            </button>
+
+            {/* Department Filter Switcher */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <Filter size={13} style={{ color: 'var(--text-dim)' }} />
+              {['FMG-A', 'FMG-B', 'QA/QC', 'Maintenance'].map((dept) => (
+                <button
+                  key={dept}
+                  className={`btn btn-sm ${selectedDept === dept ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ padding: '4px 10px', fontSize: '0.8rem' }}
+                  onClick={() => setSelectedDept(dept)}
+                >
+                  {dept}
+                </button>
+              ))}
+            </div>
           </div>
+
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={skillRadarData}>
+              <RadarChart cx="50%" cy="50%" outerRadius="75%" data={currentRadarData}>
                 <PolarGrid stroke="var(--border-color)" />
                 <PolarAngleAxis
                   dataKey="category"
@@ -168,7 +268,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   dataKey="Target"
                   stroke="#2563eb"
                   fill="#3b82f6"
-                  fillOpacity={0.3}
+                  fillOpacity={0.25}
                   strokeWidth={2}
                 />
                 <Radar
@@ -179,6 +279,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   fillOpacity={0.5}
                   strokeWidth={2.5}
                 />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
                 <Tooltip
                   contentStyle={{
                     background: 'var(--bg-card)',
@@ -220,9 +321,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <YAxis stroke="#64748b" />
                 <Tooltip
                   contentStyle={{
-                    background: '#1e293b',
+                    background: 'var(--bg-card)',
                     border: '1px solid var(--border-color)',
                     borderRadius: 8,
+                    color: 'var(--text-main)',
                   }}
                 />
                 <Bar dataKey="hours" name="ชั่วโมงอบรม (Hrs)" fill="#3b82f6" radius={[6, 6, 0, 0]} />
