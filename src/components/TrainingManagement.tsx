@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, GraduationCap, Plus, Search, Pencil, Trash2, Eye } from 'lucide-react';
+import { CheckCircle2, GraduationCap, Plus, Search, Pencil, Trash2, Eye, X } from 'lucide-react';
 import type { Employee, TrainingCourse, TrainingAttendance } from '../types';
 import { SignaturePad } from './SignaturePad';
 
@@ -33,6 +33,7 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
   onDeleteAttendance,
 }) => {
   const [selectedCourse, setSelectedCourse] = useState<TrainingCourse | null>(courses[0] ?? null);
+  const [showAttendeesModal, setShowAttendeesModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInEmpId, setCheckInEmpId] = useState(employees[0]?.id || '');
   const [checkInPeriod, setCheckInPeriod] = useState<'morning' | 'afternoon'>('morning');
@@ -43,6 +44,11 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
 
   const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+
+  const handleViewAttendees = (course: TrainingCourse) => {
+    setSelectedCourse(course);
+    setShowAttendeesModal(true);
+  };
   const [courseCode, setCourseCode] = useState('');
   const [courseTitle, setCourseTitle] = useState('');
   const [courseCategory, setCourseCategory] = useState<TrainingCourse['category']>('SAFETY');
@@ -251,9 +257,9 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button
                     type="button"
-                    className={`btn btn-sm ${c.id === selectedCourse?.id ? 'btn-primary' : 'btn-secondary'}`}
+                    className="btn btn-sm btn-primary"
                     style={{ flex: 1 }}
-                    onClick={() => setSelectedCourse(c)}
+                    onClick={() => handleViewAttendees(c)}
                   >
                     <Eye size={13} /> ดูรายชื่อ
                   </button>
@@ -592,6 +598,150 @@ export const TrainingManagement: React.FC<TrainingManagementProps> = ({
         </div>
       )}
 
+      {/* Attendees List Modal */}
+      {showAttendeesModal && selectedCourse && (
+        <div className="modal-overlay" onClick={() => setShowAttendeesModal(false)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: 820, width: '100%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <div>
+                <span className="badge badge-purple" style={{ marginBottom: 4 }}>
+                  {selectedCourse.code}
+                </span>
+                <h3 style={{ fontSize: '1.25rem', margin: 0 }}>
+                  รายชื่อผู้เข้าอบรม: {selectedCourse.title}
+                </h3>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  {selectedCourse.date} ({selectedCourse.timeRange}) · วิทยากร: {selectedCourse.instructor} · สถานที่: {selectedCourse.location}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setShowAttendeesModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <span className="badge badge-blue">
+                    ผู้เข้าร่วมทั้งหมด {courseAttendances.length} คน
+                  </span>
+                  <span className="badge badge-green">
+                    ผ่าน {courseAttendances.filter((a) => a.isPassed).length} คน
+                  </span>
+                </div>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={() => {
+                    setShowAttendeesModal(false);
+                    setLastCheckIn(null);
+                    setCheckInEmpId(employees[0]?.id || '');
+                    setSignatureDataUrl(null);
+                    setSignatureError(false);
+                    setSignatureResetKey((k) => k + 1);
+                    setShowCheckInModal(true);
+                  }}
+                >
+                  <CheckCircle2 size={15} /> เช็กชื่อเข้าอบรมเพิ่ม
+                </button>
+              </div>
+
+              {courseAttendances.length === 0 ? (
+                <div className="glass-card" style={{ padding: 30, textAlign: 'center', color: 'var(--text-muted)' }}>
+                  ยังไม่มีประวัติการเช็กชื่อในหลักสูตรนี้
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        <th>ลำดับ</th>
+                        <th>พนักงาน</th>
+                        <th>แผนก / ตำแหน่ง</th>
+                        <th>เวลาเช็กชื่อ & ลายเซ็น</th>
+                        <th>ผลการอบรม</th>
+                        <th>จัดการ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {courseAttendances.map((att, idx) => (
+                        <tr key={att.id}>
+                          <td>{idx + 1}</td>
+                          <td>
+                            <div style={{ fontWeight: 600, color: 'var(--primary)' }}>{att.empCode}</div>
+                            <div style={{ fontWeight: 600 }}>{att.employeeName}</div>
+                          </td>
+                          <td>
+                            <span className="badge badge-blue">{att.department}</span>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>{att.position}</div>
+                          </td>
+                          <td style={{ fontSize: '0.85rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <span>เช้า: {att.checkInMorning || '-'}</span>
+                              {att.signedMorning && (
+                                <img
+                                  src={att.signedMorning}
+                                  alt="ลายเซ็นเช้า"
+                                  style={{ height: 22, background: '#fff', borderRadius: 4, border: '1px solid var(--border-color)' }}
+                                />
+                              )}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span>บ่าย: {att.checkInAfternoon || '-'}</span>
+                              {att.signedAfternoon && (
+                                <img
+                                  src={att.signedAfternoon}
+                                  alt="ลายเซ็นบ่าย"
+                                  style={{ height: 22, background: '#fff', borderRadius: 4, border: '1px solid var(--border-color)' }}
+                                />
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            {att.isPassed ? (
+                              <span className="badge badge-green"><CheckCircle2 size={12} /> ผ่านเกณฑ์</span>
+                            ) : (
+                              <span className="badge badge-red">ไม่ผ่าน</span>
+                            )}
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn-icon"
+                              title="ลบประวัติเช็กชื่อนี้"
+                              onClick={() => handleDeleteAttendanceRow(att)}
+                              style={{ color: 'var(--danger)' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowAttendeesModal(false)}
+              >
+                ปิดหน้าต่าง
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
