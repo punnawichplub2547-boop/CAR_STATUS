@@ -25,7 +25,6 @@ import type {
   EvaluationAttempt,
   EvaluationCycle,
 } from '../types';
-import { SignaturePad } from './SignaturePad';
 import { exportExactFHR014Template } from '../utils/excelTemplateExporter';
 
 interface SkillMatrixViewProps {
@@ -579,6 +578,13 @@ const EmployeeEvalCard: React.FC<{
     );
     return ev && ev.resultLevel < std.targetLevel;
   });
+  const attempt2Done =
+    standards.length > 0 &&
+    standards.every((std) =>
+      evaluations.some(
+        (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 2
+      )
+    );
 
   return (
     <div className="glass-card" style={{ marginBottom: 16, overflow: 'hidden', padding: 0, transition: 'all 0.2s ease' }}>
@@ -664,7 +670,7 @@ const EmployeeEvalCard: React.FC<{
               className={`btn btn-sm ${attempt === 2 ? 'btn-primary' : 'btn-ghost'}`}
               onClick={() => setAttempt(2)}
             >
-              ครั้งที่ 2 {attempt1HasGap ? '(ประเมินซ้ำ)' : ''}
+              ครั้งที่ 2 {attempt2Done ? '✓' : attempt1HasGap ? '(ประเมินซ้ำ)' : ''}
             </button>
           </div>
 
@@ -701,12 +707,12 @@ const RoundPanel: React.FC<{
 
   const [actionFrom, setActionFrom] = useState(existingRound?.actionPeriodFrom ?? '');
   const [actionTo, setActionTo] = useState(existingRound?.actionPeriodTo ?? '');
-  const [assessorName, setAssessorName] = useState(existingRound?.assessorName ?? 'นางสาว สมหญิง ใจดี');
-  const [assessorSig, setAssessorSig] = useState<string | null>(existingRound?.assessorSignature ?? null);
-  const [deptManagerName, setDeptManagerName] = useState(existingRound?.deptManagerName ?? '');
-  const [deptManagerSig, setDeptManagerSig] = useState<string | null>(existingRound?.deptManagerSignature ?? null);
-  const [hrDeptName, setHrDeptName] = useState(existingRound?.hrDeptName ?? '');
-  const [hrDeptSig, setHrDeptSig] = useState<string | null>(existingRound?.hrDeptSignature ?? null);
+  const assessorName = existingRound?.assessorName ?? 'นางสาว สมหญิง ใจดี';
+  const assessorSig = existingRound?.assessorSignature ?? null;
+  const deptManagerName = existingRound?.deptManagerName ?? '';
+  const deptManagerSig = existingRound?.deptManagerSignature ?? null;
+  const hrDeptName = existingRound?.hrDeptName ?? '';
+  const hrDeptSig = existingRound?.hrDeptSignature ?? null;
   const [editingSkillId, setEditingSkillId] = useState<string | null>(null);
   const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -776,6 +782,7 @@ const RoundPanel: React.FC<{
       hrDeptSignature: hrDeptSig ?? undefined,
       signedAt: new Date().toISOString().split('T')[0],
     });
+    alert(`บันทึกผลประเมิน (ครั้งที่ ${attempt}) เรียบร้อยแล้ว!`);
   };
 
   return (
@@ -863,41 +870,6 @@ const RoundPanel: React.FC<{
             })}
           </tbody>
         </table>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, padding: '20px' }}>
-        <div>
-          <SignaturePad label="Assessor" onChange={setAssessorSig} />
-          <input
-            type="text"
-            className="form-control"
-            style={{ marginTop: 8 }}
-            value={assessorName}
-            onChange={(e) => setAssessorName(e.target.value)}
-          />
-        </div>
-        <div>
-          <SignaturePad label="Dept. Manager" onChange={setDeptManagerSig} />
-          <input
-            type="text"
-            className="form-control"
-            style={{ marginTop: 8 }}
-            placeholder="ชื่อผู้จัดการแผนก"
-            value={deptManagerName}
-            onChange={(e) => setDeptManagerName(e.target.value)}
-          />
-        </div>
-        <div>
-          <SignaturePad label="HR Dept." onChange={setHrDeptSig} />
-          <input
-            type="text"
-            className="form-control"
-            style={{ marginTop: 8 }}
-            placeholder="ชื่อฝ่ายบุคคล"
-            value={hrDeptName}
-            onChange={(e) => setHrDeptName(e.target.value)}
-          />
-        </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '0 20px 20px' }}>

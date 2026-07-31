@@ -233,6 +233,7 @@ export async function exportExactFHR014Template({
       const colInfo = skillCols[sIdx];
       const targetColIdx = colInfo.colIdx; // Col F = 5
       const res1ColIdx = colInfo.colIdx + 1; // Col G = 6
+      const target2ColIdx = colInfo.colIdx + 2; // Col H = 7
       const res2ColIdx = colInfo.colIdx + 3; // Col I = 8
 
       const evAttempt1 = evaluations.find(
@@ -251,20 +252,20 @@ export async function exportExactFHR014Template({
           ev.attemptNumber === 2
       );
 
-      // Unified Big 310274 Circle Image Drawing Anchor for Target
+      // Unified Big 310274 Circle Image Drawing Anchor for Target 1 & Target 2
+      // Targets are pre-set skill standards, independent of whether the employee has been scored yet
       if (std.targetLevel !== null && std.targetLevel !== undefined) {
         drawingXml = addCircleOneCellAnchor(drawingXml, targetColIdx, rowIdxZero, std.targetLevel);
+        drawingXml = addCircleOneCellAnchor(drawingXml, target2ColIdx, rowIdxZero, std.targetLevel);
       }
 
-      // Unified Big 310274 Circle Image Drawing Anchor for Attempt 1 Result
-      if (evAttempt1 && evAttempt1.resultLevel !== null && evAttempt1.resultLevel !== undefined) {
-        drawingXml = addCircleOneCellAnchor(drawingXml, res1ColIdx, rowIdxZero, evAttempt1.resultLevel);
-      }
+      // Unified Big 310274 Circle Image Drawing Anchor for Attempt 1 Result (0-level circle until actually scored)
+      const result1Level = evAttempt1?.resultLevel ?? 0;
+      drawingXml = addCircleOneCellAnchor(drawingXml, res1ColIdx, rowIdxZero, result1Level);
 
-      // Unified Big 310274 Circle Image Drawing Anchor for Attempt 2 Result (on rowIdxZero + 1)
-      if (evAttempt2 && evAttempt2.resultLevel !== null && evAttempt2.resultLevel !== undefined) {
-        drawingXml = addCircleOneCellAnchor(drawingXml, res2ColIdx, rowIdxZero + 1, evAttempt2.resultLevel);
-      }
+      // Unified Big 310274 Circle Image Drawing Anchor for Attempt 2 Result (0-level circle until actually scored)
+      const result2Level = evAttempt2?.resultLevel ?? 0;
+      drawingXml = addCircleOneCellAnchor(drawingXml, res2ColIdx, rowIdxZero, result2Level);
     });
   });
 
