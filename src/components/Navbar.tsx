@@ -38,7 +38,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="navbar">
       <div className="navbar-brand">
-        <div className="logo-badge">CAR</div>
+        <div className="logo-badge" title="Complete Auto Rubber Manufacturing">
+          <img src="/CARLOGO.png" alt="CAR Logo" className="logo-img" />
+        </div>
         <div className="brand-text">
           <span className="company-name">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</span>
           <span className="app-title gradient-text">HR Skill & Competency Platform</span>
