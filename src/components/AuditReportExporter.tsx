@@ -167,15 +167,15 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
           </div>
 
           {/* Individual Training Record Sheet Preview */}
-          <div className="glass-card" style={{ padding: 32, background: '#ffffff', color: '#0f172a', borderRadius: 16 }} id="printable-area">
+          <div className="glass-card" style={{ padding: '24px 32px', background: '#ffffff', color: '#0f172a', borderRadius: 16, maxWidth: '100%', boxSizing: 'border-box' }} id="printable-area">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                <div style={{ width: 48, height: 48, background: '#1d4ed8', color: '#fff', fontWeight: 900, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                  CAR
+                <div style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexShrink: 0 }}>
+                  <img src="/CARLOGO.png" alt="CAR Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: '1.15rem', color: '#0f172a' }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                  <h2 style={{ fontSize: '1.15rem', color: '#0f172a', margin: 0 }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
                   <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
                   <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
                     INDIVIDUAL TRAINING & COMPETENCY RECORD CARD
@@ -189,7 +189,7 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             </div>
 
             {/* Employee Profile Metadata Header */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 24, border: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, background: '#f8fafc', padding: 16, borderRadius: 10, marginBottom: 24, border: '1px solid #e2e8f0', fontSize: '0.9rem' }}>
               <div><strong>รหัสพนักงาน:</strong> {selectedEmp.empCode}</div>
               <div><strong>ชื่อ-นามสกุล:</strong> {selectedEmp.name}</div>
               <div><strong>แผนก/ฝ่าย:</strong> {selectedEmp.department}</div>
@@ -202,80 +202,84 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: 10, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 }}>
               1. ประวัติการฝึกอบรมเฉพาะงาน (OJT Records - F-HR-004)
             </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24, fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หลักสูตรการอบรม</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผู้สอน/วิทยากร</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>วันที่อบรม</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผลประเมิน (%)</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {empOjt.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
-                      ยังไม่มีประวัติ OJT บันทึก
-                    </td>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', marginBottom: 24, fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9' }}>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หลักสูตรการอบรม</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผู้สอน/วิทยากร</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>วันที่อบรม</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผลประเมิน (%)</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถานะ</th>
                   </tr>
-                ) : (
-                  empOjt.map(({ participant, session }) => (
-                    <tr key={participant.id}>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.courseName}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.instructor}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.trainingDateTo}</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{participant.instructorScorePercent}%</td>
-                      <td style={{ border: '1px solid #cbd5e1', padding: 8, color: participant.isPassed ? '#166534' : '#991b1b', fontWeight: 700 }}>
-                        {participant.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED'}
+                </thead>
+                <tbody>
+                  {empOjt.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                        ยังไม่มีประวัติ OJT บันทึก
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    empOjt.map(({ participant, session }) => (
+                      <tr key={participant.id}>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.courseName}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.instructor}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.trainingDateTo}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{participant.instructorScorePercent}%</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8, color: participant.isPassed ? '#166534' : '#991b1b', fontWeight: 700 }}>
+                          {participant.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Section 2: Skill Evaluations */}
             <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: 10, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 }}>
               2. ผลประเมินทักษะความสามารถ (Skill Matrix Evaluation - F-HR-014)
             </h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24, fontSize: '0.85rem' }}>
-              <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หัวข้อทักษะ</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หมวดหมู่</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Target Standard</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Result (%)</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>รอบการประเมิน</th>
-                  <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ครั้งที่ประเมิน</th>
-                </tr>
-              </thead>
-              <tbody>
-                {empSkills.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
-                      ยังไม่มีผลประเมินทักษะบันทึก
-                    </td>
+            <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', minWidth: 600, borderCollapse: 'collapse', marginBottom: 24, fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9' }}>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หัวข้อทักษะ</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>หมวดหมู่</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Target Standard</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>Result (%)</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>รอบการประเมิน</th>
+                    <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ครั้งที่ประเมิน</th>
                   </tr>
-                ) : (
-                empSkills.map((s) => (
-                  <tr key={s.id}>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{s.skillName}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.category}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.targetLevel}%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700, color: '#1e40af' }}>{s.resultLevel}%</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.cycle}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>
-                      {s.attemptNumber === 2 ? 'ครั้งที่ 2 (ประเมินซ้ำ)' : 'ครั้งที่ 1'}
-                    </td>
-                  </tr>
-                ))
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {empSkills.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                        ยังไม่มีผลประเมินทักษะบันทึก
+                      </td>
+                    </tr>
+                  ) : (
+                  empSkills.map((s) => (
+                    <tr key={s.id}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{s.skillName}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.category}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.targetLevel}%</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700, color: '#1e40af' }}>{s.resultLevel}%</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{s.cycle}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>
+                        {s.attemptNumber === 2 ? 'ครั้งที่ 2 (ประเมินซ้ำ)' : 'ครั้งที่ 1'}
+                      </td>
+                    </tr>
+                  ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
             {/* Approval Signatures Row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 40, paddingTop: 20, borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.8rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, marginTop: 40, paddingTop: 20, borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.8rem' }}>
               <div>
                 <div style={{ height: 40 }}></div>
                 <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้จัดทำเอกสาร (HR Officer)</div>
@@ -297,14 +301,14 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
       )}
 
       {reportType === 'department_matrix' && (
-        <div className="glass-card" style={{ padding: 32, background: '#ffffff', color: '#0f172a', borderRadius: 16 }} id="printable-area">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20 }}>
+        <div className="glass-card" style={{ padding: '24px 32px', background: '#ffffff', color: '#0f172a', borderRadius: 16, maxWidth: '100%', boxSizing: 'border-box' }} id="printable-area">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ width: 48, height: 48, background: '#1d4ed8', color: '#fff', fontWeight: 900, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                CAR
+              <div style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexShrink: 0 }}>
+                <img src="/CARLOGO.png" alt="CAR Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', color: '#0f172a' }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                <h2 style={{ fontSize: '1.15rem', color: '#0f172a', margin: 0 }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
                 <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
                   SKILL MATRIX DEPARTMENT SUMMARY REPORT (F-HR-014)
@@ -327,32 +331,34 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
                   <h3 style={{ fontSize: '1rem', color: '#0f172a', marginBottom: 10, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 }}>
                     แผนก {dept}
                   </h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ background: '#f1f5f9' }}>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>หัวข้อทักษะ</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>จำนวนคนที่ประเมิน</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>เป้าหมายเฉลี่ย</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผลจริงเฉลี่ย</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผ่านเกณฑ์</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ต่ำกว่าเกณฑ์ (Gap)</th>
-                        <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>% ผ่านเกณฑ์</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((r) => (
-                        <tr key={r.skillName}>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{r.skillName}</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.total}</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.avgTarget}%</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700, color: '#1e40af' }}>{r.avgResult}%</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: '#166534', fontWeight: 700 }}>{r.passed}</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: r.gap > 0 ? '#991b1b' : '#64748b', fontWeight: 700 }}>{r.gap}</td>
-                          <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700 }}>{r.passRate}%</td>
+                  <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', minWidth: 650, borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f1f5f9' }}>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>หัวข้อทักษะ</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>จำนวนคนที่ประเมิน</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>เป้าหมายเฉลี่ย</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผลจริงเฉลี่ย</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ผ่านเกณฑ์</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>ต่ำกว่าเกณฑ์ (Gap)</th>
+                          <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>% ผ่านเกณฑ์</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {rows.map((r) => (
+                          <tr key={r.skillName}>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{r.skillName}</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.total}</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{r.avgTarget}%</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700, color: '#1e40af' }}>{r.avgResult}%</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: '#166534', fontWeight: 700 }}>{r.passed}</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', color: r.gap > 0 ? '#991b1b' : '#64748b', fontWeight: 700 }}>{r.gap}</td>
+                            <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700 }}>{r.passRate}%</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               );
             })
@@ -361,14 +367,14 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
       )}
 
       {reportType === 'certs_compliance' && (
-        <div className="glass-card" style={{ padding: 32, background: '#ffffff', color: '#0f172a', borderRadius: 16 }} id="printable-area">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20 }}>
+        <div className="glass-card" style={{ padding: '24px 32px', background: '#ffffff', color: '#0f172a', borderRadius: 16, maxWidth: '100%', boxSizing: 'border-box' }} id="printable-area">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ width: 48, height: 48, background: '#1d4ed8', color: '#fff', fontWeight: 900, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                CAR
+              <div style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexShrink: 0 }}>
+                <img src="/CARLOGO.png" alt="CAR Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div>
-                <h2 style={{ fontSize: '1.15rem', color: '#0f172a' }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                <h2 style={{ fontSize: '1.15rem', color: '#0f172a', margin: 0 }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
                 <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
                 <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
                   CERTIFICATE COMPLIANCE READINESS REPORT
@@ -381,7 +387,7 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16, marginBottom: 24 }}>
             <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
               <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{certRows.length}</div>
               <div style={{ fontSize: '0.8rem', color: '#64748b' }}>ใบรับรองทั้งหมด</div>
@@ -400,48 +406,50 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             </div>
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-            <thead>
-              <tr style={{ background: '#f1f5f9' }}>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>ชื่อใบรับรอง</th>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left' }}>พนักงาน</th>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>แผนก</th>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถาบันออกใบรับรอง</th>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>วันหมดอายุ</th>
-                <th style={{ border: '1px solid #cbd5e1', padding: 8 }}>สถานะ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {certRows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
-                    ยังไม่มีใบรับรองบันทึกไว้
-                  </td>
+          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 650, borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9' }}>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left', minWidth: 160 }}>ชื่อใบรับรอง</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left', minWidth: 150 }}>พนักงาน</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 80 }}>แผนก</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 130 }}>สถาบันออกใบรับรอง</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 100 }}>วันหมดอายุ</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 100 }}>สถานะ</th>
                 </tr>
-              ) : (
-                certRows.map((c) => (
-                  <tr key={c.id}>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{c.certName}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{c.employeeName} ({c.empCode})</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.department}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{c.issuingOrg}</td>
-                    <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.expiryDate}</td>
-                    <td
-                      style={{
-                        border: '1px solid #cbd5e1',
-                        padding: 8,
-                        textAlign: 'center',
-                        fontWeight: 700,
-                        color: c.liveStatus === 'ACTIVE' ? '#166534' : c.liveStatus === 'EXPIRING_SOON' ? '#92400e' : '#991b1b',
-                      }}
-                    >
-                      {c.liveStatus === 'ACTIVE' ? 'ใช้งานได้ปกติ' : c.liveStatus === 'EXPIRING_SOON' ? 'ใกล้หมดอายุ' : 'หมดอายุแล้ว'}
+              </thead>
+              <tbody>
+                {certRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                      ยังไม่มีใบรับรองบันทึกไว้
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  certRows.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600, wordBreak: 'break-word' }}>{c.certName}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, wordBreak: 'break-word' }}>{c.employeeName} ({c.empCode})</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.department}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, wordBreak: 'break-word' }}>{c.issuingOrg}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.expiryDate}</td>
+                      <td
+                        style={{
+                          border: '1px solid #cbd5e1',
+                          padding: 8,
+                          textAlign: 'center',
+                          fontWeight: 700,
+                          color: c.liveStatus === 'ACTIVE' ? '#166534' : c.liveStatus === 'EXPIRING_SOON' ? '#92400e' : '#991b1b',
+                        }}
+                      >
+                        {c.liveStatus === 'ACTIVE' ? 'ใช้งานได้ปกติ' : c.liveStatus === 'EXPIRING_SOON' ? 'ใกล้หมดอายุ' : 'หมดอายุแล้ว'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
