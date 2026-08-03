@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  car-status-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: car_status_app
+    ports:
+      - "8088:80"  # สามารถปรับเปลี่ยนพอร์ตได้ตามต้องการ เช่น 8088 หรือ 18088
+    restart: always
