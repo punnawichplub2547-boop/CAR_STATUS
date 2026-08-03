@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn, RotateCcw } from 'lucide-react';
 import type { Employee, NotificationItem } from '../types';
 
@@ -25,9 +25,35 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifMenu(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowNotifMenu(false);
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -92,7 +118,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         {/* Notification Bell */}
-        <div className="notif-wrapper">
+        <div className="notif-wrapper" ref={notifRef}>
           <button
             className="notif-btn"
             onClick={() => {
@@ -105,7 +131,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {showNotifMenu && (
-            <div className="notif-dropdown glass-card">
+            <div className="notif-dropdown">
               <div className="notif-header">
                 <h3>การแจ้งเตือน (Notifications)</h3>
                 <span className="badge badge-blue">{unreadCount} รายการใหม่</span>
@@ -143,7 +169,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* User Role Switcher Dropdown */}
-        <div className="user-profile-wrapper">
+        <div className="user-profile-wrapper" ref={userRef}>
           <button
             className="user-profile-btn"
             onClick={() => {
@@ -162,7 +188,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           {showUserMenu && (
-            <div className="user-dropdown glass-card">
+            <div className="user-dropdown">
               <div className="dropdown-title">สลับผู้ใช้งาน (Switch Role Demo)</div>
               {allUsers.map((u) => (
                 <div
