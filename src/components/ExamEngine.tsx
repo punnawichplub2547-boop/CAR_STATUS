@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ExternalLink,
   RefreshCw,
@@ -28,11 +28,27 @@ interface ExamEngineProps {
 }
 
 export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }) => {
-  const [googleFormUrl, setGoogleFormUrl] = useState(DEFAULT_GOOGLE_FORM_URL);
-  const [appsScriptUrl, setAppsScriptUrl] = useState('');
+  const [googleFormUrl, setGoogleFormUrl] = useState(() => {
+    const saved = localStorage.getItem('hrskill_google_form_url');
+    if (!saved || saved.includes('EXAMPLE_FORM_ID')) {
+      return DEFAULT_GOOGLE_FORM_URL;
+    }
+    return saved;
+  });
+  const [appsScriptUrl, setAppsScriptUrl] = useState(() => {
+    return localStorage.getItem('hrskill_apps_script_url') || '';
+  });
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('hrskill_google_form_url', googleFormUrl);
+  }, [googleFormUrl]);
+
+  useEffect(() => {
+    localStorage.setItem('hrskill_apps_script_url', appsScriptUrl);
+  }, [appsScriptUrl]);
 
   // Selected Employee for Detail Drawer (for Admin/Supervisor or Active User)
   const [viewingResult, setViewingResult] = useState<GoogleFormExamResult | null>(null);
