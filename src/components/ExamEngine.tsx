@@ -562,40 +562,46 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
               {/* Itemized Question Answer Sheet */}
               <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>
-                📋 รายการคำตอบและข้อที่ตอบผิด (30 ข้อ):
+                📋 รายการคำตอบและข้อที่ตอบผิด ({viewingResult.answersDetail?.length || 0} ข้อ):
               </h4>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {viewingResult.answersDetail.map((q) => (
-                  <div
-                    key={q.questionNo}
-                    style={{
-                      padding: 14,
-                      borderRadius: 12,
-                      background: q.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
-                      border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                        {q.questionNo}. {q.questionText}
+                {(viewingResult.answersDetail || []).length > 0 ? (
+                  (viewingResult.answersDetail || []).map((q, idx) => (
+                    <div
+                      key={q?.questionNo || idx}
+                      style={{
+                        padding: 14,
+                        borderRadius: 12,
+                        background: q?.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
+                        border: `1px solid ${q?.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                          {q?.questionNo || idx + 1}. {q?.questionText || `ข้อสอบที่ ${idx + 1}`}
+                        </div>
+                        <span className={`badge ${q?.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
+                          {q?.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
+                        </span>
                       </div>
-                      <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
-                        {q.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
-                      </span>
-                    </div>
 
-                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
-                    </div>
-
-                    {!q.isCorrect && (
-                      <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
-                        เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
+                      <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        คำตอบของพนักงาน: <strong style={{ color: q?.isCorrect ? '#047857' : '#b91c1c' }}>{q?.userAnswer || '-'}</strong>
                       </div>
-                    )}
+
+                      {!q?.isCorrect && (
+                        <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
+                          เฉลยข้อที่ถูกต้อง: <span>{q?.correctAnswer || 'ดูในระบบ Google Form'}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--text-muted)' }}>
+                    ไม่มีข้อมูลคำตอบรายข้อสำหรับการสอบรอบนี้
                   </div>
-                ))}
+                )}
               </div>
             </div>
 
