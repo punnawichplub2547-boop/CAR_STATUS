@@ -17,15 +17,15 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
     {
       id: 'demo-1001-sa-pre',
       attemptNumber: 1,
-      submittedAt: '2026-08-01 08:30:00',
+      submittedAt: '2026-08-04 14:55:46',
       empCode: 'EMP-1001',
       employeeName: 'นางสาว สมหญิง ใจดี',
       department: 'HR&GA IT',
-      score: 11,
+      score: 6,
       totalQuestions: 14,
-      percentage: 79,
+      percentage: 43,
       isPassed: false,
-      source: 'ONLINE_WEB',
+      source: 'GOOGLE_FORMS',
       examType: 'SAFETY_ATTITUDE',
       phase: 'PRE_TEST',
       answersDetail: [],
@@ -33,7 +33,7 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
     {
       id: 'demo-1001-sa-post',
       attemptNumber: 1,
-      submittedAt: '2026-08-01 11:30:00',
+      submittedAt: '2026-08-04 15:10:00',
       empCode: 'EMP-1001',
       employeeName: 'นางสาว สมหญิง ใจดี',
       department: 'HR&GA IT',
@@ -669,7 +669,35 @@ export function loadExamResultsFromLocalStorage(): Record<string, GoogleFormExam
   try {
     const saved = localStorage.getItem(EXAM_RESULTS_LOCAL_STORAGE_KEY);
     if (saved) {
-      return JSON.parse(saved);
+      const parsed: Record<string, GoogleFormExamResult[]> = JSON.parse(saved);
+      const merged: Record<string, GoogleFormExamResult[]> = {};
+
+      // Seed with initial demo data
+      Object.keys(INITIAL_DEMO_EXAM_RESULTS).forEach((k) => {
+        merged[k] = [...INITIAL_DEMO_EXAM_RESULTS[k]];
+      });
+
+      // Merge saved localStorage data
+      Object.keys(parsed).forEach((code) => {
+        const empCode = code.trim().toUpperCase();
+        if (!merged[empCode]) {
+          merged[empCode] = parsed[code];
+        } else {
+          const existingList = merged[empCode];
+          parsed[code].forEach((pItem) => {
+            const idx = existingList.findIndex(
+              (e) => e.attemptNumber === pItem.attemptNumber && e.examType === pItem.examType && e.phase === pItem.phase
+            );
+            if (idx >= 0) {
+              existingList[idx] = pItem;
+            } else {
+              existingList.push(pItem);
+            }
+          });
+        }
+      });
+
+      return merged;
     }
   } catch (err) {
     console.error('Failed to load exam results from localStorage:', err);
