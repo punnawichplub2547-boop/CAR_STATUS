@@ -1,4 +1,4 @@
-import type { GoogleFormExamResult, NotificationItem } from '../types';
+import type { GoogleFormExamResult } from '../types';
 
 export const DEFAULT_GOOGLE_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdwlTwGNNMrvtcYBt9aEFmxSF2NiT7AzOGf0_jFlorzXqtH7g/viewform';
@@ -18,36 +18,36 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
       isPassed: true, // >= 24
       source: 'GOOGLE_FORMS',
       answersDetail: [
-        { questionNo: 1, questionText: 'อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในโรงงาน CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
-        { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ผลิต ขั้นตอนแรกที่ต้องปฏิบัติคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', correctAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', isCorrect: true },
-        { questionNo: 3, questionText: 'มาตรฐานระบบคุณภาพของอุตสาหกรรมยานยนต์ที่บริษัทใช้คือข้อใด?', userAnswer: 'IATF 16949 & ISO 9001', correctAnswer: 'IATF 16949 & ISO 9001', isCorrect: true },
-        { questionNo: 4, questionText: 'หลักการ 5ส. ข้อใดหมายถึงการทำให้เป็นระเบียบเรียบร้อยอยู่เสมอ?', userAnswer: 'สุขลักษณะ', correctAnswer: 'สุขลักษณะ', isCorrect: true },
-        { questionNo: 5, questionText: 'การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายสีใด?', userAnswer: 'ป้ายสีแดง (REJECT)', correctAnswer: 'ป้ายสีแดง (REJECT)', isCorrect: true },
-        { questionNo: 6, questionText: 'การซ่อมบำรุงเครื่องจักรขณะทำงานต้องทำการ Lockout / Tagout (LOTO) หรือไม่?', userAnswer: 'ต้องทำทุกครั้งก่อนเริ่มงานซ่อม', correctAnswer: 'ต้องทำทุกครั้งก่อนเริ่มงานซ่อม', isCorrect: true },
-        { questionNo: 7, questionText: 'การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน) ต้องทิ้งในถังสีใด?', userAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', correctAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', isCorrect: true },
-        { questionNo: 8, questionText: 'ข้อใดเป็นเกณฑ์การประเมินทักษะความสามารถพนักงาน (F-HR-014) ระดับ 100%?', userAnswer: 'ทำได้เองและสามารถสอนงานผู้อื่นได้', correctAnswer: 'ทำได้เองและสามารถสอนงานผู้อื่นได้', isCorrect: true },
-        { questionNo: 9, questionText: 'การประเมินอันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?', userAnswer: 'KYT / CCCF Assessment', correctAnswer: 'KYT / CCCF Assessment', isCorrect: true },
-        { questionNo: 10, questionText: 'ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัทคือเท่าใด?', userAnswer: 'ไม่เกิน 119 วัน', correctAnswer: 'ไม่เกิน 119 วัน', isCorrect: true },
-        { questionNo: 11, questionText: 'เอกสาร F-HR-016 Form A ใช้สำหรับการประเมินประเภทใด?', userAnswer: 'การประเมิน OJT พนักงานใหม่', correctAnswer: 'การประเมิน OJT พนักงานใหม่', isCorrect: true },
-        { questionNo: 12, questionText: 'เมื่อเกิดอุบัติเหตุจากการทำงาน ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?', userAnswer: 'ทันที (ภายใน 15 นาที)', correctAnswer: 'ทันที (ภายใน 15 นาที)', isCorrect: true },
-        { questionNo: 13, questionText: 'สารเคมีที่ใช้ในโรงงานต้องมีเอกสารความปลอดภัยชนิดใดกำกับ?', userAnswer: 'MSDS / SDS', correctAnswer: 'MSDS / SDS', isCorrect: true },
-        { questionNo: 14, questionText: 'จุดรวมพล (Evacuation Assembly Point) ของโรงงาน CAR อยู่ที่ใด?', userAnswer: 'ลานจอดรถหน้าอาคาร M-1', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1', isCorrect: true },
-        { questionNo: 15, questionText: 'การตรวจเช็กเครื่องจักรประจำวัน (Daily Inspection) เป็นหน้าที่ของใคร?', userAnswer: 'พนักงานผู้ปฏิบัติงานประจำเครื่อง', correctAnswer: 'พนักงานผู้ปฏิบัติงานประจำเครื่อง', isCorrect: true },
-        { questionNo: 16, questionText: 'การฉีดอัดชิ้นงานยางต้องควบคุมอุณหภูมิและเวลา (Curing Time) ตามเอกสารใด?', userAnswer: 'Work Instruction (WI)', correctAnswer: 'Work Instruction (WI)', isCorrect: true },
-        { questionNo: 17, questionText: 'ข้อใดไม่ใช่สาเหตุของการเกิดของเสียในกระบวนการผลิต (4M1E)?', userAnswer: 'สภาพอากาศภายนอกโรงงาน', correctAnswer: 'สภาพอากาศภายนอกโรงงาน', isCorrect: true },
-        { questionNo: 18, questionText: 'การวัดความแข็งยางด้วย Durometer Shore A มีเกณฑ์ความคลาดเคลื่อนเท่าใด?', userAnswer: '± 5 Shore A', correctAnswer: '± 5 Shore A', isCorrect: true },
-        { questionNo: 19, questionText: 'การแต่งกายของพนักงานในพื้นที่ผลิตต้องเป็นอย่างไร?', userAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', correctAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', isCorrect: true },
-        { questionNo: 20, questionText: 'การลาป่วยตั้งแต่กี่วันทำงานขึ้นไปต้องมีใบรับรองแพทย์?', userAnswer: '3 วันทำงานขึ้นไป', correctAnswer: '3 วันทำงานขึ้นไป', isCorrect: true },
-        { questionNo: 21, questionText: 'ป้ายเตือนความปลอดภัยสีเหลือง-ดำ หมายถึงอะไร?', userAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', correctAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', isCorrect: true },
-        { questionNo: 22, questionText: 'การส่งมอบชิ้นงานไปยังกระบวนการถัดไป เรียกว่าการควบคุมอะไร?', userAnswer: 'Next Process Customer Rule', correctAnswer: 'Next Process Customer Rule', isCorrect: true },
-        { questionNo: 23, questionText: 'การประเมินผลการทดลองงานมีกี่ระยะ?', userAnswer: '30, 60, 90 วัน', correctAnswer: '30, 60, 90 วัน', isCorrect: true },
-        { questionNo: 24, questionText: 'การฝึกอบรมกรณีเปลี่ยนงานย้ายตำแหน่งใช้แบบฟอร์มใด?', userAnswer: 'F-HR-016 Form B (4M1E Change)', correctAnswer: 'F-HR-016 Form B (4M1E Change)', isCorrect: true },
-        { questionNo: 25, questionText: 'การยกของหนักตามกฎหมายความปลอดภัย กำหนดให้น้ำหนักไม่เกินเท่าใด (ชาย)?', userAnswer: 'ไม่เกิน 55 กิโลกรัม', correctAnswer: 'ไม่เกิน 55 กิโลกรัม', isCorrect: true },
-        { questionNo: 26, questionText: 'การบันทึกรายงานการผลิตประจำวันต้องลงบันทึกเมื่อใด?', userAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', correctAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', isCorrect: true },
-        { questionNo: 27, questionText: 'การคัดแยกชิ้นงานเสียต้องแยกกองในโซนใด?', userAnswer: 'Red Tag Box / Holding Area', correctAnswer: 'Red Tag Box / Holding Area', isCorrect: true },
-        { questionNo: 28, questionText: 'นโยบายคุณภาพของบริษัท CAR เน้นเรื่องใดเป็นสำคัญ?', userAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: true },
-        { questionNo: 29, questionText: 'การใช้อุปกรณ์ดับเพลิงเคมีแห้ง (พ่นฐานไฟ) มีระยะห่างเท่าใด?', userAnswer: 'ห่าง 2 - 3 เมตรเหนือลม', correctAnswer: 'ห่าง 2 - 3 เมตรเหนือลม', isCorrect: true },
-        { questionNo: 30, questionText: 'การแจ้งปรับปรุงข้อเสนอแนะ (Kaizen Idea) สามารถยื่นผ่านช่องทางใด?', userAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบออนไลน์', correctAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบออนไลน์', isCorrect: true },
+        { questionNo: 1, questionText: 'อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
+        { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', isCorrect: true },
+        { questionNo: 3, questionText: 'การซ่อมบำรุง หรือปรับแต่งเครื่องจักรขณะทำงาน ต้องปฏิบัติตามมาตรการความปลอดภัยใดอย่างเคร่งครัด?', userAnswer: 'ทำ Lockout / Tagout (LOTO) ตัดพลังงานก่อนทุกครั้ง', correctAnswer: 'ทำ Lockout / Tagout (LOTO) ตัดพลังงานก่อนทุกครั้ง', isCorrect: true },
+        { questionNo: 4, questionText: 'การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน สารเคมี) ต้องนำไปทิ้งในภาชนะสีใด?', userAnswer: 'ถังขยะสีส้ม/ดำ (ขยะอันตราย)', correctAnswer: 'ถังขยะสีส้ม/ดำ (ขยะอันตราย)', isCorrect: true },
+        { questionNo: 5, questionText: 'หลักการ 5ส. ข้อใดหมายถึงการทำให้พื้นที่ทำงานสะอาด เป็นระเบียบเรียบร้อยเป็นมาตรฐานอยู่เสมอ?', userAnswer: 'สุขลักษณะ', correctAnswer: 'สุขลักษณะ', isCorrect: true },
+        { questionNo: 6, questionText: 'การประเมินความเสี่ยงและหยั่งรู้อันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?', userAnswer: 'KYT / CCCF Assessment', correctAnswer: 'KYT / CCCF Assessment', isCorrect: true },
+        { questionNo: 7, questionText: 'จุดรวมพลฉุกเฉิน (Evacuation Assembly Point) หลักของโรงงาน CAR ตั้งอยู่ที่ใด?', userAnswer: 'ลานจอดรถหน้าอาคาร M-1', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1', isCorrect: true },
+        { questionNo: 8, questionText: 'เอกสารข้อมูลความปลอดภัยสารเคมีที่ต้องมีติดไว้ในพื้นที่ใช้สารเคมีคือเอกสารใด?', userAnswer: 'MSDS / SDS', correctAnswer: 'MSDS / SDS', isCorrect: true },
+        { questionNo: 9, questionText: 'เมื่อเกิดอุบัติเหตุจากการทำงาน (แม้เจ็บเล็กน้อย) ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?', userAnswer: 'ทันที (ภายใน 15 นาที)', correctAnswer: 'ทันที (ภายใน 15 นาที)', isCorrect: true },
+        { questionNo: 10, questionText: 'น้ำหนักสูงสุดตามกฎหมายที่กำหนดให้พนักงานชายยกของหนักคนเดียวไม่เกินเท่าใด?', userAnswer: 'ไม่เกิน 55 กิโลกรัม', correctAnswer: 'ไม่เกิน 55 กิโลกรัม', isCorrect: true },
+        { questionNo: 11, questionText: 'มาตรฐานระบบบริหารงานคุณภาพสำหรับอุตสาหกรรมยานยนต์ที่บริษัท CAR ได้รับการรับรองคือข้อใด?', userAnswer: 'IATF 16949 & ISO 9001', correctAnswer: 'IATF 16949 & ISO 9001', isCorrect: true },
+        { questionNo: 12, questionText: 'การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายระบุสถานะสีใด?', userAnswer: 'ป้ายสีแดง (REJECT / HOLD)', correctAnswer: 'ป้ายสีแดง (REJECT / HOLD)', isCorrect: true },
+        { questionNo: 13, questionText: 'เอกสารที่ใช้ควบคุมขั้นตอนการปฏิบัติงานในสายการผลิตอย่างละเอียดคือเอกสารใด?', userAnswer: 'Work Instruction (WI) / ใบมาตรฐานการทำงาน', correctAnswer: 'Work Instruction (WI) / ใบมาตรฐานการทำงาน', isCorrect: true },
+        { questionNo: 14, questionText: 'กฎเหล็กคุณภาพในการส่งมอบชิ้นงานไปยังกระบวนการถัดไปคือข้อใด?', userAnswer: 'ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย', correctAnswer: 'ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย', isCorrect: true },
+        { questionNo: 15, questionText: 'การควบคุมการเปลี่ยนปัจจัย 4M1E ในกระบวนการผลิต (เช่น เปลี่ยนคน เปลี่ยนเครื่องจักร) ต้องใช้แบบฟอร์มใด?', userAnswer: 'F-HR-016 Form B (4M Change Request)', correctAnswer: 'F-HR-016 Form B (4M Change Request)', isCorrect: true },
+        { questionNo: 16, questionText: 'บริเวณสำหรับจัดเก็บชิ้นงานที่รอการตรวจสอบหรือชิ้นงานเสีย เรียกว่าอะไร?', userAnswer: 'Red Tag Box / Holding Area', correctAnswer: 'Red Tag Box / Holding Area', isCorrect: true },
+        { questionNo: 17, questionText: 'ค่าความแข็งชิ้นส่วนยางชิ้นงานทดสอบ วัดด้วยเครื่อง Durometer Shore A มีเกณฑ์มาตรฐานโดยทั่วไปคือเท่าใด?', userAnswer: '± 5 Shore A', correctAnswer: '± 5 Shore A', isCorrect: true },
+        { questionNo: 18, questionText: 'การลงบันทึกรายงานการผลิตและยอดของเสีย (Daily Production Report) ต้องบันทึกเมื่อใด?', userAnswer: 'บันทึกทุกๆ 1 ชั่วโมง / หลังจบชิฟท์การทำงาน', correctAnswer: 'บันทึกทุกๆ 1 ชั่วโมง / หลังจบชิฟท์การทำงาน', isCorrect: true },
+        { questionNo: 19, questionText: 'นโยบายคุณภาพของบริษัท CAR เน้นย้ำเรื่องใดเป็นสำคัญสูงสุด?', userAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: true },
+        { questionNo: 20, questionText: 'ข้อใดไม่ใช่สาเหตุการเกิดของเสียตามหลัก 4M1E?', userAnswer: 'Moon (ดวงจันทร์)', correctAnswer: 'Moon (ดวงจันทร์)', isCorrect: true },
+        { questionNo: 21, questionText: 'ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัท CAR กำหนดไว้ไม่เกินกี่วัน?', userAnswer: 'ไม่เกิน 119 วัน', correctAnswer: 'ไม่เกิน 119 วัน', isCorrect: true },
+        { questionNo: 22, questionText: 'แบบฟอร์มประเมินสมรรถนะทักษะการทำงานพนักงานรายบุคคล (Skill Matrix) ของ HR คือแบบฟอร์มใด?', userAnswer: 'F-HR-014 (Skill Matrix Record)', correctAnswer: 'F-HR-014 (Skill Matrix Record)', isCorrect: true },
+        { questionNo: 23, questionText: 'ระดับทักษะความสามารถใน Skill Matrix (F-HR-014) ระดับ 100% (สัญลักษณ์วงกลมเต็มวง) หมายถึงอะไร?', userAnswer: 'ทำได้เองตามมาตรฐานและสามารถสอนงานผู้อื่นได้', correctAnswer: 'ทำได้เองตามมาตรฐานและสามารถสอนงานผู้อื่นได้', isCorrect: true },
+        { questionNo: 24, questionText: 'การลาป่วยตั้งแต่กี่วันทำงานขึ้นไป ต้องมีใบรับรองแพทย์จากสถานพยาบาลชั้น 1 ประกอบการลา?', userAnswer: '3 วันทำงานขึ้นไป', correctAnswer: '3 วันทำงานขึ้นไป', isCorrect: true },
+        { questionNo: 25, questionText: 'การลากิจได้รับค่าจ้างตามกฎหมาย ต้องยื่นใบลาล่วงหน้าอย่างน้อยกี่วัน?', userAnswer: 'ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน', correctAnswer: 'ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน', isCorrect: true },
+        { questionNo: 26, questionText: 'การแต่งกายในการเข้าปฏิบัติงานในโรงงาน ข้อใดถูกต้องตามระเบียบบริษัท?', userAnswer: 'สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด', correctAnswer: 'สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด', isCorrect: true },
+        { questionNo: 27, questionText: 'ช่องทางสำหรับการเสนอข้อคิดเห็นปรับปรุงงาน (Kaizen / Suggestion Box) สามารถยื่นผ่านช่องทางใด?', userAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบ HR Online', correctAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบ HR Online', isCorrect: true },
+        { questionNo: 28, questionText: 'การทำข้อสอบปฐมนิเทศพนักงานใหม่ สามารถทำผ่านช่องทางใดและเข้าจากที่ใดได้บ้าง?', userAnswer: 'ทำผ่าน Google Forms ได้จากสมาร์ทโฟน/อินเทอร์เน็ตบ้านภายนอกบริษัท', correctAnswer: 'ทำผ่าน Google Forms ได้จากสมาร์ทโฟน/อินเทอร์เน็ตบ้านภายนอกบริษัท', isCorrect: true },
+        { questionNo: 29, questionText: 'หากพนักงานทำข้อสอบปฐมนิเทศไม่ผ่านเกณฑ์ 24 ข้อ (จาก 30 ข้อ) ต้องปฏิบัติตามขั้นตอนใด?', userAnswer: 'ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์', correctAnswer: 'ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์', isCorrect: true },
+        { questionNo: 30, questionText: 'สัญลักษณ์โลโก้ทางการของบริษัท Complete Auto Rubber Manufacturing (CAR) มีลักษณะสีอย่างไร?', userAnswer: 'ตัวอักษร CAR สีฟ้าบนพื้นหลังสีขาวทรงสี่เหลี่ยมขอบมนเรียบหรู', correctAnswer: 'ตัวอักษร CAR สีฟ้าบนพื้นหลังสีขาวทรงสี่เหลี่ยมขอบมนเรียบหรู', isCorrect: true },
       ],
     },
   ],
@@ -55,46 +55,46 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
     {
       id: 'gexp-1002-1',
       attemptNumber: 1,
-      submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      submittedAt: '2026-08-04 09:15:00',
       empCode: 'EMP-1002',
       employeeName: 'นางสาว วรรณา สุขเจริญ',
-      department: 'HR&GA',
-      score: 27,
+      department: 'HR&GA IT',
+      score: 13,
       totalQuestions: 30,
-      percentage: 90,
-      isPassed: true, // >= 24 PASSED!
+      percentage: 43,
+      isPassed: false, // 13 < 24 -> FAILED!
       source: 'GOOGLE_FORMS',
       answersDetail: [
-        { questionNo: 1, questionText: 'อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
-        { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ผลิต ขั้นตอนแรกที่ต้องปฏิบัติคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', correctAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', isCorrect: true },
-        { questionNo: 3, questionText: 'มาตรฐานระบบคุณภาพของอุตสาหกรรมยานยนต์ที่บริษัทใช้คือข้อใด?', userAnswer: 'IATF 16949 & ISO 9001', correctAnswer: 'IATF 16949 & ISO 9001', isCorrect: true },
-        { questionNo: 4, questionText: 'หลักการ 5ส. ข้อใดหมายถึงการทำให้เป็นระเบียบเรียบร้อยอยู่เสมอ?', userAnswer: 'สุขลักษณะ', correctAnswer: 'สุขลักษณะ', isCorrect: true },
-        { questionNo: 5, questionText: 'การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายสีใด?', userAnswer: 'ป้ายสีแดง (REJECT)', correctAnswer: 'ป้ายสีแดง (REJECT)', isCorrect: true },
-        { questionNo: 6, questionText: 'การซ่อมบำรุงเครื่องจักรขณะทำงานต้องทำการ Lockout / Tagout (LOTO) หรือไม่?', userAnswer: 'ต้องทำทุกครั้งก่อนเริ่มงานซ่อม', correctAnswer: 'ต้องทำทุกครั้งก่อนเริ่มงานซ่อม', isCorrect: true },
-        { questionNo: 7, questionText: 'การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน) ต้องทิ้งในถังสีใด?', userAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', correctAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', isCorrect: true },
-        { questionNo: 8, questionText: 'ข้อใดเป็นเกณฑ์การประเมินทักษะความสามารถพนักงาน (F-HR-014) ระดับ 100%?', userAnswer: 'ทำได้เองและสามารถสอนงานผู้อื่นได้', correctAnswer: 'ทำได้เองและสามารถสอนงานผู้อื่นได้', isCorrect: true },
-        { questionNo: 9, questionText: 'การประเมินอันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?', userAnswer: 'KYT / CCCF Assessment', correctAnswer: 'KYT / CCCF Assessment', isCorrect: true },
-        { questionNo: 10, questionText: 'ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัทคือเท่าใด?', userAnswer: 'ไม่เกิน 119 วัน', correctAnswer: 'ไม่เกิน 119 วัน', isCorrect: true },
-        { questionNo: 11, questionText: 'เอกสาร F-HR-016 Form A ใช้สำหรับการประเมินประเภทใด?', userAnswer: 'การประเมิน OJT พนักงานใหม่', correctAnswer: 'การประเมิน OJT พนักงานใหม่', isCorrect: true },
-        { questionNo: 12, questionText: 'เมื่อเกิดอุบัติเหตุจากการทำงาน ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?', userAnswer: 'ทันที (ภายใน 15 นาที)', correctAnswer: 'ทันที (ภายใน 15 นาที)', isCorrect: true },
-        { questionNo: 13, questionText: 'สารเคมีที่ใช้ในโรงงานต้องมีเอกสารความปลอดภัยชนิดใดกำกับ?', userAnswer: 'MSDS / SDS', correctAnswer: 'MSDS / SDS', isCorrect: true },
-        { questionNo: 14, questionText: 'จุดรวมพล (Evacuation Assembly Point) ของโรงงาน CAR อยู่ที่ใด?', userAnswer: 'ลานจอดรถหน้าอาคาร M-1', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1', isCorrect: true },
-        { questionNo: 15, questionText: 'การตรวจเช็กเครื่องจักรประจำวัน (Daily Inspection) เป็นหน้าที่ของใคร?', userAnswer: 'พนักงานผู้ปฏิบัติงานประจำเครื่อง', correctAnswer: 'พนักงานผู้ปฏิบัติงานประจำเครื่อง', isCorrect: true },
-        { questionNo: 16, questionText: 'การฉีดอัดชิ้นงานยางต้องควบคุมอุณหภูมิและเวลา (Curing Time) ตามเอกสารใด?', userAnswer: 'Work Instruction (WI)', correctAnswer: 'Work Instruction (WI)', isCorrect: true },
-        { questionNo: 17, questionText: 'ข้อใดไม่ใช่สาเหตุของการเกิดของเสียในกระบวนการผลิต (4M1E)?', userAnswer: 'สภาพอากาศภายนอกโรงงาน', correctAnswer: 'สภาพอากาศภายนอกโรงงาน', isCorrect: true },
-        { questionNo: 18, questionText: 'การวัดความแข็งยางด้วย Durometer Shore A มีเกณฑ์ความคลาดเคลื่อนเท่าใด?', userAnswer: '± 5 Shore A', correctAnswer: '± 5 Shore A', isCorrect: true },
-        { questionNo: 19, questionText: 'การแต่งกายของพนักงานในพื้นที่ผลิตต้องเป็นอย่างไร?', userAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', correctAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', isCorrect: true },
-        { questionNo: 20, questionText: 'การลาป่วยตั้งแต่กี่วันทำงานขึ้นไปต้องมีใบรับรองแพทย์?', userAnswer: '3 วันทำงานขึ้นไป', correctAnswer: '3 วันทำงานขึ้นไป', isCorrect: true },
-        { questionNo: 21, questionText: 'ป้ายเตือนความปลอดภัยสีเหลือง-ดำ หมายถึงอะไร?', userAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', correctAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', isCorrect: true },
-        { questionNo: 22, questionText: 'การส่งมอบชิ้นงานไปยังกระบวนการถัดไป เรียกว่าการควบคุมอะไร?', userAnswer: 'Next Process Customer Rule', correctAnswer: 'Next Process Customer Rule', isCorrect: true },
-        { questionNo: 23, questionText: 'การประเมินผลการทดลองงานมีกี่ระยะ?', userAnswer: '30, 60, 90 วัน', correctAnswer: '30, 60, 90 วัน', isCorrect: true },
-        { questionNo: 24, questionText: 'การฝึกอบรมกรณีเปลี่ยนงานย้ายตำแหน่งใช้แบบฟอร์มใด?', userAnswer: 'F-HR-016 Form B (4M1E Change)', correctAnswer: 'F-HR-016 Form B (4M1E Change)', isCorrect: true },
-        { questionNo: 25, questionText: 'การยกของหนักตามกฎหมายความปลอดภัย กำหนดให้น้ำหนักไม่เกินเท่าใด (ชาย)?', userAnswer: 'ไม่เกิน 55 กิโลกรัม', correctAnswer: 'ไม่เกิน 55 กิโลกรัม', isCorrect: true },
-        { questionNo: 26, questionText: 'การบันทึกรายงานการผลิตประจำวันต้องลงบันทึกเมื่อใด?', userAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', correctAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', isCorrect: true },
-        { questionNo: 27, questionText: 'การคัดแยกชิ้นงานเสียต้องแยกกองในโซนใด?', userAnswer: 'Red Tag Box / Holding Area', correctAnswer: 'Red Tag Box / Holding Area', isCorrect: true },
-        { questionNo: 28, questionText: 'นโยบายคุณภาพของบริษัท CAR เน้นเรื่องใดเป็นสำคัญ?', userAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: true },
-        { questionNo: 29, questionText: 'การใช้อุปกรณ์ดับเพลิงเคมีแห้ง (พ่นฐานไฟ) มีระยะห่างเท่าใด?', userAnswer: 'ห่าง 2 - 3 เมตรเหนือลม', correctAnswer: 'ห่าง 2 - 3 เมตรเหนือลม', isCorrect: true },
-        { questionNo: 30, questionText: 'การแจ้งปรับปรุงข้อเสนอแนะ (Kaizen Idea) สามารถยื่นผ่านช่องทางใด?', userAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบออนไลน์', correctAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบออนไลน์', isCorrect: false },
+        { questionNo: 1, questionText: '1. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
+        { questionNo: 2, questionText: '2. เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', isCorrect: true },
+        { questionNo: 3, questionText: '3. การซ่อมบำรุง หรือปรับแต่งเครื่องจักรขณะทำงาน ต้องปฏิบัติตามมาตรการความปลอดภัยใดอย่างเคร่งครัด?', userAnswer: 'เปิดเครื่องทิ้งไว้เพื่อทดสอบ', correctAnswer: 'ทำ Lockout / Tagout (LOTO) ตัดพลังงานก่อนทุกครั้ง', isCorrect: false },
+        { questionNo: 4, questionText: '4. การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน สารเคมี) ต้องนำไปทิ้งในภาชนะสีใด?', userAnswer: 'ถังขยะสีเขียว (ขยะเปียก)', correctAnswer: 'ถังขยะสีส้ม/ดำ (ขยะอันตราย)', isCorrect: false },
+        { questionNo: 5, questionText: '5. หลักการ 5ส. ข้อใดหมายถึงการทำให้พื้นที่ทำงานสะอาด เป็นระเบียบเรียบร้อยเป็นมาตรฐานอยู่เสมอ?', userAnswer: 'สะสาง', correctAnswer: 'สุขลักษณะ', isCorrect: false },
+        { questionNo: 6, questionText: '6. การประเมินความเสี่ยงและหยั่งรู้อันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?', userAnswer: 'KYT / CCCF Assessment', correctAnswer: 'KYT / CCCF Assessment', isCorrect: true },
+        { questionNo: 7, questionText: '7. จุดรวมพลฉุกเฉิน (Evacuation Assembly Point) หลักของโรงงาน CAR ตั้งอยู่ที่ใด?', userAnswer: 'ป้อมยามหน้าประตู 3', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1', isCorrect: false },
+        { questionNo: 8, questionText: '8. เอกสารข้อมูลความปลอดภัยสารเคมีที่ต้องมีติดไว้ในพื้นที่ใช้สารเคมีคือเอกสารใด?', userAnswer: 'Work Instruction (WI)', correctAnswer: 'MSDS / SDS', isCorrect: false },
+        { questionNo: 9, questionText: '9. เมื่อเกิดอุบัติเหตุจากการทำงาน (แม้เจ็บเล็กน้อย) ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?', userAnswer: 'ทันที (ภายใน 15 นาที)', correctAnswer: 'ทันที (ภายใน 15 นาที)', isCorrect: true },
+        { questionNo: 10, questionText: '10. น้ำหนักสูงสุดตามกฎหมายที่กำหนดให้พนักงานชายยกของหนักคนเดียวไม่เกินเท่าใด?', userAnswer: 'ไม่เกิน 55 กิโลกรัม', correctAnswer: 'ไม่เกิน 55 กิโลกรัม', isCorrect: true },
+        { questionNo: 11, questionText: '11. มาตรฐานระบบบริหารงานคุณภาพสำหรับอุตสาหกรรมยานยนต์ที่บริษัท CAR ได้รับการรับรองคือข้อใด?', userAnswer: 'IATF 16949 & ISO 9001', correctAnswer: 'IATF 16949 & ISO 9001', isCorrect: true },
+        { questionNo: 12, questionText: '12. การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายระบุสถานะสีใด?', userAnswer: 'ป้ายสีแดง (REJECT / HOLD)', correctAnswer: 'ป้ายสีแดง (REJECT / HOLD)', isCorrect: true },
+        { questionNo: 13, questionText: '13. เอกสารที่ใช้ควบคุมขั้นตอนการปฏิบัติงานในสายการผลิตอย่างละเอียดคือเอกสารใด?', userAnswer: 'Pay Slip', correctAnswer: 'Work Instruction (WI) / ใบมาตรฐานการทำงาน', isCorrect: false },
+        { questionNo: 14, questionText: '14. กฎเหล็กคุณภาพในการส่งมอบชิ้นงานไปยังกระบวนการถัดไปคือข้อใด?', userAnswer: 'ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย', correctAnswer: 'ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย', isCorrect: true },
+        { questionNo: 15, questionText: '15. การควบคุมการเปลี่ยนปัจจัย 4M1E ในกระบวนการผลิต (เช่น เปลี่ยนคน เปลี่ยนเครื่องจักร) ต้องใช้แบบฟอร์มใด?', userAnswer: 'F-HR-016 Form B (4M Change Request)', correctAnswer: 'F-HR-016 Form B (4M Change Request)', isCorrect: true },
+        { questionNo: 16, questionText: '16. บริเวณสำหรับจัดเก็บชิ้นงานที่รอการตรวจสอบหรือชิ้นงานเสีย เรียกว่าอะไร?', userAnswer: 'VIP Lounge', correctAnswer: 'Red Tag Box / Holding Area', isCorrect: false },
+        { questionNo: 17, questionText: '17. ค่าความแข็งชิ้นส่วนยางชิ้นงานทดสอบ วัดด้วยเครื่อง Durometer Shore A มีเกณฑ์มาตรฐานโดยทั่วไปคือเท่าใด?', userAnswer: '± 20 Shore A', correctAnswer: '± 5 Shore A', isCorrect: false },
+        { questionNo: 18, questionText: '18. การลงบันทึกรายงานการผลิตและยอดของเสีย (Daily Production Report) ต้องบันทึกเมื่อใด?', userAnswer: 'บันทึกเมื่อจำได้', correctAnswer: 'บันทึกทุกๆ 1 ชั่วโมง / หลังจบชิฟท์การทำงาน', isCorrect: false },
+        { questionNo: 19, questionText: '19. นโยบายคุณภาพของบริษัท CAR เน้นย้ำเรื่องใดเป็นสำคัญสูงสุด?', userAnswer: 'ผลิตตามใจพนักงาน', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: false },
+        { questionNo: 20, questionText: '20. ข้อใดไม่ใช่สาเหตุการเกิดของเสียตามหลัก 4M1E?', userAnswer: 'Man (คน)', correctAnswer: 'Moon (ดวงจันทร์)', isCorrect: false },
+        { questionNo: 21, questionText: '21. ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัท CAR กำหนดไว้ไม่เกินกี่วัน?', userAnswer: 'ไม่เกิน 60 วัน', correctAnswer: 'ไม่เกิน 119 วัน', isCorrect: false },
+        { questionNo: 22, questionText: '22. แบบฟอร์มประเมินสมรรถนะทักษะการทำงานพนักงานรายบุคคล (Skill Matrix) ของ HR คือแบบฟอร์มใด?', userAnswer: 'F-HR-014 (Skill Matrix Record)', correctAnswer: 'F-HR-014 (Skill Matrix Record)', isCorrect: true },
+        { questionNo: 23, questionText: '23. ระดับทักษะความสามารถใน Skill Matrix (F-HR-014) ระดับ 100% (สัญลักษณ์วงกลมเต็มวง) หมายถึงอะไร?', userAnswer: 'ต้องมีคนคอยคุมตลอดเวลา', correctAnswer: 'ทำได้เองตามมาตรฐานและสามารถสอนงานผู้อื่นได้', isCorrect: false },
+        { questionNo: 24, questionText: '24. การลาป่วยตั้งแต่กี่วันทำงานขึ้นไป ต้องมีใบรับรองแพทย์จากสถานพยาบาลชั้น 1 ประกอบการลา?', userAnswer: '1 วันทำงาน', correctAnswer: '3 วันทำงานขึ้นไป', isCorrect: false },
+        { questionNo: 25, questionText: '25. การลากิจได้รับค่าจ้างตามกฎหมาย ต้องยื่นใบลาล่วงหน้าอย่างน้อยกี่วัน?', userAnswer: 'ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน', correctAnswer: 'ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน', isCorrect: true },
+        { questionNo: 26, questionText: '26. การแต่งกายในการเข้าปฏิบัติงานในโรงงาน ข้อใดถูกต้องตามระเบียบบริษัท?', userAnswer: 'สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด', correctAnswer: 'สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด', isCorrect: true },
+        { questionNo: 27, questionText: '27. ช่องทางสำหรับการเสนอข้อคิดเห็นปรับปรุงงาน (Kaizen / Suggestion Box) สามารถยื่นผ่านช่องทางใด?', userAnswer: 'เขียนใส่กระดาษทิ้งบนพื้น', correctAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบ HR Online', isCorrect: false },
+        { questionNo: 28, questionText: '28. การทำข้อสอบปฐมนิเทศพนักงานใหม่ สามารถทำผ่านช่องทางใดและเข้าจากที่ใดได้บ้าง?', userAnswer: 'ต้องทำบนคอมพิวเตอร์ HR เท่านั้น', correctAnswer: 'ทำผ่าน Google Forms ได้จากสมาร์ทโฟน/อินเทอร์เน็ตบ้านภายนอกบริษัท', isCorrect: false },
+        { questionNo: 29, questionText: '29. หากพนักงานทำข้อสอบปฐมนิเทศไม่ผ่านเกณฑ์ 24 ข้อ (จาก 30 ข้อ) ต้องปฏิบัติตามขั้นตอนใด?', userAnswer: 'ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์', correctAnswer: 'ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์', isCorrect: true },
+        { questionNo: 30, questionText: '30. สัญลักษณ์โลโก้ทางการของบริษัท Complete Auto Rubber Manufacturing (CAR) มีลักษณะสีอย่างไร?', userAnswer: 'รูปวงกลมสีดำล้วน', correctAnswer: 'ตัวอักษร CAR สีฟ้าบนพื้นหลังสีขาวทรงสี่เหลี่ยมขอบมนเรียบหรู', isCorrect: false },
       ],
     },
   ],
@@ -183,7 +183,7 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
         { questionNo: 24, questionText: 'การแต่งกายในพื้นที่ผลิตต้องทำอย่างไร?', userAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', correctAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', isCorrect: true },
         { questionNo: 25, questionText: 'การซ่อมบำรุงเครื่องต้องกดปุ่มใด?', userAnswer: 'Emergency Stop', correctAnswer: 'Emergency Stop & LOTO', isCorrect: false },
         { questionNo: 26, questionText: 'การรายงานผลผลิตต้องทำเมื่อใด?', userAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', correctAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', isCorrect: true },
-        { questionNo: 27, questionText: 'นโยบายคุณภาพ CAR เน้นอะไร?', userAnswer: 'กำไรสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: false },
+        { questionNo: 27, questionText: 'นโยบายคุณภาพ CAR เน้นอะไร?', userAnswer: 'กำไรสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลดภัยสูงสุด', isCorrect: false },
         { questionNo: 28, questionText: 'การลากิจต้องยื่นล่วงหน้ากี่วัน?', userAnswer: '1 วัน', correctAnswer: '3 วันขึ้นไป', isCorrect: false },
         { questionNo: 29, questionText: 'การล้างมือ 7 ขั้นตอนป้องกันอะไร?', userAnswer: 'เชื้อโรคและความสกปรก', correctAnswer: 'เชื้อโรคและความสกปรก', isCorrect: true },
         { questionNo: 30, questionText: 'เมื่อพบน้ำมันรั่วไหลบนพื้นต้องทำอย่างไร?', userAnswer: 'นำทราย/ขี้เลื่อยมาโรยซับน้ำมันทันที', correctAnswer: 'นำทราย/ขี้เลื่อยมาโรยซับน้ำมันทันที', isCorrect: true },
@@ -200,18 +200,6 @@ export function getLatestEmployeeExamResult(empCode: string): GoogleFormExamResu
   const list = getEmployeeExamResults(empCode);
   if (!list.length) return null;
   return list[list.length - 1]; // Latest by timestamp/attempt
-}
-
-export function generateHrFailedNotification(result: GoogleFormExamResult): NotificationItem {
-  return {
-    id: `notif-failed-${Date.now()}`,
-    title: `🚨 [ผลสอบไม่ผ่านเกณฑ์] ${result.employeeName} (${result.empCode})`,
-    message: `ทำข้อสอบปฐมนิเทศ Google Forms ได้ ${result.score}/30 ข้อ (${result.percentage}%) ไม่ผ่านเกณฑ์ 24 ข้อ กรุณาตรวจสอบข้อสอบที่ตอบผิดและแจ้งพนักงานทำซ้ำ`,
-    type: 'EXAM_FAILED',
-    date: result.submittedAt.split(' ')[0],
-    read: false,
-    actionUrl: 'exam_engine',
-  };
 }
 
 export function getSampleGoogleAppsScriptCode(): string {
@@ -239,27 +227,25 @@ function doGet(e) {
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
     var timestamp = row[0];
-    var code = String(row[1]).trim();
-    var name = String(row[2]).trim();
-    var scoreStr = String(row[3]); // e.g. "26 / 30" or 26
+    var scoreNum = parseInt(row[1]) || 0;
+    var code = String(row[2]).trim();
+    var name = String(row[3]).trim();
+    var dept = String(row[4]).trim();
     
     if (empCode && code !== empCode) continue;
     
-    var scoreNum = parseInt(scoreStr) || 0;
     attemptCounter[code] = (attemptCounter[code] || 0) + 1;
     
     var answersDetail = [];
-    // Read question columns dynamically
-    for (var col = 4; col < row.length; col += 2) {
-      var qNo = Math.floor((col - 4) / 2) + 1;
+    for (var col = 5; col < row.length; col++) {
+      var qNo = col - 4;
       var uAns = String(row[col]);
-      var isCorr = String(row[col + 1]).toLowerCase().indexOf("true") !== -1 || String(row[col + 1]).indexOf("ถูก") !== -1;
       answersDetail.push({
         questionNo: qNo,
         questionText: "ข้อสอบที่ " + qNo,
         userAnswer: uAns,
-        correctAnswer: isCorr ? uAns : "ดูในเฉลย Google Form",
-        isCorrect: isCorr
+        correctAnswer: "ดูในเฉลย Google Form",
+        isCorrect: true
       });
     }
     
@@ -269,6 +255,7 @@ function doGet(e) {
       submittedAt: Utilities.formatDate(new Date(timestamp), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
       empCode: code,
       employeeName: name,
+      department: dept,
       score: scoreNum,
       totalQuestions: 30,
       percentage: Math.round((scoreNum / 30) * 100),

@@ -245,7 +245,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                   </tr>
                 </thead>
                 <tbody>
-                  {activeUserHistory.map((res) => (
+                  {activeUserHistory.map((res: GoogleFormExamResult) => (
                     <tr key={res.id}>
                       <td style={{ fontWeight: 700 }}>ครั้งที่ {res.attemptNumber}</td>
                       <td>{res.submittedAt}</td>
