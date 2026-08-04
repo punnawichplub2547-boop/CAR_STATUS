@@ -1,4 +1,4 @@
-import type { GoogleFormExamResult, PreTestLockMap } from '../types';
+import type { GoogleFormExamResult, PreTestLockMap, ExamType, ExamPhase } from '../types';
 import * as XLSX from 'xlsx';
 
 export const DEFAULT_SAFETY_FORM_URL =
@@ -460,7 +460,7 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
 
   for (let i = 1; i < jsonRows.length; i++) {
     const row = jsonRows[i];
-    if (!row || !row[2]) continue;
+    if (!row || (!row[2] && !row[3])) continue;
 
     let timestampStr = String(row[0] || '');
     if (typeof row[0] === 'number') {
@@ -474,24 +474,42 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
     const scoreMatch = rawScore.match(/^(\d+)/);
     const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-    const empCode = String(row[2]).trim();
+    const empCode = String(row[2] || '').trim();
+    if (!empCode) continue;
+
     const employeeName = String(row[3] || '').trim();
     const department = String(row[4] || '').trim();
+    const phaseText = String(row[5] || '');
+    const phase: ExamPhase = phaseText.includes('ก่อน') ? 'PRE_TEST' : 'POST_TEST';
+
+    // Auto-detect question count based on remaining columns (from index 6 onwards)
+    const questionColsCount = Math.max(0, row.length - 6);
+    const isSafety = questionColsCount <= 14;
+    const totalQuestions = isSafety ? 14 : 30;
+    const examType: ExamType = isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION';
+    const isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
+    const percentage = Math.round((scoreNum / totalQuestions) * 100);
 
     attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
     const attemptNumber = attemptCounter[empCode];
 
+    const bank = isSafety ? SAFETY_ATTITUDE_QUESTIONS_BANK : MASTER_QUESTIONS_BANK;
+
     const answersDetail = [];
-    for (let col = 5; col < row.length; col++) {
-      const qNo = col - 4;
+    for (let col = 6; col < row.length; col++) {
+      const qNo = col - 5;
       const qText = headers[col] || `ข้อสอบข้อที่ ${qNo}`;
       const uAns = String(row[col] || '');
+      const matchedQ = bank.find((q) => q.questionNo === qNo);
+      const correctAnswer = matchedQ ? matchedQ.correctAnswer : 'ดูในเฉลย Google Form';
+      const isCorrect = matchedQ ? uAns.trim() === matchedQ.correctAnswer.trim() : true;
+
       answersDetail.push({
         questionNo: qNo,
         questionText: qText,
         userAnswer: uAns,
-        correctAnswer: 'ดูในเฉลย Google Form',
-        isCorrect: true,
+        correctAnswer,
+        isCorrect,
       });
     }
 
@@ -503,10 +521,12 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
       employeeName,
       department,
       score: scoreNum,
-      totalQuestions: 30,
-      percentage: Math.round((scoreNum / 30) * 100),
-      isPassed: scoreNum >= 24,
+      totalQuestions,
+      percentage,
+      isPassed,
       source: 'GOOGLE_FORMS',
+      examType,
+      phase,
       answersDetail,
     };
 
@@ -514,8 +534,7 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
       results[empCode] = [];
     }
 
-    // Replace or append
-    const existingIndex = results[empCode].findIndex((r) => r.attemptNumber === attemptNumber);
+    const existingIndex = results[empCode].findIndex((r) => r.attemptNumber === attemptNumber && r.examType === examType && r.phase === phase);
     if (existingIndex >= 0) {
       results[empCode][existingIndex] = resultObj;
     } else {
