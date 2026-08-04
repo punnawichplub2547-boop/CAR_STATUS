@@ -561,32 +561,72 @@ export function getSampleGoogleAppsScriptCode(): string {
 
 function doGet(e) {
   try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var ss = null;
+    try {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    } catch (e1) {
+      ss = null;
+    }
+
+    if (!ss) {
+      var files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
+      while (files.hasNext()) {
+        var file = files.next();
+        var fname = file.getName();
+        if (fname.indexOf("ตอบกลับ") !== -1 || fname.indexOf("CAR") !== -1 || fname.indexOf("ทัศนคติ") !== -1 || fname.indexOf("ปฐมนิเทศ") !== -1) {
+          ss = SpreadsheetApp.open(file);
+          break;
+        }
+      }
+      if (!ss) {
+        var allSheets = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
+        if (allSheets.hasNext()) {
+          ss = SpreadsheetApp.open(allSheets.next());
+        }
+      }
+    }
+
+    if (!ss) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        totalRecords: 0,
+        results: [],
+        message: "ยังไม่พบข้อมูล Google Sheet ที่ผูกกับแบบสอบถาม"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var sheet = ss.getActiveSheet();
     var rows = sheet.getDataRange().getValues();
     var results = [];
     var attemptCounter = {};
 
     for (var i = 1; i < rows.length; i++) {
       var row = rows[i];
-      if (!row[0]) continue;
+      if (!row || !row[0]) continue;
 
-      var scoreText = String(row[2] || "0/30");
-      var scoreParts = scoreText.split("/");
-      var score = parseInt(scoreParts[0]) || 0;
-      var totalQuestions = parseInt(scoreParts[1]) || 30;
-      var isSafety = totalQuestions === 14;
+      var rawScore = String(row[1] || "0");
+      var scoreMatch = rawScore.match(/^(\\d+)/);
+      var scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-      var percentage = Math.round((score / totalQuestions) * 100);
-      var isPassed = isSafety ? score >= 12 : score >= 24;
-
-      var empCode = String(row[3] || "").trim();
+      var empCode = String(row[2] || "").trim();
       if (!empCode) continue;
+
+      var employeeName = String(row[3] || "").trim();
+      var department = String(row[4] || "").trim();
+      var phaseText = String(row[5] || "");
+      var isPreTest = phaseText.indexOf("ก่อน") !== -1;
+
+      var questionColsCount = Math.max(0, row.length - 6);
+      var isSafety = questionColsCount <= 14;
+      var totalQuestions = isSafety ? 14 : 30;
+      var percentage = Math.round((scoreNum / totalQuestions) * 100);
+      var isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
 
       attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
 
       var answersDetail = [];
-      for (var col = 7; col < row.length; col++) {
-        var qNo = col - 6;
+      for (var col = 6; col < row.length; col++) {
+        var qNo = col - 5;
         answersDetail.push({
           questionNo: qNo,
           questionText: "ข้อที่ " + qNo,
@@ -601,15 +641,15 @@ function doGet(e) {
         attemptNumber: attemptCounter[empCode],
         submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
         empCode: empCode,
-        employeeName: String(row[4] || "").trim(),
-        department: String(row[5] || "").trim(),
-        score: score,
+        employeeName: employeeName,
+        department: department,
+        score: scoreNum,
         totalQuestions: totalQuestions,
         percentage: percentage,
         isPassed: isPassed,
         source: "GOOGLE_FORMS",
         examType: isSafety ? "SAFETY_ATTITUDE" : "ORIENTATION",
-        phase: String(row[6] || "").indexOf("ก่อน") !== -1 ? "PRE_TEST" : "POST_TEST",
+        phase: isPreTest ? "PRE_TEST" : "POST_TEST",
         answersDetail: answersDetail
       });
     }

@@ -305,15 +305,32 @@ function createOrientationGoogleForm() {
 // ==============================================================================
 function doGet(e) {
   try {
-    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    let ss = null;
+    try {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    } catch (e1) {
+      ss = null;
+    }
+
     if (!ss) {
       const sheetId = (e && e.parameter && e.parameter.sheetId) ? e.parameter.sheetId : null;
       if (sheetId) {
         ss = SpreadsheetApp.openById(sheetId);
       } else {
         const files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
-        if (files.hasNext()) {
-          ss = SpreadsheetApp.open(files.next());
+        while (files.hasNext()) {
+          const file = files.next();
+          const fname = file.getName();
+          if (fname.includes("ตอบกลับ") || fname.includes("CAR") || fname.includes("ทัศนคติ") || fname.includes("ปฐมนิเทศ")) {
+            ss = SpreadsheetApp.open(file);
+            break;
+          }
+        }
+        if (!ss) {
+          const allSheets = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
+          if (allSheets.hasNext()) {
+            ss = SpreadsheetApp.open(allSheets.next());
+          }
         }
       }
     }
@@ -329,39 +346,61 @@ function doGet(e) {
 
     const sheet = ss.getActiveSheet();
     const rows = sheet.getDataRange().getValues();
+    const attemptCounter = {};
 
     const results = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (!row[0]) continue;
+      if (!row || !row[0]) continue;
 
-      const scoreText = String(row[2] || "0/30");
-      const scoreParts = scoreText.split("/");
-      const score = parseInt(scoreParts[0]) || 0;
-      const totalQuestions = parseInt(scoreParts[1]) || 30;
-      const isSafety = totalQuestions === 14;
+      const rawScore = String(row[1] || '0');
+      const scoreMatch = rawScore.match(/^(\d+)/);
+      const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-      const percentage = Math.round((score / totalQuestions) * 100);
-      const isPassed = isSafety ? score >= 12 : score >= 24;
+      const empCode = String(row[2] || "").trim();
+      if (!empCode) continue;
 
-      const empCode = String(row[3] || "").trim() || ("EMP-100" + i);
-      const employeeName = String(row[4] || "พนักงานทดสอบ").trim();
-      const department = String(row[5] || "ผลิต (PD)").trim();
+      const employeeName = String(row[3] || "").trim();
+      const department = String(row[4] || "").trim();
+      const phaseText = String(row[5] || "");
+      const isPreTest = phaseText.includes("ก่อน");
+
+      // Auto-detect question count based on remaining columns (from index 6 onwards)
+      const questionColsCount = Math.max(0, row.length - 6);
+      const isSafety = questionColsCount <= 14;
+      const totalQuestions = isSafety ? 14 : 30;
+      const percentage = Math.round((scoreNum / totalQuestions) * 100);
+      const isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
+
+      attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
+
+      const answersDetail = [];
+      for (let col = 6; col < row.length; col++) {
+        const qNo = col - 5;
+        answersDetail.push({
+          questionNo: qNo,
+          questionText: "ข้อที่ " + qNo,
+          userAnswer: String(row[col] || ""),
+          correctAnswer: "ดูในเฉลย Google Form",
+          isCorrect: true
+        });
+      }
 
       results.push({
-        id: 'row-' + i,
-        attemptNumber: 1,
+        id: 'gas-row-' + i,
+        attemptNumber: attemptCounter[empCode],
         submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
         empCode: empCode,
         employeeName: employeeName,
         department: department,
-        score: score,
+        score: scoreNum,
         totalQuestions: totalQuestions,
         percentage: percentage,
         isPassed: isPassed,
         source: 'GOOGLE_FORMS',
         examType: isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION',
-        phase: String(row[6] || "").includes("ก่อน") ? 'PRE_TEST' : 'POST_TEST',
+        phase: isPreTest ? 'PRE_TEST' : 'POST_TEST',
+        answersDetail: answersDetail
       });
     }
 
