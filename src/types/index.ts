@@ -223,6 +223,9 @@ export interface ExamSubmission {
   submittedAt: string;
 }
 
+export type ExamType = 'SAFETY_ATTITUDE' | 'ORIENTATION';
+export type ExamPhase = 'PRE_TEST' | 'POST_TEST';
+
 export interface GoogleFormQuestionDetail {
   questionNo: number;
   questionText: string;
@@ -238,12 +241,14 @@ export interface GoogleFormExamResult {
   empCode: string;
   employeeName: string;
   department: string;
-  score: number; // e.g. 26 out of 30
-  totalQuestions: number; // 30
-  percentage: number; // Math.round((score / 30) * 100)
-  isPassed: boolean; // score >= 24
+  score: number; // e.g. 12/14 or 26/30
+  totalQuestions: number; // 14 or 30
+  percentage: number; // Math.round((score / totalQuestions) * 100)
+  isPassed: boolean;
   answersDetail: GoogleFormQuestionDetail[];
-  source: 'GOOGLE_FORMS';
+  source: 'GOOGLE_FORMS' | 'ONLINE_WEB';
+  examType?: ExamType;
+  phase?: ExamPhase;
 }
 
 export interface NotificationItem {

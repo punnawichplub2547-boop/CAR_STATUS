@@ -10,6 +10,54 @@ export const DEFAULT_APPS_SCRIPT_URL =
 export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> = {
   'EMP-1001': [
     {
+      id: 'demo-1001-sa-pre',
+      attemptNumber: 1,
+      submittedAt: '2026-08-01 08:30:00',
+      empCode: 'EMP-1001',
+      employeeName: 'นางสาว สมหญิง ใจดี',
+      department: 'HR&GA IT',
+      score: 11,
+      totalQuestions: 14,
+      percentage: 79,
+      isPassed: false,
+      source: 'ONLINE_WEB',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'PRE_TEST',
+      answersDetail: [],
+    },
+    {
+      id: 'demo-1001-sa-post',
+      attemptNumber: 1,
+      submittedAt: '2026-08-01 11:30:00',
+      empCode: 'EMP-1001',
+      employeeName: 'นางสาว สมหญิง ใจดี',
+      department: 'HR&GA IT',
+      score: 14,
+      totalQuestions: 14,
+      percentage: 100,
+      isPassed: true,
+      source: 'ONLINE_WEB',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'POST_TEST',
+      answersDetail: [],
+    },
+    {
+      id: 'demo-1001-ori-pre',
+      attemptNumber: 1,
+      submittedAt: '2026-08-01 09:00:00',
+      empCode: 'EMP-1001',
+      employeeName: 'นางสาว สมหญิง ใจดี',
+      department: 'HR&GA IT',
+      score: 21,
+      totalQuestions: 30,
+      percentage: 70,
+      isPassed: false,
+      source: 'GOOGLE_FORMS',
+      examType: 'ORIENTATION',
+      phase: 'PRE_TEST',
+      answersDetail: [],
+    },
+    {
       id: 'gexp-1001-1',
       attemptNumber: 1,
       submittedAt: '2026-08-01 09:30:00',
@@ -21,6 +69,8 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
       percentage: 93,
       isPassed: true, // >= 24
       source: 'GOOGLE_FORMS',
+      examType: 'ORIENTATION',
+      phase: 'POST_TEST',
       answersDetail: [
         { questionNo: 1, questionText: 'อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
         { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', isCorrect: true },
@@ -57,6 +107,38 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
   ],
   'EMP-1002': [
     {
+      id: 'demo-1002-sa-pre',
+      attemptNumber: 1,
+      submittedAt: '2026-08-04 08:30:00',
+      empCode: 'EMP-1002',
+      employeeName: 'นางสาว วรรณา สุขเจริญ',
+      department: 'HR&GA',
+      score: 9,
+      totalQuestions: 14,
+      percentage: 64,
+      isPassed: false,
+      source: 'ONLINE_WEB',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'PRE_TEST',
+      answersDetail: [],
+    },
+    {
+      id: 'demo-1002-sa-post',
+      attemptNumber: 1,
+      submittedAt: '2026-08-04 11:30:00',
+      empCode: 'EMP-1002',
+      employeeName: 'นางสาว วรรณา สุขเจริญ',
+      department: 'HR&GA',
+      score: 13,
+      totalQuestions: 14,
+      percentage: 93,
+      isPassed: true,
+      source: 'ONLINE_WEB',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'POST_TEST',
+      answersDetail: [],
+    },
+    {
       id: 'gexp-1002-1',
       attemptNumber: 1,
       submittedAt: '2026-08-04 09:15:00',
@@ -68,6 +150,8 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
       percentage: 43,
       isPassed: false, // 13 < 24 -> FAILED!
       source: 'GOOGLE_FORMS',
+      examType: 'ORIENTATION',
+      phase: 'PRE_TEST',
       answersDetail: [
         { questionNo: 1, questionText: '1. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
         { questionNo: 2, questionText: '2. เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', userAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที', isCorrect: true },
@@ -196,6 +280,23 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
   ],
 };
 
+export const SAFETY_ATTITUDE_QUESTIONS_BANK = [
+  { questionNo: 1, questionText: '1. คุณเพิ่งเข้าทำงานวันแรก หัวหน้าสั่งให้ทำงานกับเครื่องจักรใหม่ที่ไม่คุ้นเคย คุณจะทำอย่างไร?', correctAnswer: 'เรียกหัวหน้างานกลับมา และบอกเขาว่าคุณยังไม่ทราบวิธีการทำงานกับเครื่องจักรนี้' },
+  { questionNo: 2, questionText: '2. เห็นเพื่อนเอาหนังสติ๊กเล็งใส่ใบหูของพนักงานที่กำลังคุมเครื่องจักร คุณจะทำอย่างไร?', correctAnswer: 'รีบเดินเข้าไปหาคนเล็งหนังสติ๊ก แล้วพยายามบอกให้เขาหยุดการล้อเล่นนั้นทันที' },
+  { questionNo: 3, questionText: '3. ขนของด่วนเหลือ 10 นาทีจะเที่ยง ต้องใช้เวลาอีกครึ่งชั่วโมงจึงจะเสร็จ คุณจะทำอย่างไร?', correctAnswer: 'หยุดขนของตอนเที่ยงตรง ไปรับประทานอาหารแล้วกลับมาทำงานใหม่ ยอมเสี่ยงที่จะถูกดุ' },
+  { questionNo: 4, questionText: '4. ต้องยกลังไม้หนักเทอะทะคนเดียว โดยมีผู้จัดการโรงงานยืนอยู่ข้างๆ คุณจะทำอย่างไร?', correctAnswer: 'ถามผู้จัดการโรงงานว่า เขาพอจะช่วยคุณยกลังไม้นั้นได้ไหม' },
+  { questionNo: 5, questionText: '5. รถยกทำน้ำมันหล่อลื่นหกลงบนทางเดินสัญจร คุณจะทำอย่างไร?', correctAnswer: 'ส่งข่าวให้คนทำความสะอาดทราบ แล้วยืนใกล้ๆ บริเวณนั้นเพื่อคอยบอกคนอื่นให้ระวังตัว' },
+  { questionNo: 6, questionText: '6. ทำงานด่วนจนสถานที่รกรุงรัง นายจ้างเดินมาตะโกนสั่งให้รีบทำความสะอาด คุณจะทำอย่างไร?', correctAnswer: 'หยุดทำงานทั้งหมด แล้วรีบทำความสะอาดสถานที่ทันที' },
+  { questionNo: 7, questionText: '7. มีคนมาท้าพนันให้คุณยกเหล็กเทอะทะในเวลาพักรับประทานอาหาร คุณจะทำอย่างไร?', correctAnswer: 'บอกผู้มาท้าพนันว่า คุณจะรับคำท้าก็ต่อเมื่อใช้อุปกรณ์ยกน้ำหนักจริงๆ (บาเบล)' },
+  { questionNo: 8, questionText: '8. ปีนบันไดซ่อมไฟแล้วรู้สึกมึนศีรษะเจ็บหน้าอก แม้ช่างอีกคนลาพักร้อน คุณจะทำอย่างไร?', correctAnswer: 'บอกหัวหน้างานว่าคุณรู้สึกไม่สบาย แม้ทราบดีว่างานทั้งโรงงานต้องหยุดชะงัก' },
+  { questionNo: 9, questionText: '9. ทำงานอยู่นึกอยากสูบบุหรี่ขึ้นมา แต่มีป้าย "อันตราย ห้ามสูบบุหรี่" คุณจะทำอย่างไร?', correctAnswer: 'ตัดสินใจยอมอดบุหรี่ไว้ ไม่แอบจุดสูบในพื้นที่อันตราย' },
+  { questionNo: 10, questionText: '10. มีหน้าที่เทโซดาไฟ แต่เครื่องป้องกันหน้า (Face Shield) เกิดหายไป คุณจะทำอย่างไร?', correctAnswer: 'ไม่ยอมทำงานโดยไม่มีเครื่องป้องกันหน้า' },
+  { questionNo: 11, questionText: '11. ค้นพบวิธีทำงานที่ปลอดภัยกว่าวิธีที่ถูกสอนมา แต่ช้าลงเล็กน้อย คุณจะทำอย่างไร?', correctAnswer: 'แนะนำให้หัวหน้างานลองทำตามวิธีใหม่ของคุณ' },
+  { questionNo: 12, questionText: '12. ลูกชาย 3 ขวบตกบันไดบ้านที่ไม่มีราวกั้นเจ็บเล็กน้อย คุณจะทำอย่างไร?', correctAnswer: 'หาทางทำราวบันไดโดยเร็ว ถึงแม้จะทำให้บ้านราคาแพงของคุณเสียความสวยงามลงไปบ้าง' },
+  { questionNo: 13, questionText: '13. บริษัทจัดฉายหนังวิธีการขับรถปลอดภัยในเวลาทำงาน คุณจะทำอย่างไร?', correctAnswer: 'ไปชมภาพยนตร์นั้น ถึงแม้จะรู้ว่าตนเองเป็นนักขับรถที่ดีอยู่แล้ว' },
+  { questionNo: 14, questionText: '14. บริษัทใหม่ให้เงินดี แต่มีประวัติอุบัติเหตุคนงานถึงแก่กรรมเมื่อสัปดาห์ก่อน คุณจะทำอย่างไร?', correctAnswer: 'พิจารณาเหตุผลด้านความปลอดภัยและสวัสดิภาพชีวิตมากกว่าเงินทอง' },
+];
+
 export const MASTER_QUESTIONS_BANK = [
   { questionNo: 1, questionText: '1. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้' },
   { questionNo: 2, questionText: '2. เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที' },
@@ -236,13 +337,17 @@ export function ensureAnswersDetail(result: GoogleFormExamResult): Array<{
   correctAnswer: string;
   isCorrect: boolean;
 }> {
-  if (result.answersDetail && result.answersDetail.length >= 30) {
+  const isSafetyExam = result.examType === 'SAFETY_ATTITUDE' || result.totalQuestions === 14;
+  const bank = isSafetyExam ? SAFETY_ATTITUDE_QUESTIONS_BANK : MASTER_QUESTIONS_BANK;
+  const targetTotal = bank.length;
+
+  if (result.answersDetail && result.answersDetail.length >= targetTotal) {
     return result.answersDetail;
   }
 
-  // Auto-generate 30 questions breakdown from master bank based on score
-  const correctCount = Math.min(30, Math.max(0, result.score || 0));
-  return MASTER_QUESTIONS_BANK.map((mq, idx) => {
+  // Auto-generate itemized breakdown from target bank based on score
+  const correctCount = Math.min(targetTotal, Math.max(0, result.score || 0));
+  return bank.map((mq, idx) => {
     const isCorrect = idx < correctCount;
     const existing = result.answersDetail ? result.answersDetail[idx] : null;
 
