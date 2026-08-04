@@ -1,4 +1,5 @@
 import type { GoogleFormExamResult } from '../types';
+import * as XLSX from 'xlsx';
 
 export const DEFAULT_GOOGLE_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdwlTwGNNMrvtcYBt9aEFmxSF2NiT7AzOGf0_jFlorzXqtH7g/viewform';
@@ -200,6 +201,115 @@ export function getLatestEmployeeExamResult(empCode: string): GoogleFormExamResu
   const list = getEmployeeExamResults(empCode);
   if (!list.length) return null;
   return list[list.length - 1]; // Latest by timestamp/attempt
+}
+
+
+const EXAM_RESULTS_LOCAL_STORAGE_KEY = 'car_orientation_exam_results_v2';
+
+export function saveExamResultsToLocalStorage(resultsMap: Record<string, GoogleFormExamResult[]>): void {
+  try {
+    localStorage.setItem(EXAM_RESULTS_LOCAL_STORAGE_KEY, JSON.stringify(resultsMap));
+  } catch (err) {
+    console.error('Failed to save exam results to localStorage:', err);
+  }
+}
+
+export function loadExamResultsFromLocalStorage(): Record<string, GoogleFormExamResult[]> {
+  try {
+    const saved = localStorage.getItem(EXAM_RESULTS_LOCAL_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (err) {
+    console.error('Failed to load exam results from localStorage:', err);
+  }
+  return INITIAL_DEMO_EXAM_RESULTS;
+}
+
+export async function parseExcelOrCsvFile(file: File): Promise<Record<string, GoogleFormExamResult[]>> {
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: 'array' });
+  const firstSheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheetName];
+  const jsonRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+  if (!jsonRows || jsonRows.length < 2) {
+    throw new Error('ไฟล์ที่นำเข้าไม่มีข้อมูลคำตอบ');
+  }
+
+  const existingMap = loadExamResultsFromLocalStorage();
+  const results: Record<string, GoogleFormExamResult[]> = { ...existingMap };
+  const attemptCounter: Record<string, number> = {};
+
+  const headers = jsonRows[0].map((h) => String(h || ''));
+
+  for (let i = 1; i < jsonRows.length; i++) {
+    const row = jsonRows[i];
+    if (!row || !row[2]) continue;
+
+    let timestampStr = String(row[0] || '');
+    if (typeof row[0] === 'number') {
+      const d = XLSX.SSF.parse_date_code(row[0]);
+      if (d) {
+        timestampStr = `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')} ${String(d.H).padStart(2, '0')}:${String(d.M).padStart(2, '0')}:${String(d.S).padStart(2, '0')}`;
+      }
+    }
+
+    const rawScore = String(row[1] || '0');
+    const scoreMatch = rawScore.match(/^(\d+)/);
+    const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+
+    const empCode = String(row[2]).trim();
+    const employeeName = String(row[3] || '').trim();
+    const department = String(row[4] || '').trim();
+
+    attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
+    const attemptNumber = attemptCounter[empCode];
+
+    const answersDetail = [];
+    for (let col = 5; col < row.length; col++) {
+      const qNo = col - 4;
+      const qText = headers[col] || `ข้อสอบข้อที่ ${qNo}`;
+      const uAns = String(row[col] || '');
+      answersDetail.push({
+        questionNo: qNo,
+        questionText: qText,
+        userAnswer: uAns,
+        correctAnswer: 'ดูในเฉลย Google Form',
+        isCorrect: true,
+      });
+    }
+
+    const resultObj: GoogleFormExamResult = {
+      id: `file-import-${empCode}-${attemptNumber}-${i}`,
+      attemptNumber,
+      submittedAt: timestampStr || new Date().toISOString().replace('T', ' ').substring(0, 19),
+      empCode,
+      employeeName,
+      department,
+      score: scoreNum,
+      totalQuestions: 30,
+      percentage: Math.round((scoreNum / 30) * 100),
+      isPassed: scoreNum >= 24,
+      source: 'GOOGLE_FORMS',
+      answersDetail,
+    };
+
+    if (!results[empCode]) {
+      results[empCode] = [];
+    }
+
+    // Replace or append
+    const existingIndex = results[empCode].findIndex((r) => r.attemptNumber === attemptNumber);
+    if (existingIndex >= 0) {
+      results[empCode][existingIndex] = resultObj;
+    } else {
+      results[empCode].push(resultObj);
+    }
+  }
+
+  saveExamResultsToLocalStorage(results);
+  return results;
 }
 
 export function getSampleGoogleAppsScriptCode(): string {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ExternalLink,
   RefreshCw,
@@ -13,13 +13,14 @@ import {
   BookOpen,
   X,
   Sparkles,
+  Upload,
 } from 'lucide-react';
 import type { Employee, GoogleFormExamResult } from '../types';
 import {
   DEFAULT_GOOGLE_FORM_URL,
-  getEmployeeExamResults,
-  getLatestEmployeeExamResult,
   getSampleGoogleAppsScriptCode,
+  loadExamResultsFromLocalStorage,
+  parseExcelOrCsvFile,
 } from '../services/googleFormSync';
 
 interface ExamEngineProps {
@@ -41,6 +42,14 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
+
+  // Dynamic Exam Results Map
+  const [examResultsMap, setExamResultsMap] = useState<Record<string, GoogleFormExamResult[]>>(() => {
+    return loadExamResultsFromLocalStorage();
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem('hrskill_google_form_url', googleFormUrl);
@@ -57,9 +66,50 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Sync Logic simulation
-  const handleSyncData = () => {
+  // Handle Excel/CSV File Upload
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsSyncing(true);
+      const updatedResults = await parseExcelOrCsvFile(file);
+      setExamResultsMap(updatedResults);
+      setImportStatusMessage(`✅ อัปเดตผลสอบจากไฟล์ "${file.name}" เรียบร้อยแล้ว!`);
+      setTimeout(() => setImportStatusMessage(null), 5000);
+    } catch (err: any) {
+      alert(`❌ เกิดข้อผิดพลาดในการอ่านไฟล์: ${err?.message || 'รูปแบบไฟล์ไม่ถูกต้อง'}`);
+    } finally {
+      setIsSyncing(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Sync Logic simulation / Live API fetch
+  const handleSyncData = async () => {
     setIsSyncing(true);
+    if (appsScriptUrl) {
+      try {
+        const res = await fetch(`${appsScriptUrl}?empCode=`);
+        const json = await res.json();
+        if (json.status === 'success' && json.results) {
+          const newMap: Record<string, GoogleFormExamResult[]> = { ...examResultsMap };
+          json.results.forEach((item: GoogleFormExamResult) => {
+            if (!newMap[item.empCode]) newMap[item.empCode] = [];
+            const idx = newMap[item.empCode].findIndex((r) => r.attemptNumber === item.attemptNumber);
+            if (idx >= 0) newMap[item.empCode][idx] = item;
+            else newMap[item.empCode].push(item);
+          });
+          setExamResultsMap(newMap);
+          setImportStatusMessage('✅ ซิงค์ข้อมูลล่าสุดจาก Google Apps Script API สำเร็จ!');
+          setTimeout(() => setImportStatusMessage(null), 4000);
+        }
+      } catch (err) {
+        console.error('Apps Script Sync Error:', err);
+      }
+    }
     setTimeout(() => {
       setIsSyncing(false);
     }, 800);
@@ -69,6 +119,17 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     navigator.clipboard.writeText(getSampleGoogleAppsScriptCode());
     setCopiedCode(true);
     setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  // Helper functions using state
+  const getEmployeeExamResults = (empCode: string): GoogleFormExamResult[] => {
+    return examResultsMap[empCode] || [];
+  };
+
+  const getLatestEmployeeExamResult = (empCode: string): GoogleFormExamResult | null => {
+    const list = getEmployeeExamResults(empCode);
+    if (!list.length) return null;
+    return list[list.length - 1];
   };
 
   // Active User Results
@@ -86,6 +147,15 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
   return (
     <div className="exam-page content-container">
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept=".xlsx,.xls,.csv"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+
       {/* Page Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
@@ -111,11 +181,21 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
           <button
             className="btn btn-secondary"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSyncing}
+            style={{ borderRadius: 14, padding: '10px 16px', background: 'rgba(16, 185, 129, 0.1)', color: '#047857', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+            title="นำเข้าไฟล์ Excel หรือ CSV ตอบกลับจาก Google Form เพื่ออัปเดตคะแนนทันที"
+          >
+            <Upload size={18} /> นำเข้าไฟล์ Excel/CSV ตอบกลับ
+          </button>
+
+          <button
+            className="btn btn-secondary"
             onClick={handleSyncData}
             disabled={isSyncing}
             style={{ borderRadius: 14, padding: '10px 16px' }}
           >
-            <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+            <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
             {isSyncing ? 'กำลังซิงค์ข้อมูล...' : 'ซิงค์ผลสอบล่าสุด'}
           </button>
 
@@ -131,6 +211,12 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
           )}
         </div>
       </div>
+
+      {importStatusMessage && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#047857', padding: '12px 18px', borderRadius: 12, marginBottom: 20, marginTop: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Sparkles size={18} /> {importStatusMessage}
+        </div>
+      )}
 
       {/* SECTION 1: Active User's Latest Score Card & Attempt History */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 28 }}>
