@@ -63,20 +63,20 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
       />
       <div className="login-bg-overlay"></div>
 
-      {/* Top-Left Brand Corner Badge */}
+      {/* Brand mark top-left */}
       <div className="login-brand-header">
         <div className="login-brand-logo">
-          <img src="/assets/car-logo.png" alt="CAR Logo" />
+          <img src="/assets/car-logo.png" alt="CAR Logo" className="brand-img" />
         </div>
         <div className="login-brand-text">
-          <span className="brand-title">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</span>
-          <span className="brand-subtitle">Skill Management & Orientation System</span>
+          <span className="brand-title">Complete Auto Rubber Co., Ltd.</span>
+          <span className="brand-subtitle">Skill Management System</span>
         </div>
       </div>
 
       {/* Top-Right Exit Button */}
       <button className="login-close-btn" onClick={onClose} title="ปิดหน้าต่างทดสอบ">
-        <X size={18} /> ปิดหน้าต่างทดสอบ
+        <X size={18} /> ปิดหน้าต่างทดสอบ (Back)
       </button>
 
       {/* Centered Glass Login Card */}
@@ -87,6 +87,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
           </div>
           <div className="login-eyebrow">Skill Management Portal</div>
           <h1 className="login-title">เข้าสู่ระบบ</h1>
+          <p className="login-desc">บริหารทักษะความสามารถของพนักงาน (Test Demo Screen)</p>
         </div>
 
         {loginAlert && (
@@ -111,7 +112,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
           </div>
 
           <div className="login-field">
-            <label>รหัสผ่าน</label>
+            <label>รหัสผ่าน (ทดสอบระบบ - ไม่ต้องใช้รหัสผ่านจริง)</label>
             <div className="login-input-wrapper">
               <Lock className="field-icon" size={18} />
               <input
@@ -146,38 +147,30 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
 
           <button type="submit" className="login-submit-btn">
             <span className="btn-sheen"></span>
-            <LogIn size={20} /> เข้าสู่ระบบ (Login)
+            <LogIn size={20} /> เข้าสู่ระบบ (Test Login)
           </button>
         </form>
 
         {/* Quick Demo Roles Section */}
         <div className="demo-roles-container">
           <div className="demo-roles-title">
-            <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
+            <Shield size={14} /> คลิกสลับเข้าใช้งานตามสิทธิ์ผู้ทดสอบ (Quick Demo Login):
           </div>
           <div className="demo-user-list">
-            {allUsers.slice(0, 3).map((u) => {
-              const roleClass = u.role === 'ADMIN' ? 'role-admin' : u.role === 'SUPERVISOR' ? 'role-supervisor' : 'role-operator';
-              const roleLabel = u.role === 'ADMIN' ? 'ADMIN (ผู้ดูแล)' : u.role === 'SUPERVISOR' ? 'SUPERVISOR (หัวหน้า)' : 'OPERATOR (พนักงาน)';
-
-              return (
-                <button
-                  key={u.id}
-                  type="button"
-                  className="demo-user-btn"
-                  onClick={() => handleQuickDemoLogin(u)}
-                >
-                  <img src={u.avatar} alt={u.name} className="demo-avatar" />
-                  <div className="demo-user-info" style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="demo-name">{u.name}</span>
-                      <span className={`role-pill ${roleClass}`}>{roleLabel}</span>
-                    </div>
-                    <span className="demo-role">{u.empCode} • {u.department} ({u.position})</span>
-                  </div>
-                </button>
-              );
-            })}
+            {allUsers.slice(0, 3).map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                className="demo-user-btn"
+                onClick={() => handleQuickDemoLogin(u)}
+              >
+                <img src={u.avatar} alt={u.name} className="demo-avatar" />
+                <div className="demo-user-info">
+                  <span className="demo-name">{u.name}</span>
+                  <span className="demo-role">{u.role} • {u.department}</span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -186,7 +179,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
       <div className="login-footer-status">
         <span className="status-pill">
           <span className="status-dot"></span>
-          ระบบพร้อมใช้งาน · ISO 9001 & IATF 16949 Certified
+          ระบบพร้อมใช้งาน · ISO 9001 Quality System
         </span>
       </div>
     </div>
