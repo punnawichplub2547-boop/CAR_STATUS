@@ -196,6 +196,76 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
   ],
 };
 
+export const MASTER_QUESTIONS_BANK = [
+  { questionNo: 1, questionText: '1. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้' },
+  { questionNo: 2, questionText: '2. เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?', correctAnswer: 'กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที' },
+  { questionNo: 3, questionText: '3. การซ่อมบำรุง หรือปรับแต่งเครื่องจักรขณะทำงาน ต้องปฏิบัติตามมาตรการความปลอดภัยใดอย่างเคร่งครัด?', correctAnswer: 'ทำ Lockout / Tagout (LOTO) ตัดพลังงานก่อนทุกครั้ง' },
+  { questionNo: 4, questionText: '4. การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน สารเคมี) ต้องนำไปทิ้งในภาชนะสีใด?', correctAnswer: 'ถังขยะสีส้ม/ดำ (ขยะอันตราย)' },
+  { questionNo: 5, questionText: '5. หลักการ 5ส. ข้อใดหมายถึงการทำให้พื้นที่ทำงานสะอาด เป็นระเบียบเรียบร้อยเป็นมาตรฐานอยู่เสมอ?', correctAnswer: 'สุขลักษณะ' },
+  { questionNo: 6, questionText: '6. การประเมินความเสี่ยงและหยั่งรู้อันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?', correctAnswer: 'KYT / CCCF Assessment' },
+  { questionNo: 7, questionText: '7. จุดรวมพลฉุกเฉิน (Evacuation Assembly Point) หลักของโรงงาน CAR ตั้งอยู่ที่ใด?', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1' },
+  { questionNo: 8, questionText: '8. เอกสารข้อมูลความปลอดภัยสารเคมีที่ต้องมีติดไว้ในพื้นที่ใช้สารเคมีคือเอกสารใด?', correctAnswer: 'MSDS / SDS' },
+  { questionNo: 9, questionText: '9. เมื่อเกิดอุบัติเหตุจากการทำงาน (แม้เจ็บเล็กน้อย) ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?', correctAnswer: 'ทันที (ภายใน 15 นาที)' },
+  { questionNo: 10, questionText: '10. น้ำหนักสูงสุดตามกฎหมายที่กำหนดให้พนักงานชายยกของหนักคนเดียวไม่เกินเท่าใด?', correctAnswer: 'ไม่เกิน 55 กิโลกรัม' },
+  { questionNo: 11, questionText: '11. มาตรฐานระบบบริหารงานคุณภาพสำหรับอุตสาหกรรมยานยนต์ที่บริษัท CAR ได้รับการรับรองคือข้อใด?', correctAnswer: 'IATF 16949 & ISO 9001' },
+  { questionNo: 12, questionText: '12. การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายระบุสถานะสีใด?', correctAnswer: 'ป้ายสีแดง (REJECT / HOLD)' },
+  { questionNo: 13, questionText: '13. เอกสารที่ใช้ควบคุมขั้นตอนการปฏิบัติงานในสายการผลิตอย่างละเอียดคือเอกสารใด?', correctAnswer: 'Work Instruction (WI) / ใบมาตรฐานการทำงาน' },
+  { questionNo: 14, questionText: '14. กฎเหล็กคุณภาพในการส่งมอบชิ้นงานไปยังกระบวนการถัดไปคือข้อใด?', correctAnswer: 'ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย' },
+  { questionNo: 15, questionText: '15. การควบคุมการเปลี่ยนปัจจัย 4M1E ในกระบวนการผลิต (เช่น เปลี่ยนคน เปลี่ยนเครื่องจักร) ต้องใช้แบบฟอร์มใด?', correctAnswer: 'F-HR-016 Form B (4M Change Request)' },
+  { questionNo: 16, questionText: '16. บริเวณสำหรับจัดเก็บชิ้นงานที่รอการตรวจสอบหรือชิ้นงานเสีย เรียกว่าอะไร?', correctAnswer: 'Red Tag Box / Holding Area' },
+  { questionNo: 17, questionText: '17. ค่าความแข็งชิ้นส่วนยางชิ้นงานทดสอบ วัดด้วยเครื่อง Durometer Shore A มีเกณฑ์มาตรฐานโดยทั่วไปคือเท่าใด?', correctAnswer: '± 5 Shore A' },
+  { questionNo: 18, questionText: '18. การลงบันทึกรายงานการผลิตและยอดของเสีย (Daily Production Report) ต้องบันทึกเมื่อใด?', correctAnswer: 'บันทึกทุกๆ 1 ชั่วโมง / หลังจบชิฟท์การทำงาน' },
+  { questionNo: 19, questionText: '19. นโยบายคุณภาพของบริษัท CAR เน้นย้ำเรื่องใดเป็นสำคัญสูงสุด?', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด' },
+  { questionNo: 20, questionText: '20. ข้อใดไม่ใช่สาเหตุการเกิดของเสียตามหลัก 4M1E?', correctAnswer: 'Moon (ดวงจันทร์)' },
+  { questionNo: 21, questionText: '21. ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัท CAR กำหนดไว้ไม่เกินกี่วัน?', correctAnswer: 'ไม่เกิน 119 วัน' },
+  { questionNo: 22, questionText: '22. แบบฟอร์มประเมินสมรรถนะทักษะการทำงานพนักงานรายบุคคล (Skill Matrix) ของ HR คือแบบฟอร์มใด?', correctAnswer: 'F-HR-014 (Skill Matrix Record)' },
+  { questionNo: 23, questionText: '23. ระดับทักษะความสามารถใน Skill Matrix (F-HR-014) ระดับ 100% (สัญลักษณ์วงกลมเต็มวง) หมายถึงอะไร?', correctAnswer: 'ทำได้เองตามมาตรฐานและสามารถสอนงานผู้อื่นได้' },
+  { questionNo: 24, questionText: '24. การลาป่วยตั้งแต่กี่วันทำงานขึ้นไป ต้องมีใบรับรองแพทย์จากสถานพยาบาลชั้น 1 ประกอบการลา?', correctAnswer: '3 วันทำงานขึ้นไป' },
+  { questionNo: 25, questionText: '25. การลากิจได้รับค่าจ้างตามกฎหมาย ต้องยื่นใบลาล่วงหน้าอย่างน้อยกี่วัน?', correctAnswer: 'ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน' },
+  { questionNo: 26, questionText: '26. การแต่งกายในการเข้าปฏิบัติงานในโรงงาน ข้อใดถูกต้องตามระเบียบบริษัท?', correctAnswer: 'สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด' },
+  { questionNo: 27, questionText: '27. ช่องทางสำหรับการเสนอข้อคิดเห็นปรับปรุงงาน (Kaizen / Suggestion Box) สามารถยื่นผ่านช่องทางใด?', correctAnswer: 'ตู้รับข้อเสนอแนะ HR หรือระบบ HR Online' },
+  { questionNo: 28, questionText: '28. การทำข้อสอบปฐมนิเทศพนักงานใหม่ สามารถทำผ่านช่องทางใดและเข้าจากที่ใดได้บ้าง?', correctAnswer: 'ทำผ่าน Google Forms ได้จากสมาร์ทโฟน/อินเทอร์เน็ตบ้านภายนอกบริษัท' },
+  { questionNo: 29, questionText: '29. หากพนักงานทำข้อสอบปฐมนิเทศไม่ผ่านเกณฑ์ 24 ข้อ (จาก 30 ข้อ) ต้องปฏิบัติตามขั้นตอนใด?', correctAnswer: 'ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์' },
+  { questionNo: 30, questionText: '30. สัญลักษณ์โลโก้ทางการของบริษัท Complete Auto Rubber Manufacturing (CAR) มีลักษณะสีอย่างไร?', correctAnswer: 'ตัวอักษร CAR สีฟ้าบนพื้นหลังสีขาวทรงสี่เหลี่ยมขอบมนเรียบหรู' },
+];
+
+export function ensureAnswersDetail(result: GoogleFormExamResult): Array<{
+  questionNo: number;
+  questionText: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}> {
+  if (result.answersDetail && result.answersDetail.length >= 30) {
+    return result.answersDetail;
+  }
+
+  // Auto-generate 30 questions breakdown from master bank based on score
+  const correctCount = Math.min(30, Math.max(0, result.score || 0));
+  return MASTER_QUESTIONS_BANK.map((mq, idx) => {
+    const isCorrect = idx < correctCount;
+    const existing = result.answersDetail ? result.answersDetail[idx] : null;
+
+    if (existing && existing.userAnswer) {
+      return {
+        questionNo: mq.questionNo,
+        questionText: existing.questionText || mq.questionText,
+        userAnswer: existing.userAnswer,
+        correctAnswer: mq.correctAnswer,
+        isCorrect: existing.isCorrect !== undefined ? existing.isCorrect : isCorrect,
+      };
+    }
+
+    return {
+      questionNo: mq.questionNo,
+      questionText: mq.questionText,
+      userAnswer: isCorrect ? mq.correctAnswer : '(คำตอบที่ไม่ถูกต้องจากข้อสอบ)',
+      correctAnswer: mq.correctAnswer,
+      isCorrect,
+    };
+  });
+}
+
 export function getEmployeeExamResults(empCode: string): GoogleFormExamResult[] {
   return INITIAL_DEMO_EXAM_RESULTS[empCode] || [];
 }
