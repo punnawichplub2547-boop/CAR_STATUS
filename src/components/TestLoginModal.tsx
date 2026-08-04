@@ -84,7 +84,6 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
         <div className="login-card-header">
           <div className="login-eyebrow">Skill Management Portal</div>
           <h1 className="login-title">เข้าสู่ระบบ</h1>
-          <p className="login-desc">ระบบบริหารทักษะความสามารถพนักงาน (F-HR-014)</p>
         </div>
 
         {loginAlert && (
