@@ -45,7 +45,7 @@ function createSafetyAttitudeGoogleForm() {
   const form = FormApp.create(formTitle);
   form.setDescription(formDesc);
   form.setIsQuiz(true);
-  form.setCollectEmail(true);
+  form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
 
   // ข้อมูลพนักงาน

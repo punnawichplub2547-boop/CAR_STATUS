@@ -20,7 +20,7 @@ function createOrientationGoogleForm() {
   const form = FormApp.create(formTitle);
   form.setDescription(formDesc);
   form.setIsQuiz(true);
-  form.setCollectEmail(true);
+  form.setCollectEmail(false);
   form.setAllowResponseEdits(false);
 
   // 1. Employee Code Field
