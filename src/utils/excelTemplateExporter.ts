@@ -20,7 +20,7 @@ export function formatSkillLevelWithIcon(level: number | null | undefined): stri
   return `○ 0%`;
 }
 
-function escapeXml(str: string): string {
+export function escapeXml(str: string): string {
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -29,7 +29,7 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;');
 }
 
-function setCellInSheetXml(xml: string, cellRef: string, textVal: string | number): string {
+export function setCellInSheetXml(xml: string, cellRef: string, textVal: string | number): string {
   const safeText = escapeXml(String(textVal));
   const pattern = new RegExp(`<c r="${cellRef}"(?:\\s+[^/>]*)?>.*?</c>|<c r="${cellRef}"(?:\\s+[^/>]*)?/>`, 's');
   const match = pattern.exec(xml);
@@ -38,6 +38,19 @@ function setCellInSheetXml(xml: string, cellRef: string, textVal: string | numbe
     const sMatch = /\bs="([^"]*)"/.exec(fullMatch);
     const sAttr = sMatch ? ` s="${sMatch[1]}"` : '';
     const newCell = `<c r="${cellRef}"${sAttr} t="inlineStr"><is><t>${safeText}</t></is></c>`;
+    return xml.slice(0, match.index) + newCell + xml.slice(match.index + fullMatch.length);
+  }
+  return xml;
+}
+
+export function clearCellInSheetXml(xml: string, cellRef: string): string {
+  const pattern = new RegExp(`<c r="${cellRef}"(?:\\s+[^/>]*)?>.*?</c>|<c r="${cellRef}"(?:\\s+[^/>]*)?/>`, 's');
+  const match = pattern.exec(xml);
+  if (match) {
+    const fullMatch = match[0];
+    const sMatch = /\bs="([^"]*)"/.exec(fullMatch);
+    const sAttr = sMatch ? ` s="${sMatch[1]}"` : '';
+    const newCell = `<c r="${cellRef}"${sAttr}/>`;
     return xml.slice(0, match.index) + newCell + xml.slice(match.index + fullMatch.length);
   }
   return xml;
@@ -80,7 +93,7 @@ function addCircleOneCellAnchor(drawingXml: string, colIdx: number, rowIdx: numb
   return drawingXml.replace('</xdr:wsDr>', `${anchorXml}</xdr:wsDr>`);
 }
 
-async function saveBlobFile(buffer: ArrayBuffer | Uint8Array, fileName: string): Promise<void> {
+export async function saveBlobFile(buffer: ArrayBuffer | Uint8Array, fileName: string): Promise<void> {
   const blob = new Blob([buffer as BlobPart], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   });

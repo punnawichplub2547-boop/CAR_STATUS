@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Phase 1 scope only: Employee + orientation training (F-HR-002) + exam
+// results synced from the Google Form. Certificate / SkillEvaluation / OJT
+// tables from the full design doc get added table-by-table in later phases.
+
+model Employee {
+  id                Int      @id @default(autoincrement())
+  empCode           String   @unique
+  name              String
+  email             String?
+  department        String
+  section           String?
+  position          String
+  startingDate      DateTime
+  status            String   @default("PROBATION")
+  orientationPassed Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  examSubmissions     ExamSubmission[]
+  trainingAttendances TrainingAttendance[]
+
+  @@map("employees")
+}
+
+// The 2 fixed F-HR-002 orientation courses. Seeded once; category is what
+// the exam pass criteria and the Google Form both key off of.
+model TrainingCourse {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  title     String
+  category  String // "REGULATION" | "SAFETY"
+  createdAt DateTime @default(now())
+
+  attendances     TrainingAttendance[]
+  examSubmissions ExamSubmission[]
+
+  @@map("training_courses")
+}
+
+// One row per employee per course per training session — this is the data
+// the F-HR-002 export pulls from (signature column stays blank for print).
+model TrainingAttendance {
+  id               Int      @id @default(autoincrement())
+  courseId         Int
+  course           TrainingCourse @relation(fields: [courseId], references: [id])
+  employeeId       Int
+  employee         Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  trainingDate     DateTime
+  timeRange        String
+  instructor       String
+  location         String
+  checkInMorning   String?
+  checkInAfternoon String?
+  createdAt        DateTime @default(now())
+
+  @@unique([courseId, employeeId, trainingDate])
+  @@map("training_attendances")
+}
+
+// Populated by the webhook the Google Apps Script calls on form submit.
+model ExamSubmission {
+  id             Int      @id @default(autoincrement())
+  formResponseId String   @unique
+  courseId       Int?
+  course         TrainingCourse? @relation(fields: [courseId], references: [id])
+  courseCategory String // "REGULATION" | "SAFETY"
+  empCode        String
+  employeeId     Int?
+  employee       Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  respondentName String
+  respondentEmail String?
+  totalQuestions Int
+  correctCount   Int
+  wrongCount     Int
+  percentage     Float
+  isPassed       Boolean
+  submittedAt    DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([empCode])
+  @@map("exam_submissions")
+}

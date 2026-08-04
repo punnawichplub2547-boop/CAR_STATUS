@@ -12,6 +12,7 @@ import { ExamEngine } from './components/ExamEngine';
 import { AuditReportExporter } from './components/AuditReportExporter';
 import { TestLoginModal } from './components/TestLoginModal';
 import { computeCertificateStatus } from './utils/certificateStatus';
+import { createBackendEmployee } from './utils/api';
 
 import {
   INITIAL_EMPLOYEES,
@@ -24,12 +25,11 @@ import {
   INITIAL_PROBATION_EVALUATIONS,
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
-  INITIAL_ATTENDANCES,
   EXAM_QUESTIONS,
   INITIAL_NOTIFICATIONS,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, TrainingAttendance, NotificationItem, ExamSubmission } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, ExamSubmission } from './types';
 
 function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
@@ -67,14 +67,13 @@ export function App() {
   const [ojtParticipants, setOjtParticipants] = usePersistentState<OjtParticipant[]>('ojtParticipants', INITIAL_OJT_PARTICIPANTS);
   const [probationEvaluations, setProbationEvaluations] = usePersistentState<ProbationEvaluation[]>('probationEvaluations', INITIAL_PROBATION_EVALUATIONS);
   const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', INITIAL_CERTIFICATES);
-  const [courses, setCourses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
-  const [attendances, setAttendances] = usePersistentState<TrainingAttendance[]>('attendances', INITIAL_ATTENDANCES);
+  const [courses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
   const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
 
   // Reset Demo Data
   const handleResetDemoData = () => {
     if (window.confirm('คุณต้องการรีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?')) {
-      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'attendances', 'notifications'];
+      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications'];
       keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
       window.location.reload();
     }
@@ -83,62 +82,29 @@ export function App() {
   // Handlers
   const handleAddEmployee = (newEmp: Employee) => {
     setEmployees([newEmp, ...employees]);
+    // Mirror into the backend so the new hire shows up on the F-HR-002
+    // orientation export page and can be matched against Google Form exam
+    // submissions by empCode. Local state above is already updated either
+    // way — a backend sync failure (e.g. duplicate empCode) shouldn't block
+    // HR from continuing to use the rest of the app.
+    createBackendEmployee({
+      empCode: newEmp.empCode,
+      name: newEmp.name,
+      email: newEmp.email,
+      department: newEmp.department,
+      section: newEmp.section,
+      position: newEmp.position,
+      startingDate: newEmp.startingDate,
+      status: newEmp.status,
+    }).catch((err) => {
+      window.alert(
+        `เพิ่มพนักงาน "${newEmp.name}" ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ F-HR-002 ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}\n\nพนักงานคนนี้จะไม่ขึ้นในหน้า F-HR-002 จนกว่าจะซิงก์สำเร็จ`
+      );
+    });
   };
 
   const handleEditEmployee = (updatedEmp: Employee) => {
     setEmployees(employees.map((e) => (e.id === updatedEmp.id ? updatedEmp : e)));
-  };
-
-  const handleCheckIn = (
-    courseId: string,
-    employeeId: string,
-    period: 'morning' | 'afternoon',
-    time: string,
-    signatureDataUrl: string
-  ) => {
-    const emp = employees.find((e) => e.id === employeeId);
-    if (!emp) return;
-    const existing = attendances.find((a) => a.courseId === courseId && a.employeeId === employeeId);
-    if (existing) {
-      const checkInMorning = period === 'morning' ? time : existing.checkInMorning;
-      const signedMorning = period === 'morning' ? signatureDataUrl : existing.signedMorning;
-      const checkInAfternoon = period === 'afternoon' ? time : existing.checkInAfternoon;
-      const signedAfternoon = period === 'afternoon' ? signatureDataUrl : existing.signedAfternoon;
-      setAttendances(
-        attendances.map((a) =>
-          a.id === existing.id
-            ? {
-                ...a,
-                checkInMorning,
-                signedMorning,
-                checkInAfternoon,
-                signedAfternoon,
-                isPassed: !!checkInMorning && !!checkInAfternoon,
-              }
-            : a
-        )
-      );
-    } else {
-      const checkInMorning = period === 'morning' ? time : undefined;
-      const signedMorning = period === 'morning' ? signatureDataUrl : undefined;
-      const checkInAfternoon = period === 'afternoon' ? time : undefined;
-      const signedAfternoon = period === 'afternoon' ? signatureDataUrl : undefined;
-      const newAttendance: TrainingAttendance = {
-        id: `att-${Date.now()}`,
-        courseId,
-        employeeId: emp.id,
-        employeeName: emp.name,
-        empCode: emp.empCode,
-        department: emp.department,
-        position: emp.position,
-        checkInMorning,
-        signedMorning,
-        checkInAfternoon,
-        signedAfternoon,
-        isPassed: !!checkInMorning && !!checkInAfternoon,
-      };
-      setAttendances([newAttendance, ...attendances]);
-    }
   };
 
   const handleAddOjtSession = (
@@ -179,23 +145,6 @@ export function App() {
     setSkillEvaluationRounds(
       exists ? skillEvaluationRounds.map((r) => (r.id === round.id ? round : r)) : [round, ...skillEvaluationRounds]
     );
-  };
-
-  const handleAddCourse = (course: TrainingCourse) => {
-    setCourses([course, ...courses]);
-  };
-
-  const handleEditCourse = (updatedCourse: TrainingCourse) => {
-    setCourses(courses.map((c) => (c.id === updatedCourse.id ? updatedCourse : c)));
-  };
-
-  const handleDeleteCourse = (courseId: string) => {
-    setCourses(courses.filter((c) => c.id !== courseId));
-    setAttendances(attendances.filter((a) => a.courseId !== courseId));
-  };
-
-  const handleDeleteAttendance = (attendanceId: string) => {
-    setAttendances(attendances.filter((a) => a.id !== attendanceId));
   };
 
   const handleMarkNotifRead = (id: string) => {
@@ -261,18 +210,7 @@ export function App() {
             />
           )}
 
-          {activeTab === 'training' && (
-            <TrainingManagement
-              courses={courses}
-              attendances={attendances}
-              employees={employees}
-              onAddCourse={handleAddCourse}
-              onEditCourse={handleEditCourse}
-              onDeleteCourse={handleDeleteCourse}
-              onCheckIn={handleCheckIn}
-              onDeleteAttendance={handleDeleteAttendance}
-            />
-          )}
+          {activeTab === 'training' && <TrainingManagement />}
 
           {activeTab === 'evaluations' && (
             <OjtProbationEvaluator

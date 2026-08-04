@@ -7,3 +7,45 @@ services:
     ports:
       - "8088:80"  # สามารถปรับเปลี่ยนพอร์ตได้ตามต้องการ เช่น 8088 หรือ 18088
     restart: always
+
+  car-status-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: car_status_backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: "mysql://car_user:car_password@car-status-mysql:3306/car_status"
+    ports:
+      # host 4001 (not 4000) — 4000 is already bound by a Windows/WSL
+      # networking process on this machine; container listens on 4000 internally
+      - "4001:4000"
+    depends_on:
+      car-status-mysql:
+        condition: service_healthy
+    restart: always
+
+  car-status-mysql:
+    image: mysql:8.4
+    container_name: car_status_mysql
+    environment:
+      MYSQL_DATABASE: car_status
+      MYSQL_USER: car_user
+      MYSQL_PASSWORD: car_password
+      MYSQL_ROOT_PASSWORD: change_me_root_password
+    ports:
+      # host 3307 (not 3306) since a local mysqld is already using 3306 on
+      # this machine — containers still talk to each other on 3306 internally
+      - "3307:3306"
+    volumes:
+      - car_status_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pchange_me_root_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+volumes:
+  car_status_mysql_data:
