@@ -714,11 +714,14 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                   const safetyRecords = allRecords.filter((r) => r.examType === 'SAFETY_ATTITUDE' || r.totalQuestions === 14);
                   const oriRecords = allRecords.filter((r) => r.examType === 'ORIENTATION' || r.totalQuestions === 30);
 
-                  const latestSafety = safetyRecords.length > 0 ? safetyRecords[safetyRecords.length - 1] : null;
-                  const latestOri = oriRecords.length > 0 ? oriRecords[oriRecords.length - 1] : null;
+                  const safetyPre = safetyRecords.filter((r) => r.phase === 'PRE_TEST').pop();
+                  const safetyPost = safetyRecords.filter((r) => r.phase === 'POST_TEST').pop();
 
-                  const isSafetyPassed = latestSafety?.isPassed;
-                  const isOriPassed = latestOri?.isPassed;
+                  const oriPre = oriRecords.filter((r) => r.phase === 'PRE_TEST').pop();
+                  const oriPost = oriRecords.filter((r) => r.phase === 'POST_TEST').pop();
+
+                  const isSafetyPassed = (safetyPost?.isPassed) || (safetyPre?.isPassed);
+                  const isOriPassed = (oriPost?.isPassed) || (oriPre?.isPassed);
 
                   return (
                     <tr key={emp.id}>
@@ -738,17 +741,27 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
                       {/* Safety 14Q Score Column */}
                       <td>
-                        {latestSafety ? (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latestSafety.isPassed ? '#047857' : '#b91c1c' }}>
-                                {latestSafety.score} / 14 ข้อ
-                              </span>
-                              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>({latestSafety.percentage}%)</span>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                              รอบ: {latestSafety.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'} ({safetyRecords.length} รอบ)
-                            </div>
+                        {safetyPre || safetyPost ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {safetyPre && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Pre: </span>
+                                <span style={{ fontWeight: 800, color: safetyPre.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {safetyPre.score} / 14 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({safetyPre.percentage}%)</span>
+                              </div>
+                            )}
+                            {safetyPost && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
+                                <span style={{ fontWeight: 800, color: safetyPost.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {safetyPost.score} / 14 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({safetyPost.percentage}%)</span>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({safetyRecords.length} รอบ)</div>
                           </div>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (14 ข้อ)</span>
@@ -757,17 +770,27 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
                       {/* Orientation 30Q Score Column */}
                       <td>
-                        {latestOri ? (
-                          <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latestOri.isPassed ? '#047857' : '#b91c1c' }}>
-                                {latestOri.score} / 30 ข้อ
-                              </span>
-                              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>({latestOri.percentage}%)</span>
-                            </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                              รอบ: {latestOri.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'} ({oriRecords.length} รอบ)
-                            </div>
+                        {oriPre || oriPost ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {oriPre && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Pre: </span>
+                                <span style={{ fontWeight: 800, color: oriPre.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {oriPre.score} / 30 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPre.percentage}%)</span>
+                              </div>
+                            )}
+                            {oriPost && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
+                                <span style={{ fontWeight: 800, color: oriPost.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {oriPost.score} / 30 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPost.percentage}%)</span>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({oriRecords.length} รอบ)</div>
                           </div>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (30 ข้อ)</span>
@@ -778,7 +801,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                       <td>
                         {isSafetyPassed && isOriPassed ? (
                           <span className="badge badge-green">PASSED ทั้ง 2 ชุด (ผ่าน)</span>
-                        ) : (latestSafety || latestOri) ? (
+                        ) : (safetyRecords.length > 0 || oriRecords.length > 0) ? (
                           <span className={`badge ${isSafetyPassed || isOriPassed ? 'badge-amber' : 'badge-red'}`}>
                             {isSafetyPassed || isOriPassed ? 'ผ่าน 1/2 ชุด' : 'FAILED (ต้องสอบใหม่)'}
                           </span>
@@ -789,10 +812,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
                       {/* Action Buttons */}
                       <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {latestSafety && (
+                        {(safetyPost || safetyPre) && (
                           <button
                             className="btn btn-xs btn-secondary"
-                            onClick={() => setViewingResult(latestSafety)}
+                            onClick={() => setViewingResult((safetyPost || safetyPre)!)}
                             style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             title="ดูคำตอบข้อสอบทัศนคติความปลอดภัย 14 ข้อ"
                           >
@@ -800,10 +823,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                           </button>
                         )}
 
-                        {latestOri && (
+                        {(oriPost || oriPre) && (
                           <button
                             className="btn btn-xs btn-secondary"
-                            onClick={() => setViewingResult(latestOri)}
+                            onClick={() => setViewingResult((oriPost || oriPre)!)}
                             style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                             title="ดูคำตอบข้อสอบประเมินการปฐมนิเทศ 30 ข้อ"
                           >
