@@ -127,10 +127,16 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
     try {
       setIsSyncing(true);
-      const updatedResults = await parseExcelOrCsvFile(file);
+      const { results: updatedResults, detectedExamType, detectedPhase } = await parseExcelOrCsvFile(file);
       setExamResultsMap(updatedResults);
-      setImportStatusMessage(`✅ อัปเดตผลสอบจากไฟล์ "${file.name}" เรียบร้อยแล้ว!`);
-      setTimeout(() => setImportStatusMessage(null), 5000);
+      if (detectedExamType) setSelectedExamType(detectedExamType);
+      if (detectedPhase) setSelectedPhase(detectedPhase);
+      setImportStatusMessage(
+        `✅ อัปเดตและซิงค์ผลสอบจากไฟล์ "${file.name}" เรียบร้อยแล้ว! (${
+          detectedExamType === 'SAFETY_ATTITUDE' ? 'ทัศนคติความปลอดภัย 14 ข้อ' : 'ประเมินการปฐมนิเทศ 30 ข้อ'
+        } - ${detectedPhase === 'PRE_TEST' ? 'รอบ Pre-Test' : 'รอบ Post-Test'})`
+      );
+      setTimeout(() => setImportStatusMessage(null), 6000);
     } catch (err: any) {
       alert(`❌ เกิดข้อผิดพลาดในการอ่านไฟล์: ${err?.message || 'รูปแบบไฟล์ไม่ถูกต้อง'}`);
     } finally {
@@ -702,12 +708,14 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => {
-                  const history = getEmployeeExamResults(emp.empCode).filter(r => {
-                    const matchType = (r.examType || 'ORIENTATION') === selectedExamType;
-                    const matchPhase = (r.phase || 'POST_TEST') === selectedPhase;
-                    return matchType && matchPhase;
-                  });
+                  const allRecords = getEmployeeExamResults(emp.empCode);
+                  const typeRecords = allRecords.filter((r) => (r.examType || 'SAFETY_ATTITUDE') === selectedExamType);
+                  const history = typeRecords.filter((r) => (r.phase || 'PRE_TEST') === selectedPhase);
                   const latest = history.length > 0 ? history[history.length - 1] : null;
+
+                  const otherPhase = selectedPhase === 'PRE_TEST' ? 'POST_TEST' : 'PRE_TEST';
+                  const altPhaseRecord = typeRecords.find((r) => (r.phase || 'PRE_TEST') === otherPhase);
+                  const activeDisplayRecord = latest || altPhaseRecord;
 
                   return (
                     <tr key={emp.id}>
@@ -733,28 +741,39 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginLeft: 6 }}>({latest.percentage}%)</span>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ส่งเมื่อ: {latest.submittedAt}</div>
                           </div>
+                        ) : altPhaseRecord ? (
+                          <div>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: altPhaseRecord.isPassed ? '#047857' : '#b45309' }}>
+                              {altPhaseRecord.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'}: {altPhaseRecord.score} / {altPhaseRecord.totalQuestions} ข้อ ({altPhaseRecord.percentage}%)
+                            </span>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ส่งเมื่อ: {altPhaseRecord.submittedAt}</div>
+                          </div>
                         ) : (
                           <span style={{ color: 'var(--text-dim)' }}>ยังไม่มีข้อมูล</span>
                         )}
                       </td>
                       <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                        {history.length > 0 ? `${history.length} รอบ` : '-'}
+                        {typeRecords.length > 0 ? `${typeRecords.length} รอบ` : '-'}
                       </td>
                       <td>
                         {latest ? (
                           <span className={`badge ${latest.isPassed ? 'badge-green' : 'badge-red'}`}>
                             {latest.isPassed ? 'PASSED (ผ่าน)' : 'FAILED (ต้องสอบใหม่)'}
                           </span>
+                        ) : altPhaseRecord ? (
+                          <span className="badge badge-amber" style={{ fontSize: '0.78rem' }}>
+                            {altPhaseRecord.phase === 'PRE_TEST' ? '📝 สอบ Pre-Test แล้ว' : '✅ สอบ Post-Test แล้ว'}
+                          </span>
                         ) : (
                           <span className="badge badge-amber">ยังไม่ได้ทำข้อสอบ</span>
                         )}
                       </td>
                       <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {latest && (
+                        {activeDisplayRecord && (
                           <button
                             className="btn btn-xs btn-secondary"
                             onClick={() => {
-                              setViewingResult(latest);
+                              setViewingResult(activeDisplayRecord);
                             }}
                             style={{ borderRadius: 8, padding: '5px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           >

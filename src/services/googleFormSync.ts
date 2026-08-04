@@ -677,7 +677,11 @@ export function loadExamResultsFromLocalStorage(): Record<string, GoogleFormExam
   return INITIAL_DEMO_EXAM_RESULTS;
 }
 
-export async function parseExcelOrCsvFile(file: File): Promise<Record<string, GoogleFormExamResult[]>> {
+export async function parseExcelOrCsvFile(file: File): Promise<{
+  results: Record<string, GoogleFormExamResult[]>;
+  detectedExamType?: ExamType;
+  detectedPhase?: ExamPhase;
+}> {
   const data = await file.arrayBuffer();
   const workbook = XLSX.read(data, { type: 'array' });
   const firstSheetName = workbook.SheetNames[0];
@@ -692,37 +696,69 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
   const results: Record<string, GoogleFormExamResult[]> = { ...existingMap };
   const attemptCounter: Record<string, number> = {};
 
-  const headers = jsonRows[0].map((h) => String(h || ''));
+  const rawHeaders = jsonRows[0].map((h) => String(h || '').trim());
+  const hLower = rawHeaders.map((h) => h.toLowerCase());
+
+  // Dynamic Header Matching (resilient against extra columns like Email or rearranged columns)
+  let tsCol = hLower.findIndex((h) => h.includes('ประทับ') || h.includes('timestamp'));
+  let scoreCol = hLower.findIndex((h) => h.includes('คะแนน') || h.includes('score'));
+  let empCol = hLower.findIndex((h) => h.includes('รหัส') || h.includes('employee id') || h.includes('emp'));
+  let nameCol = hLower.findIndex((h) => h.includes('ชื่อ') || h.includes('name'));
+  let deptCol = hLower.findIndex((h) => h.includes('แผนก') || h.includes('dept'));
+  let phaseCol = hLower.findIndex((h) => h.includes('รอบ') || h.includes('phase'));
+
+  // Fallbacks if specific text is missing
+  const tsIdx = tsCol >= 0 ? tsCol : 0;
+  const scoreIdx = scoreCol >= 0 ? scoreCol : 1;
+  const empIdx = empCol >= 0 ? empCol : 2;
+  const nameIdx = nameCol >= 0 ? nameCol : 3;
+  const deptIdx = deptCol >= 0 ? deptCol : 4;
+  const phaseIdx = phaseCol >= 0 ? phaseCol : 5;
+
+  const metadataCols = new Set([tsIdx, scoreIdx, empIdx, nameIdx, deptIdx, phaseIdx].filter((idx) => idx >= 0));
+
+  let lastDetectedType: ExamType | undefined;
+  let lastDetectedPhase: ExamPhase | undefined;
 
   for (let i = 1; i < jsonRows.length; i++) {
     const row = jsonRows[i];
-    if (!row || (!row[2] && !row[3])) continue;
+    if (!row || row.length === 0) continue;
 
-    let timestampStr = String(row[0] || '');
-    if (typeof row[0] === 'number') {
-      const d = XLSX.SSF.parse_date_code(row[0]);
+    let timestampStr = String(row[tsIdx] || '');
+    if (typeof row[tsIdx] === 'number') {
+      const d = XLSX.SSF.parse_date_code(row[tsIdx]);
       if (d) {
         timestampStr = `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')} ${String(d.H).padStart(2, '0')}:${String(d.M).padStart(2, '0')}:${String(d.S).padStart(2, '0')}`;
       }
     }
 
-    const rawScore = String(row[1] || '0');
+    const rawScore = String(row[scoreIdx] || '0');
     const scoreMatch = rawScore.match(/^(\d+)/);
     const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-    const empCode = String(row[2] || '').trim();
+    const empCode = String(row[empIdx] || '').trim();
     if (!empCode) continue;
 
-    const employeeName = String(row[3] || '').trim();
-    const department = String(row[4] || '').trim();
-    const phaseText = String(row[5] || '');
+    const employeeName = String(row[nameIdx] || '').trim();
+    const department = String(row[deptIdx] || '').trim();
+    const phaseText = String(row[phaseIdx] || '');
     const phase: ExamPhase = phaseText.includes('ก่อน') ? 'PRE_TEST' : 'POST_TEST';
+    lastDetectedPhase = phase;
 
-    // Auto-detect question count based on remaining columns (from index 6 onwards)
-    const questionColsCount = Math.max(0, row.length - 6);
+    // Detect question columns dynamically
+    const questionCols = [];
+    for (let col = 0; col < row.length; col++) {
+      if (!metadataCols.has(col) && rawHeaders[col]) {
+        questionCols.push(col);
+      }
+    }
+
+    const questionColsCount = questionCols.length > 0 ? questionCols.length : Math.max(0, row.length - 6);
     const isSafety = questionColsCount <= 14;
     const totalQuestions = isSafety ? 14 : 30;
     const examType: ExamType = isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION';
+    lastDetectedType = examType;
+
     const isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
     const percentage = Math.round((scoreNum / totalQuestions) * 100);
 
@@ -732,9 +768,9 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
     const bank = isSafety ? SAFETY_ATTITUDE_QUESTIONS_BANK : MASTER_QUESTIONS_BANK;
 
     const answersDetail = [];
-    for (let col = 6; col < row.length; col++) {
-      const qNo = col - 5;
-      const qText = headers[col] || `ข้อสอบข้อที่ ${qNo}`;
+    let qNo = 1;
+    for (const col of questionCols) {
+      const qText = rawHeaders[col] || `ข้อสอบข้อที่ ${qNo}`;
       const uAns = String(row[col] || '');
       const matchedQ = bank.find((q) => q.questionNo === qNo);
       const correctAnswer = matchedQ ? matchedQ.correctAnswer : 'ดูในเฉลย Google Form';
@@ -747,6 +783,7 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
         correctAnswer,
         isCorrect,
       });
+      qNo++;
     }
 
     const resultObj: GoogleFormExamResult = {
@@ -770,7 +807,9 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
       results[empCode] = [];
     }
 
-    const existingIndex = results[empCode].findIndex((r) => r.attemptNumber === attemptNumber && r.examType === examType && r.phase === phase);
+    const existingIndex = results[empCode].findIndex(
+      (r) => r.attemptNumber === attemptNumber && r.examType === examType && r.phase === phase
+    );
     if (existingIndex >= 0) {
       results[empCode][existingIndex] = resultObj;
     } else {
@@ -779,7 +818,11 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
   }
 
   saveExamResultsToLocalStorage(results);
-  return results;
+  return {
+    results,
+    detectedExamType: lastDetectedType,
+    detectedPhase: lastDetectedPhase,
+  };
 }
 
 export function getSampleGoogleAppsScriptCode(): string {
