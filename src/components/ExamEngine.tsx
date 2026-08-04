@@ -702,22 +702,23 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 <tr>
                   <th>พนักงาน</th>
                   <th>แผนก / ตำแหน่ง</th>
-                  <th>คะแนนสอบล่าสุด (Google Form)</th>
-                  <th>จำนวนรอบที่ทำ</th>
-                  <th>สถานะ</th>
+                  <th>🛡️ ทัศนคติความปลอดภัย (14 ข้อ)</th>
+                  <th>🏆 ประเมินการปฐมนิเทศ (30 ข้อ)</th>
+                  <th>สถานะรวม</th>
                   <th>การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => {
                   const allRecords = getEmployeeExamResults(emp.empCode);
-                  const typeRecords = allRecords.filter((r) => (r.examType || 'SAFETY_ATTITUDE') === selectedExamType);
-                  const history = typeRecords.filter((r) => (r.phase || 'PRE_TEST') === selectedPhase);
-                  const latest = history.length > 0 ? history[history.length - 1] : null;
+                  const safetyRecords = allRecords.filter((r) => r.examType === 'SAFETY_ATTITUDE' || r.totalQuestions === 14);
+                  const oriRecords = allRecords.filter((r) => r.examType === 'ORIENTATION' || r.totalQuestions === 30);
 
-                  const otherPhase = selectedPhase === 'PRE_TEST' ? 'POST_TEST' : 'PRE_TEST';
-                  const altPhaseRecord = typeRecords.find((r) => (r.phase || 'PRE_TEST') === otherPhase);
-                  const activeDisplayRecord = latest || altPhaseRecord;
+                  const latestSafety = safetyRecords.length > 0 ? safetyRecords[safetyRecords.length - 1] : null;
+                  const latestOri = oriRecords.length > 0 ? oriRecords[oriRecords.length - 1] : null;
+
+                  const isSafetyPassed = latestSafety?.isPassed;
+                  const isOriPassed = latestOri?.isPassed;
 
                   return (
                     <tr key={emp.id}>
@@ -734,62 +735,89 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                         <div>{emp.department}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{emp.position}</div>
                       </td>
+
+                      {/* Safety 14Q Score Column */}
                       <td>
-                        {latest ? (
+                        {latestSafety ? (
                           <div>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latest.isPassed ? '#047857' : '#b91c1c' }}>
-                              {latest.score} / {latest.totalQuestions} ข้อ
-                            </span>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginLeft: 6 }}>({latest.percentage}%)</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ส่งเมื่อ: {latest.submittedAt}</div>
-                          </div>
-                        ) : altPhaseRecord ? (
-                          <div>
-                            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: altPhaseRecord.isPassed ? '#047857' : '#b45309' }}>
-                              {altPhaseRecord.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'}: {altPhaseRecord.score} / {altPhaseRecord.totalQuestions} ข้อ ({altPhaseRecord.percentage}%)
-                            </span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ส่งเมื่อ: {altPhaseRecord.submittedAt}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latestSafety.isPassed ? '#047857' : '#b91c1c' }}>
+                                {latestSafety.score} / 14 ข้อ
+                              </span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>({latestSafety.percentage}%)</span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                              รอบ: {latestSafety.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'} ({safetyRecords.length} รอบ)
+                            </div>
                           </div>
                         ) : (
-                          <span style={{ color: 'var(--text-dim)' }}>ยังไม่มีข้อมูล</span>
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (14 ข้อ)</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                        {typeRecords.length > 0 ? `${typeRecords.length} รอบ` : '-'}
-                      </td>
+
+                      {/* Orientation 30Q Score Column */}
                       <td>
-                        {latest ? (
-                          <span className={`badge ${latest.isPassed ? 'badge-green' : 'badge-red'}`}>
-                            {latest.isPassed ? 'PASSED (ผ่าน)' : 'FAILED (ต้องสอบใหม่)'}
-                          </span>
-                        ) : altPhaseRecord ? (
-                          <span className="badge badge-amber" style={{ fontSize: '0.78rem' }}>
-                            {altPhaseRecord.phase === 'PRE_TEST' ? '📝 สอบ Pre-Test แล้ว' : '✅ สอบ Post-Test แล้ว'}
+                        {latestOri ? (
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latestOri.isPassed ? '#047857' : '#b91c1c' }}>
+                                {latestOri.score} / 30 ข้อ
+                              </span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>({latestOri.percentage}%)</span>
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                              รอบ: {latestOri.phase === 'PRE_TEST' ? 'Pre-Test' : 'Post-Test'} ({oriRecords.length} รอบ)
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (30 ข้อ)</span>
+                        )}
+                      </td>
+
+                      {/* Overall Status Badge */}
+                      <td>
+                        {isSafetyPassed && isOriPassed ? (
+                          <span className="badge badge-green">PASSED ทั้ง 2 ชุด (ผ่าน)</span>
+                        ) : (latestSafety || latestOri) ? (
+                          <span className={`badge ${isSafetyPassed || isOriPassed ? 'badge-amber' : 'badge-red'}`}>
+                            {isSafetyPassed || isOriPassed ? 'ผ่าน 1/2 ชุด' : 'FAILED (ต้องสอบใหม่)'}
                           </span>
                         ) : (
                           <span className="badge badge-amber">ยังไม่ได้ทำข้อสอบ</span>
                         )}
                       </td>
+
+                      {/* Action Buttons */}
                       <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        {activeDisplayRecord && (
+                        {latestSafety && (
                           <button
                             className="btn btn-xs btn-secondary"
-                            onClick={() => {
-                              setViewingResult(activeDisplayRecord);
-                            }}
-                            style={{ borderRadius: 8, padding: '5px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            onClick={() => setViewingResult(latestSafety)}
+                            style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            title="ดูคำตอบข้อสอบทัศนคติความปลอดภัย 14 ข้อ"
                           >
-                            <Eye size={14} /> ดูประวัติ & เฉลย
+                            <Eye size={14} /> เฉลย (14 ข้อ)
+                          </button>
+                        )}
+
+                        {latestOri && (
+                          <button
+                            className="btn btn-xs btn-secondary"
+                            onClick={() => setViewingResult(latestOri)}
+                            style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            title="ดูคำตอบข้อสอบประเมินการปฐมนิเทศ 30 ข้อ"
+                          >
+                            <Eye size={14} /> เฉลย (30 ข้อ)
                           </button>
                         )}
 
                         <button
                           className={`btn btn-xs ${preTestLockMap[emp.empCode]?.[selectedExamType] ? 'btn-secondary' : 'btn-warning'}`}
                           onClick={() => handleTogglePreTestLock(emp.empCode)}
-                          style={{ borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                           title="HR สลับสถานะปิดก่อนอบรมเพื่อปลดล็อคการสอบหลังอบรม"
                         >
-                          {preTestLockMap[emp.empCode]?.[selectedExamType] ? '🔓 ปิด Pre-Test แล้ว' : '🔒 HR กดปิด Pre-Test'}
+                          {preTestLockMap[emp.empCode]?.[selectedExamType] ? '🔓 Post-Test เปิด' : '🔒 HR กดปิด Pre-Test'}
                         </button>
                       </td>
                     </tr>
