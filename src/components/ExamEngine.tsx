@@ -54,7 +54,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(() => {
     const saved = localStorage.getItem('hrskill_apps_script_url');
-    if (!saved || saved.includes('AKfycbwq') || saved.includes('AKfycbzg')) {
+    if (!saved || saved !== DEFAULT_APPS_SCRIPT_URL) {
       localStorage.setItem('hrskill_apps_script_url', DEFAULT_APPS_SCRIPT_URL);
       return DEFAULT_APPS_SCRIPT_URL;
     }
