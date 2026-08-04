@@ -529,73 +529,81 @@ export async function parseExcelOrCsvFile(file: File): Promise<Record<string, Go
 
 export function getSampleGoogleAppsScriptCode(): string {
   return `/**
- * Google Apps Script (Code.gs)
- * แปะโค้ดนี้ใน Google Sheets -> Extensions -> Apps Script
- * จากนั้นกด Deploy -> New deployment -> Select type: Web app
- * Execute as: Me, Who has access: Anyone
+ * Google Apps Script (Code.gs) - ระบบซิงค์คะแนนข้อสอบ CAR อัตโนมัติ (14 ข้อ และ 30 ข้อ)
+ * 
+ * วิธีนำไปใช้งาน:
+ * 1. เปิด Google Sheets ที่เชื่อมกับ Google Forms (หน้าการตอบกลับ)
+ * 2. ไปที่เมนู "ส่วนขยาย" (Extensions) ➔ "Apps Script"
+ * 3. วางโค้ดนี้ลงใน Code.gs ทั้งหมด
+ * 4. กดปุ่ม "Deploy" (การทำให้ใช้งานได้) ➔ "New deployment" (การทำให้ใช้งานได้ใหม่)
+ * 5. ประเภท: Web app, Execute as: Me, Who has access: Anyone (ทุกคน)
+ * 6. คัดลอก Web App URL นำมาวางในระบบเว็บ CAR HR Skill Matrix
  */
 
 function doGet(e) {
-  var empCode = e.parameter.empCode;
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-  var data = sheet.getDataRange().getValues();
-  
-  if (data.length < 2) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "empty" }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  
-  var results = [];
-  var attemptCounter = {};
-  
-  // Skip header row
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var timestamp = row[0];
-    var scoreNum = parseInt(row[1]) || 0;
-    var code = String(row[2]).trim();
-    var name = String(row[3]).trim();
-    var dept = String(row[4]).trim();
-    
-    if (empCode && code !== empCode) continue;
-    
-    attemptCounter[code] = (attemptCounter[code] || 0) + 1;
-    
-    var answersDetail = [];
-    for (var col = 5; col < row.length; col++) {
-      var qNo = col - 4;
-      var uAns = String(row[col]);
-      answersDetail.push({
-        questionNo: qNo,
-        questionText: "ข้อสอบที่ " + qNo,
-        userAnswer: uAns,
-        correctAnswer: "ดูในเฉลย Google Form",
-        isCorrect: true
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var rows = sheet.getDataRange().getValues();
+    var results = [];
+    var attemptCounter = {};
+
+    for (var i = 1; i < rows.length; i++) {
+      var row = rows[i];
+      if (!row[0]) continue;
+
+      var scoreText = String(row[2] || "0/30");
+      var scoreParts = scoreText.split("/");
+      var score = parseInt(scoreParts[0]) || 0;
+      var totalQuestions = parseInt(scoreParts[1]) || 30;
+      var isSafety = totalQuestions === 14;
+
+      var percentage = Math.round((score / totalQuestions) * 100);
+      var isPassed = isSafety ? score >= 12 : score >= 24;
+
+      var empCode = String(row[3] || "").trim();
+      if (!empCode) continue;
+
+      attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
+
+      var answersDetail = [];
+      for (var col = 7; col < row.length; col++) {
+        var qNo = col - 6;
+        answersDetail.push({
+          questionNo: qNo,
+          questionText: "ข้อที่ " + qNo,
+          userAnswer: String(row[col] || ""),
+          correctAnswer: "ดูในเฉลย Google Form",
+          isCorrect: true
+        });
+      }
+
+      results.push({
+        id: "gas-row-" + i,
+        attemptNumber: attemptCounter[empCode],
+        submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
+        empCode: empCode,
+        employeeName: String(row[4] || "").trim(),
+        department: String(row[5] || "").trim(),
+        score: score,
+        totalQuestions: totalQuestions,
+        percentage: percentage,
+        isPassed: isPassed,
+        source: "GOOGLE_FORMS",
+        examType: isSafety ? "SAFETY_ATTITUDE" : "ORIENTATION",
+        phase: String(row[6] || "").indexOf("ก่อน") !== -1 ? "PRE_TEST" : "POST_TEST",
+        answersDetail: answersDetail
       });
     }
-    
-    results.push({
-      id: "gas-" + i,
-      attemptNumber: attemptCounter[code],
-      submittedAt: Utilities.formatDate(new Date(timestamp), "GMT+7", "yyyy-MM-dd HH:mm:ss"),
-      empCode: code,
-      employeeName: name,
-      department: dept,
-      score: scoreNum,
-      totalQuestions: 30,
-      percentage: Math.round((scoreNum / 30) * 100),
-      isPassed: scoreNum >= 24,
-      answersDetail: answersDetail,
-      source: "GOOGLE_FORMS"
-    });
+
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      totalRecords: results.length,
+      results: results
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
-  
-  return ContentService.createTextOutput(JSON.stringify({
-    status: "success",
-    empCode: empCode,
-    totalRecords: results.length,
-    results: results
-  })).setMimeType(ContentService.MimeType.JSON);
 }
 `;
 }
