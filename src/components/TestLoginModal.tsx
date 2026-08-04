@@ -69,7 +69,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
           <img src="/assets/car-logo.png" alt="CAR Logo" className="brand-img" />
         </div>
         <div className="login-brand-text">
-          <span className="brand-title">Complete Auto Rubber Co., Ltd.</span>
+          <span className="brand-title">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</span>
           <span className="brand-subtitle">Skill Management System</span>
         </div>
       </div>

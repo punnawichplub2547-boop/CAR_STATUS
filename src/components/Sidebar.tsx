@@ -199,7 +199,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     บจก. คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง
                   </h3>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Complete Auto Rubber Manufacturing Co., Ltd. (CAR)
+                    COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.
                   </div>
                 </div>
               </div>
