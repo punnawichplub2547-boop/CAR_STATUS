@@ -1,7 +1,7 @@
 import type { GoogleFormExamResult, NotificationItem } from '../types';
 
 export const DEFAULT_GOOGLE_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSc_EXAMPLE_FORM_ID/viewform';
+  'https://docs.google.com/forms/d/e/1FAIpQLSdwlTwGNNMrvtcYBt9aEFmxSF2NiT7AzOGf0_jFlorzXqtH7g/viewform';
 
 export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> = {
   'EMP-1001': [
