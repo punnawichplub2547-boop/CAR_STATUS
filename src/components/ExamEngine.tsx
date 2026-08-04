@@ -153,7 +153,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     }
   };
 
-  // Sync Logic / Live Apps Script Fetch
+  // Sync Logic / Live Apps Script Fetch (High-Performance Optimized)
   const handleSyncData = useCallback(async (silent: boolean = false) => {
     if (!silent) setIsSyncing(true);
     const targetUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
@@ -165,29 +165,56 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
           const json = JSON.parse(text);
           if (json.status === 'success' && json.results && json.results.length > 0) {
             setExamResultsMap((prevMap) => {
-              const newMap: Record<string, GoogleFormExamResult[]> = { ...prevMap };
+              let hasChanges = false;
               let updatedCount = 0;
+              const newMap: Record<string, GoogleFormExamResult[]> = { ...prevMap };
+
               json.results.forEach((item: GoogleFormExamResult) => {
                 const empCode = (item.empCode || '').trim().toUpperCase();
                 if (!empCode) return;
                 const normalizedItem = { ...item, empCode };
-                if (!newMap[empCode]) newMap[empCode] = [];
-                const idx = newMap[empCode].findIndex(
-                  (r) => r.attemptNumber === item.attemptNumber && r.examType === item.examType && r.phase === item.phase
-                );
-                if (idx >= 0) {
-                  newMap[empCode][idx] = normalizedItem;
-                } else {
-                  newMap[empCode].push(normalizedItem);
+                if (!newMap[empCode]) {
+                  newMap[empCode] = [normalizedItem];
+                  hasChanges = true;
                   updatedCount++;
+                } else {
+                  const existingList = newMap[empCode];
+                  const idx = existingList.findIndex(
+                    (r) => r.attemptNumber === item.attemptNumber && r.examType === item.examType && r.phase === item.phase
+                  );
+                  if (idx >= 0) {
+                    const prevItem = existingList[idx];
+                    if (
+                      prevItem.score !== item.score ||
+                      prevItem.submittedAt !== item.submittedAt ||
+                      prevItem.isPassed !== item.isPassed
+                    ) {
+                      existingList[idx] = normalizedItem;
+                      hasChanges = true;
+                      updatedCount++;
+                    }
+                  } else {
+                    existingList.push(normalizedItem);
+                    hasChanges = true;
+                    updatedCount++;
+                  }
                 }
               });
-              saveExamResultsToLocalStorage(newMap);
-              if (!silent || updatedCount > 0) {
-                setImportStatusMessage(`⚡️ ซิงค์ผลสอบสดจาก Google Forms อัตโนมัติเรียบร้อยแล้ว (${json.totalRecords} รายการ)`);
-                setTimeout(() => setImportStatusMessage(null), 5000);
+
+              if (hasChanges) {
+                saveExamResultsToLocalStorage(newMap);
+                if (!silent || updatedCount > 0) {
+                  setImportStatusMessage(`⚡️ ซิงค์ผลสอบสดจาก Google Forms เรียบร้อยแล้ว (${json.totalRecords} รายการ)`);
+                  setTimeout(() => setImportStatusMessage(null), 4000);
+                }
+                return newMap;
               }
-              return newMap;
+              
+              if (!silent) {
+                setImportStatusMessage(`⚡️ ข้อมูลเป็นปัจจุบันแล้ว (${json.totalRecords} รายการ)`);
+                setTimeout(() => setImportStatusMessage(null), 3000);
+              }
+              return prevMap; // Return same reference -> NO RE-RENDER!
             });
           }
         } else if (!silent) {
@@ -201,16 +228,18 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     if (!silent) {
       setTimeout(() => {
         setIsSyncing(false);
-      }, 800);
+      }, 500);
     }
   }, [appsScriptUrl]);
 
-  // Live Auto-Sync Polling Every 10 Seconds
+  // Smart Live Auto-Sync Polling (Every 30s & Only When Page Visible)
   useEffect(() => {
     handleSyncData(true);
     const interval = setInterval(() => {
-      handleSyncData(true);
-    }, 10000);
+      if (document.visibilityState === 'visible') {
+        handleSyncData(true);
+      }
+    }, 30000);
     return () => clearInterval(interval);
   }, [handleSyncData]);
 
