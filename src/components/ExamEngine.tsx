@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ExternalLink,
   RefreshCw,
@@ -142,8 +142,8 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   };
 
   // Sync Logic / Live Apps Script Fetch
-  const handleSyncData = async () => {
-    setIsSyncing(true);
+  const handleSyncData = useCallback(async (silent: boolean = false) => {
+    if (!silent) setIsSyncing(true);
     const targetUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
     if (targetUrl) {
       try {
@@ -151,31 +151,53 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         const text = await res.text();
         if (text.startsWith('{')) {
           const json = JSON.parse(text);
-          if (json.status === 'success' && json.results) {
-            const newMap: Record<string, GoogleFormExamResult[]> = { ...examResultsMap };
-            json.results.forEach((item: GoogleFormExamResult) => {
-              if (!newMap[item.empCode]) newMap[item.empCode] = [];
-              const idx = newMap[item.empCode].findIndex((r) => r.attemptNumber === item.attemptNumber);
-              if (idx >= 0) newMap[item.empCode][idx] = item;
-              else newMap[item.empCode].push(item);
+          if (json.status === 'success' && json.results && json.results.length > 0) {
+            setExamResultsMap((prevMap) => {
+              const newMap: Record<string, GoogleFormExamResult[]> = { ...prevMap };
+              let updatedCount = 0;
+              json.results.forEach((item: GoogleFormExamResult) => {
+                if (!newMap[item.empCode]) newMap[item.empCode] = [];
+                const idx = newMap[item.empCode].findIndex(
+                  (r) => r.attemptNumber === item.attemptNumber && r.examType === item.examType && r.phase === item.phase
+                );
+                if (idx >= 0) {
+                  newMap[item.empCode][idx] = item;
+                } else {
+                  newMap[item.empCode].push(item);
+                  updatedCount++;
+                }
+              });
+              saveExamResultsToLocalStorage(newMap);
+              if (!silent || updatedCount > 0) {
+                setImportStatusMessage(`⚡️ ซิงค์ผลสอบสดจาก Google Forms อัตโนมัติเรียบร้อยแล้ว (${json.totalRecords} รายการ)`);
+                setTimeout(() => setImportStatusMessage(null), 5000);
+              }
+              return newMap;
             });
-            setExamResultsMap(newMap);
-            saveExamResultsToLocalStorage(newMap);
-            setImportStatusMessage(`✅ ซิงค์ข้อมูลล่าสุดสำเร็จ! พบข้อมูลทั้งสิ้น ${json.totalRecords || 0} รายการ`);
-            setTimeout(() => setImportStatusMessage(null), 5000);
           }
-        } else {
+        } else if (!silent) {
           setImportStatusMessage('⚠️ ติดสิทธิ์การเข้าถึง Google: โปรดตรวจสอบว่าใน Apps Script ตั้งค่า "ผู้มีสิทธิ์เข้าถึง" เป็น "ทุกคน (Anyone)" แล้วกด Deploy ใหม่');
           setTimeout(() => setImportStatusMessage(null), 8000);
         }
       } catch (err) {
-        console.error('Apps Script Sync Error:', err);
+        console.error('Apps Script Auto Sync Error:', err);
       }
     }
-    setTimeout(() => {
-      setIsSyncing(false);
-    }, 800);
-  };
+    if (!silent) {
+      setTimeout(() => {
+        setIsSyncing(false);
+      }, 800);
+    }
+  }, [appsScriptUrl]);
+
+  // Live Auto-Sync Polling Every 10 Seconds
+  useEffect(() => {
+    handleSyncData(true);
+    const interval = setInterval(() => {
+      handleSyncData(true);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [handleSyncData]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(getSampleGoogleAppsScriptCode());
@@ -332,7 +354,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
           <button
             className="btn btn-secondary"
-            onClick={handleSyncData}
+            onClick={() => handleSyncData(false)}
             disabled={isSyncing}
             style={{ borderRadius: 14, padding: '10px 16px' }}
           >
