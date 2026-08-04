@@ -193,6 +193,38 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
   ],
   'EMP-1003': [
     {
+      id: 'demo-1003-sa-pre',
+      attemptNumber: 1,
+      submittedAt: '2026-08-02 08:30:00',
+      empCode: 'EMP-1003',
+      employeeName: 'นาย ประเสริฐ ยิ้มแย้ม',
+      department: 'FMG-A',
+      score: 10,
+      totalQuestions: 14,
+      percentage: 71,
+      isPassed: false,
+      source: 'GOOGLE_FORMS',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'PRE_TEST',
+      answersDetail: [],
+    },
+    {
+      id: 'demo-1003-sa-post',
+      attemptNumber: 1,
+      submittedAt: '2026-08-02 11:30:00',
+      empCode: 'EMP-1003',
+      employeeName: 'นาย ประเสริฐ ยิ้มแย้ม',
+      department: 'FMG-A',
+      score: 13,
+      totalQuestions: 14,
+      percentage: 93,
+      isPassed: true,
+      source: 'ONLINE_WEB',
+      examType: 'SAFETY_ATTITUDE',
+      phase: 'POST_TEST',
+      answersDetail: [],
+    },
+    {
       id: 'gexp-1003-1',
       attemptNumber: 1,
       submittedAt: '2026-08-02 10:15:00',
@@ -204,38 +236,9 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
       percentage: 60,
       isPassed: false, // < 24 FAILED -> HR Alert!
       source: 'GOOGLE_FORMS',
-      answersDetail: [
-        { questionNo: 1, questionText: 'อุปกรณ์ PPE พื้นฐานในโรงงาน CAR คือข้อใด?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
-        { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ผลิต ต้องทำอย่างไร?', userAnswer: 'วิ่งหนีออกจากโรงงานทันที', correctAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', isCorrect: false },
-        { questionNo: 3, questionText: 'มาตรฐานระบบคุณภาพอุตสาหกรรมยานยนต์คือข้อใด?', userAnswer: 'ISO 14001', correctAnswer: 'IATF 16949 & ISO 9001', isCorrect: false },
-        { questionNo: 4, questionText: 'การซ่อมบำรุงเครื่องจักรต้องทำ LOTO หรือไม่?', userAnswer: 'ไม่ต้องทำถ้าซ่อมแป๊บเดียว', correctAnswer: 'ต้องทำทุกครั้งก่อนเริ่มงานซ่อม', isCorrect: false },
-        { questionNo: 5, questionText: 'ชิ้นงานเสียต้องติดป้ายสีใด?', userAnswer: 'ป้ายสีแดง (REJECT)', correctAnswer: 'ป้ายสีแดง (REJECT)', isCorrect: true },
-        { questionNo: 6, questionText: 'ระยะเวลาทดลองงานพนักงานใหม่กำหนดไว้เท่าใด?', userAnswer: 'ไม่เกิน 119 วัน', correctAnswer: 'ไม่เกิน 119 วัน', isCorrect: true },
-        { questionNo: 7, questionText: 'การจัดการขยะอันตรายต้องทิ้งถังสีใด?', userAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', correctAnswer: 'ถังสีส้ม/ดำ (ขยะอันตราย)', isCorrect: true },
-        { questionNo: 8, questionText: 'จุดรวมพลฉุกเฉินของโรงงานอยู่ที่ใด?', userAnswer: 'ห้องอาหารพนักงาน', correctAnswer: 'ลานจอดรถหน้าอาคาร M-1', isCorrect: false },
-        { questionNo: 9, questionText: 'เอกสาร F-HR-016 Form A ใช้สำหรับงานใด?', userAnswer: 'การประเมิน OJT พนักงานใหม่', correctAnswer: 'การประเมิน OJT พนักงานใหม่', isCorrect: true },
-        { questionNo: 10, questionText: 'การตรวจเช็กเครื่องจักรประจำวันเป็นหน้าที่ใคร?', userAnswer: 'ช่างซ่อมบำรุงเท่านั้น', correctAnswer: 'พนักงานผู้ปฏิบัติงานประจำเครื่อง', isCorrect: false },
-        { questionNo: 11, questionText: 'การฉีดอัดยางต้องควบคุมอุณหภูมิตามเอกสารใด?', userAnswer: 'Work Instruction (WI)', correctAnswer: 'Work Instruction (WI)', isCorrect: true },
-        { questionNo: 12, questionText: 'สารเคมีต้องมีเอกสารชนิดใดกำกับ?', userAnswer: 'MSDS / SDS', correctAnswer: 'MSDS / SDS', isCorrect: true },
-        { questionNo: 13, questionText: 'เมื่อเกิดอุบัติเหตุต้องแจ้งหัวหน้างานภายในเวลากี่นาที?', userAnswer: 'หลังจบชิฟท์ทำงาน', correctAnswer: 'ทันที (ภายใน 15 นาที)', isCorrect: false },
-        { questionNo: 14, questionText: 'การประเมินอันตราย KYT ต้องทำเมื่อใด?', userAnswer: 'ก่อนเริ่มงานทุกครั้ง', correctAnswer: 'ก่อนเริ่มงานทุกครั้ง', isCorrect: true },
-        { questionNo: 15, questionText: 'การลาป่วย 3 วันต้องใช้เอกสารอะไร?', userAnswer: 'ใบรับรองแพทย์', correctAnswer: 'ใบรับรองแพทย์', isCorrect: true },
-        { questionNo: 16, questionText: 'การยกของหนักชายไม่เกินกี่ กก.?', userAnswer: 'ไม่เกิน 55 กิโลกรัม', correctAnswer: 'ไม่เกิน 55 กิโลกรัม', isCorrect: true },
-        { questionNo: 17, questionText: 'เกณฑ์คะแนนสอบผ่านปฐมนิเทศคือข้อใด?', userAnswer: 'ต้องถูกอย่างน้อย 24 จาก 30 ข้อ (80%)', correctAnswer: 'ต้องถูกอย่างน้อย 24 จาก 30 ข้อ (80%)', isCorrect: true },
-        { questionNo: 18, questionText: 'ป้ายเตือนสีเหลืองดำหมายถึงอะไร?', userAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', correctAnswer: 'ระวังอันตราย / พื้นที่เสี่ยง', isCorrect: true },
-        { questionNo: 19, questionText: 'การคัดแยกของเสียต้องวางในโซนใด?', userAnswer: 'Red Tag Box / Holding Area', correctAnswer: 'Red Tag Box / Holding Area', isCorrect: true },
-        { questionNo: 20, questionText: 'การประเมินทดลองงานมีกี่ระยะ?', userAnswer: '30, 60, 90 วัน', correctAnswer: '30, 60, 90 วัน', isCorrect: true },
-        { questionNo: 21, questionText: 'ข้อสอบปฐมนิเทศสามารถทำผ่านช่องทางใด?', userAnswer: 'Google Forms จากอินเทอร์เน็ตภายนอก', correctAnswer: 'Google Forms จากอินเทอร์เน็ตภายนอก', isCorrect: true },
-        { questionNo: 22, questionText: 'หากสอบไม่ผ่านเกณฑ์ 24 ข้อ ต้องทำอย่างไร?', userAnswer: 'แจ้ง HR เพื่อดูข้อที่ผิดและทำสอบใหม่', correctAnswer: 'แจ้ง HR เพื่อดูข้อที่ผิดและทำสอบใหม่', isCorrect: true },
-        { questionNo: 23, questionText: 'อุปกรณ์ดับเพลิงพ่นห่างกี่เมตร?', userAnswer: '10 เมตร', correctAnswer: 'ห่าง 2 - 3 เมตรเหนือลม', isCorrect: false },
-        { questionNo: 24, questionText: 'การแต่งกายในพื้นที่ผลิตต้องทำอย่างไร?', userAnswer: 'ใส่อะไรก็ได้ตามสบาย', correctAnswer: 'สวมยูนิฟอร์ม ติดบัตรพนักงาน และใส่ PPE ครบถ้วน', isCorrect: false },
-        { questionNo: 25, questionText: 'การซ่อมบำรุงเครื่องต้องกดปุ่มใด?', userAnswer: 'Emergency Stop', correctAnswer: 'Emergency Stop & LOTO', isCorrect: false },
-        { questionNo: 26, questionText: 'การรายงานผลผลิตต้องทำเมื่อใด?', userAnswer: 'สัปดาห์ละครั้ง', correctAnswer: 'ทุกๆ 1 ชั่วโมง / หลังจบชิฟท์', isCorrect: false },
-        { questionNo: 27, questionText: 'นโยบายคุณภาพ CAR เน้นอะไร?', userAnswer: 'กำไรสูงสุด', correctAnswer: 'คุณภาพเป็นหนึ่ง ส่งมอบตรงเวลา ปลอดภัยสูงสุด', isCorrect: false },
-        { questionNo: 28, questionText: 'การลากิจต้องยื่นล่วงหน้ากี่วัน?', userAnswer: '1 วัน', correctAnswer: '3 วันขึ้นไป', isCorrect: false },
-        { questionNo: 29, questionText: 'การล้างมือ 7 ขั้นตอนป้องกันอะไร?', userAnswer: 'เชื้อโรคและความสกปรก', correctAnswer: 'เชื้อโรคและความสกปรก', isCorrect: true },
-        { questionNo: 30, questionText: 'เมื่อพบน้ำมันรั่วไหลบนพื้นต้องทำอย่างไร?', userAnswer: 'นำทราย/ขี้เลื่อยมาโรยซับน้ำมันทันที', correctAnswer: 'นำทราย/ขี้เลื่อยมาโรยซับน้ำมันทันที', isCorrect: true },
-      ],
+      examType: 'ORIENTATION',
+      phase: 'PRE_TEST',
+      answersDetail: [],
     },
     {
       id: 'gexp-1003-2',
@@ -249,6 +252,8 @@ export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> =
       percentage: 87,
       isPassed: true, // >= 24 PASSED!
       source: 'GOOGLE_FORMS',
+      examType: 'ORIENTATION',
+      phase: 'POST_TEST',
       answersDetail: [
         { questionNo: 1, questionText: 'อุปกรณ์ PPE พื้นฐานในโรงงาน CAR คือข้อใด?', userAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', correctAnswer: 'หมวกนิรภัยและรองเท้าเซฟตี้', isCorrect: true },
         { questionNo: 2, questionText: 'เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ผลิต ต้องทำอย่างไร?', userAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', correctAnswer: 'กดสัญญาณแจ้งเตือนและโทรแจ้ง จป.', isCorrect: true },
@@ -695,6 +700,15 @@ export function loadExamResultsFromLocalStorage(): Record<string, GoogleFormExam
             }
           });
         }
+      });
+
+      // Sanitize all records to ensure examType and phase are always present
+      Object.keys(merged).forEach((code) => {
+        merged[code] = merged[code].map((r) => ({
+          ...r,
+          examType: r.examType || (r.totalQuestions <= 14 ? 'SAFETY_ATTITUDE' : 'ORIENTATION'),
+          phase: r.phase || (r.attemptNumber === 1 ? 'PRE_TEST' : 'POST_TEST'),
+        }));
       });
 
       return merged;
