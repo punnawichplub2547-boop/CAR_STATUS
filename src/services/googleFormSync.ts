@@ -1,4 +1,4 @@
-import type { GoogleFormExamResult } from '../types';
+import type { GoogleFormExamResult, PreTestLockMap } from '../types';
 import * as XLSX from 'xlsx';
 
 export const DEFAULT_SAFETY_FORM_URL =
@@ -388,6 +388,38 @@ export function getLatestEmployeeExamResult(empCode: string): GoogleFormExamResu
 
 
 const EXAM_RESULTS_LOCAL_STORAGE_KEY = 'car_orientation_exam_results_v2';
+const PRE_TEST_LOCK_LOCAL_STORAGE_KEY = 'car_pre_test_lock_status_v1';
+
+export const INITIAL_PRE_TEST_LOCK_MAP: PreTestLockMap = {
+  'EMP-1001': {
+    'SAFETY_ATTITUDE': true, // Closed by HR (Post-Test UNLOCKED)
+    'ORIENTATION': true,     // Closed by HR (Post-Test UNLOCKED)
+  },
+  'EMP-1002': {
+    'SAFETY_ATTITUDE': false, // Open (Post-Test LOCKED)
+    'ORIENTATION': false,    // Open (Post-Test LOCKED)
+  },
+};
+
+export function savePreTestLockStatusToLocalStorage(lockMap: PreTestLockMap): void {
+  try {
+    localStorage.setItem(PRE_TEST_LOCK_LOCAL_STORAGE_KEY, JSON.stringify(lockMap));
+  } catch (err) {
+    console.error('Failed to save Pre-Test lock status to localStorage:', err);
+  }
+}
+
+export function loadPreTestLockStatusFromLocalStorage(): PreTestLockMap {
+  try {
+    const saved = localStorage.getItem(PRE_TEST_LOCK_LOCAL_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (err) {
+    console.error('Failed to load Pre-Test lock status from localStorage:', err);
+  }
+  return INITIAL_PRE_TEST_LOCK_MAP;
+}
 
 export function saveExamResultsToLocalStorage(resultsMap: Record<string, GoogleFormExamResult[]>): void {
   try {

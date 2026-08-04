@@ -19,7 +19,7 @@ import {
   ArrowRight,
   ClipboardList,
 } from 'lucide-react';
-import type { Employee, GoogleFormExamResult, ExamType, ExamPhase } from '../types';
+import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap } from '../types';
 import {
   DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_GOOGLE_FORM_URL,
@@ -30,8 +30,10 @@ import {
   ensureAnswersDetail,
   getSampleGoogleAppsScriptCode,
   loadExamResultsFromLocalStorage,
+  loadPreTestLockStatusFromLocalStorage,
   parseExcelOrCsvFile,
   saveExamResultsToLocalStorage,
+  savePreTestLockStatusToLocalStorage,
 } from '../services/googleFormSync';
 
 interface ExamEngineProps {
@@ -61,6 +63,36 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [copiedCode, setCopiedCode] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
+
+  const isHR = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR';
+
+  // Pre-Test Lock Status Map
+  const [preTestLockMap, setPreTestLockMap] = useState<PreTestLockMap>(() =>
+    loadPreTestLockStatusFromLocalStorage()
+  );
+
+  const isPreTestClosed = Boolean(preTestLockMap[currentUser.empCode]?.[selectedExamType]);
+
+  const handleTogglePreTestLock = (empCode: string) => {
+    const currentStatus = Boolean(preTestLockMap[empCode]?.[selectedExamType]);
+    const updatedMap: PreTestLockMap = {
+      ...preTestLockMap,
+      [empCode]: {
+        ...(preTestLockMap[empCode] || {}),
+        [selectedExamType]: !currentStatus,
+      },
+    };
+    setPreTestLockMap(updatedMap);
+    savePreTestLockStatusToLocalStorage(updatedMap);
+    setImportStatusMessage(
+      `🔒 อัปเดตสถานะการสอบ ${selectedExamType === 'SAFETY_ATTITUDE' ? 'ทัศนคติความปลอดภัย' : 'ปฐมนิเทศ'} ของรหัส ${empCode}: ${
+        !currentStatus
+          ? 'ปิดการสอบก่อนอบรมแล้ว (เปิดรับการสอบหลังอบรมแล้ว ✅)'
+          : 'เปิดการสอบก่อนอบรมอยู่ (สอบหลังอบรมถูกล็อคอยู่ 🔒)'
+      }`
+    );
+    setTimeout(() => setImportStatusMessage(null), 5000);
+  };
 
   // Online Web Quiz State
   const [showOnlineQuizModal, setShowOnlineQuizModal] = useState(false);
@@ -158,6 +190,12 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
   // Start Online Web Quiz
   const handleStartOnlineQuiz = () => {
+    if (selectedPhase === 'POST_TEST' && !isPreTestClosed) {
+      alert(
+        '🔒 ไม่สามารถทำแบบทดสอบรอบหลังการอบรม (Post-Test) ได้:\n\nเจ้าหน้าที่ HR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะสามารถทำแบบทดสอบรอบหลังการอบรมและบันทึกผลได้ครับ'
+      );
+      return;
+    }
     setUserQuizAnswers({});
     setShowOnlineQuizModal(true);
   };
@@ -363,13 +401,13 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         {/* Divider */}
         <div style={{ height: 1, background: 'var(--border-color)', opacity: 0.6 }} />
 
-        {/* Row 2: Phase Switcher */}
+        {/* Row 2: Phase Switcher & HR Lock Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110 }}>
             <BookOpen size={16} /> รอบการสอบ:
           </span>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <button
               onClick={() => setSelectedPhase('PRE_TEST')}
               style={{
@@ -387,20 +425,41 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             </button>
 
             <button
-              onClick={() => setSelectedPhase('POST_TEST')}
+              onClick={() => {
+                if (!isPreTestClosed) {
+                  alert('🔒 รอบหลังการอบรม (Post-Test) ถูกล็อคอยู่:\nHR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะทำข้อสอบหลังอบรมได้ครับ');
+                }
+                setSelectedPhase('POST_TEST');
+              }}
               style={{
                 borderRadius: 10,
                 padding: '6px 16px',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                background: selectedPhase === 'POST_TEST' ? 'rgba(16, 185, 129, 0.15)' : 'transparent',
-                color: selectedPhase === 'POST_TEST' ? '#047857' : 'var(--text-muted)',
-                border: selectedPhase === 'POST_TEST' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
+                background: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)') : 'transparent',
+                color: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '#047857' : '#b91c1c') : 'var(--text-muted)',
+                border: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)') : '1px solid transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
               }}
             >
-              ✅ หลังการอบรม (Post-Test)
+              {isPreTestClosed ? '✅ หลังการอบรม (Post-Test)' : '🔒 หลังการอบรม (Post-Test - รอล็อคปิด Pre-Test)'}
             </button>
+
+            {/* HR Control: Toggle Pre-Test Lock Status */}
+            {isHR && (
+              <button
+                className={`btn btn-xs ${isPreTestClosed ? 'btn-secondary' : 'btn-warning'}`}
+                onClick={() => handleTogglePreTestLock(currentUser.empCode)}
+                style={{ borderRadius: 10, padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title="HR กดเพื่อปิดการสอบก่อนอบรมและปลดล็อคให้สอบหลังอบรม"
+              >
+                {isPreTestClosed ? <CheckCircle2 size={14} className="text-green" /> : <AlertTriangle size={14} />}
+                {isPreTestClosed ? '🔓 เปิดสอบหลังอบรมแล้ว (Pre-Test ปิดแล้ว)' : '🔒 HR กดปิดสอบก่อนอบรม (เพื่อเปิดสอบหลังอบรม)'}
+              </button>
+            )}
           </div>
 
           {/* Pre-Test vs Post-Test Progress Badge */}
@@ -668,8 +727,8 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                           <span className="badge badge-amber">ยังไม่ได้ทำข้อสอบ</span>
                         )}
                       </td>
-                      <td>
-                        {latest ? (
+                      <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {latest && (
                           <button
                             className="btn btn-xs btn-secondary"
                             onClick={() => {
@@ -679,9 +738,16 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                           >
                             <Eye size={14} /> ดูประวัติ & เฉลย
                           </button>
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>-</span>
                         )}
+
+                        <button
+                          className={`btn btn-xs ${preTestLockMap[emp.empCode]?.[selectedExamType] ? 'btn-secondary' : 'btn-warning'}`}
+                          onClick={() => handleTogglePreTestLock(emp.empCode)}
+                          style={{ borderRadius: 8, padding: '5px 10px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          title="HR สลับสถานะปิดก่อนอบรมเพื่อปลดล็อคการสอบหลังอบรม"
+                        >
+                          {preTestLockMap[emp.empCode]?.[selectedExamType] ? '🔓 ปิด Pre-Test แล้ว' : '🔒 HR กดปิด Pre-Test'}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -758,50 +824,63 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 </div>
               )}
 
-              {/* Itemized Question Answer Sheet */}
-              {(() => {
-                const detailedAnswers = ensureAnswersDetail(viewingResult);
-                return (
-                  <>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>
-                      📋 รายการคำตอบและข้อที่ตอบผิด ({detailedAnswers.length} ข้อ):
-                    </h4>
+              {/* Itemized Question Answer Sheet (HR ONLY) */}
+              {!isHR ? (
+                <div style={{ padding: 24, textAlign: 'center', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.3)', marginTop: 12 }}>
+                  <ShieldCheck size={36} className="text-amber" style={{ marginBottom: 10 }} />
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.05rem', color: '#b45309', fontWeight: 700 }}>
+                    🔒 สิทธิ์การเปิดดูเฉลยและข้อที่ตอบผิดถูกจำกัด
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    ระบบเปิดให้เฉพาะเจ้าหน้าที่ <strong>HR / Admin</strong> เป็นผู้เปิดดูและทบทวนรายละเอียดเฉลยคำตอบเพื่อความสุจริตของแบบทดสอบ<br />
+                    หากต้องการทบทวนคำตอบข้อที่สงสัย สามารถติดต่อเจ้าหน้าที่ HR เพื่อขอคำแนะนำเพิ่มเติมได้ครับ
+                  </p>
+                </div>
+              ) : (
+                (() => {
+                  const detailedAnswers = ensureAnswersDetail(viewingResult);
+                  return (
+                    <>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>
+                        📋 รายการคำตอบและข้อที่ตอบผิด ({detailedAnswers.length} ข้อ):
+                      </h4>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {detailedAnswers.map((q, idx) => (
-                        <div
-                          key={q.questionNo || idx}
-                          style={{
-                            padding: 14,
-                            borderRadius: 12,
-                            background: q.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
-                            border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                              {q.questionText}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {detailedAnswers.map((q, idx) => (
+                          <div
+                            key={q.questionNo || idx}
+                            style={{
+                              padding: 14,
+                              borderRadius: 12,
+                              background: q.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
+                              border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                                {q.questionText}
+                              </div>
+                              <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
+                                {q.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
+                              </span>
                             </div>
-                            <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
-                              {q.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
-                            </span>
-                          </div>
 
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
-                          </div>
-
-                          {!q.isCorrect && (
-                            <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
-                              เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
+
+                            {!q.isCorrect && (
+                              <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
+                                เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              )}
             </div>
 
             {/* Modal Footer */}

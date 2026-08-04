@@ -225,6 +225,7 @@ export interface ExamSubmission {
 
 export type ExamType = 'SAFETY_ATTITUDE' | 'ORIENTATION';
 export type ExamPhase = 'PRE_TEST' | 'POST_TEST';
+export type PreTestLockMap = Record<string, Record<ExamType, boolean>>;
 
 export interface GoogleFormQuestionDetail {
   questionNo: number;
@@ -249,6 +250,7 @@ export interface GoogleFormExamResult {
   source: 'GOOGLE_FORMS' | 'ONLINE_WEB';
   examType?: ExamType;
   phase?: ExamPhase;
+  preTestClosed?: boolean;
 }
 
 export interface NotificationItem {
