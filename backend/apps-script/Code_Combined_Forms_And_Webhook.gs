@@ -459,7 +459,7 @@ function doGet(e) {
           attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
 
           results.push({
-            id: 'gas-' + sheet.getId() + '-' + i,
+            id: 'gas-' + ss.getId() + '-' + sheet.getSheetId() + '-' + i,
             attemptNumber: attemptCounter[empCode],
             submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
             empCode: empCode,
