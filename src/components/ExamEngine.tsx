@@ -99,8 +99,13 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [showOnlineQuizModal, setShowOnlineQuizModal] = useState(false);
   const [userQuizAnswers, setUserQuizAnswers] = useState<Record<number, string>>({});
 
-  // Dynamic Exam Results Map
+  // Dynamic Exam Results Map (100% Real Live Google Sheet / Form Data Only)
   const [examResultsMap, setExamResultsMap] = useState<Record<string, GoogleFormExamResult[]>>(() => {
+    if (!localStorage.getItem('hrskill_zero_mock_v1')) {
+      localStorage.removeItem('hrskill_google_form_exam_results_v1');
+      localStorage.setItem('hrskill_zero_mock_v1', 'true');
+      return {};
+    }
     return loadExamResultsFromLocalStorage();
   });
 
