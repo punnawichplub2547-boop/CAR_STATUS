@@ -4,6 +4,9 @@ import * as XLSX from 'xlsx';
 export const DEFAULT_GOOGLE_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSdwlTwGNNMrvtcYBt9aEFmxSF2NiT7AzOGf0_jFlorzXqtH7g/viewform';
 
+export const DEFAULT_APPS_SCRIPT_URL =
+  'https://script.google.com/macros/s/AKfycbyz-Vdq9YI6Fkyxtf1KZKaYwCvtlk-zkiFxDCDZ6tIy9hFc6n4QHQB2phcNEmJ5KXz9/exec';
+
 export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> = {
   'EMP-1001': [
     {

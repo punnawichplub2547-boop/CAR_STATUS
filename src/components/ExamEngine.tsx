@@ -17,10 +17,12 @@ import {
 } from 'lucide-react';
 import type { Employee, GoogleFormExamResult } from '../types';
 import {
+  DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_GOOGLE_FORM_URL,
   getSampleGoogleAppsScriptCode,
   loadExamResultsFromLocalStorage,
   parseExcelOrCsvFile,
+  saveExamResultsToLocalStorage,
 } from '../services/googleFormSync';
 
 interface ExamEngineProps {
@@ -37,7 +39,11 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     return saved;
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(() => {
-    return localStorage.getItem('hrskill_apps_script_url') || '';
+    const saved = localStorage.getItem('hrskill_apps_script_url');
+    if (!saved) {
+      return DEFAULT_APPS_SCRIPT_URL;
+    }
+    return saved;
   });
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -87,24 +93,32 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     }
   };
 
-  // Sync Logic simulation / Live API fetch
+  // Sync Logic / Live Apps Script Fetch
   const handleSyncData = async () => {
     setIsSyncing(true);
-    if (appsScriptUrl) {
+    const targetUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    if (targetUrl) {
       try {
-        const res = await fetch(`${appsScriptUrl}?empCode=`);
-        const json = await res.json();
-        if (json.status === 'success' && json.results) {
-          const newMap: Record<string, GoogleFormExamResult[]> = { ...examResultsMap };
-          json.results.forEach((item: GoogleFormExamResult) => {
-            if (!newMap[item.empCode]) newMap[item.empCode] = [];
-            const idx = newMap[item.empCode].findIndex((r) => r.attemptNumber === item.attemptNumber);
-            if (idx >= 0) newMap[item.empCode][idx] = item;
-            else newMap[item.empCode].push(item);
-          });
-          setExamResultsMap(newMap);
-          setImportStatusMessage('✅ ซิงค์ข้อมูลล่าสุดจาก Google Apps Script API สำเร็จ!');
-          setTimeout(() => setImportStatusMessage(null), 4000);
+        const res = await fetch(`${targetUrl}?empCode=`);
+        const text = await res.text();
+        if (text.startsWith('{')) {
+          const json = JSON.parse(text);
+          if (json.status === 'success' && json.results) {
+            const newMap: Record<string, GoogleFormExamResult[]> = { ...examResultsMap };
+            json.results.forEach((item: GoogleFormExamResult) => {
+              if (!newMap[item.empCode]) newMap[item.empCode] = [];
+              const idx = newMap[item.empCode].findIndex((r) => r.attemptNumber === item.attemptNumber);
+              if (idx >= 0) newMap[item.empCode][idx] = item;
+              else newMap[item.empCode].push(item);
+            });
+            setExamResultsMap(newMap);
+            saveExamResultsToLocalStorage(newMap);
+            setImportStatusMessage(`✅ ซิงค์ข้อมูลล่าสุดสำเร็จ! พบข้อมูลทั้งสิ้น ${json.totalRecords || 0} รายการ`);
+            setTimeout(() => setImportStatusMessage(null), 5000);
+          }
+        } else {
+          setImportStatusMessage('⚠️ ติดสิทธิ์การเข้าถึง Google: โปรดตรวจสอบว่าใน Apps Script ตั้งค่า "ผู้มีสิทธิ์เข้าถึง" เป็น "ทุกคน (Anyone)" แล้วกด Deploy ใหม่');
+          setTimeout(() => setImportStatusMessage(null), 8000);
         }
       } catch (err) {
         console.error('Apps Script Sync Error:', err);
