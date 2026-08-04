@@ -369,114 +369,119 @@ function createOrientationGoogleForm() {
 // ==============================================================================
 function doGet(e) {
   try {
-    let ss = null;
+    const allSheetsToRead = [];
+
+    // 1. Check active spreadsheet (container-bound)
     try {
-      ss = SpreadsheetApp.getActiveSpreadsheet();
-    } catch (e1) {
-      ss = null;
+      const activeSs = SpreadsheetApp.getActiveSpreadsheet();
+      if (activeSs) {
+        allSheetsToRead.push(activeSs);
+      }
+    } catch (err) {
+      // Standalone script
     }
 
-    if (!ss) {
-      const sheetId = (e && e.parameter && e.parameter.sheetId) ? e.parameter.sheetId : null;
-      if (sheetId) {
-        ss = SpreadsheetApp.openById(sheetId);
-      } else {
-        const files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
-        while (files.hasNext()) {
-          const file = files.next();
-          const fname = file.getName();
-          if (fname.includes("ตอบกลับ") || fname.includes("CAR") || fname.includes("ทัศนคติ") || fname.includes("ปฐมนิเทศ")) {
-            ss = SpreadsheetApp.open(file);
-            break;
+    // 2. Search Google Drive for all response Google Sheets
+    const files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
+    while (files.hasNext()) {
+      const file = files.next();
+      const fname = file.getName();
+      if (fname.includes("ตอบกลับ") || fname.includes("CAR") || fname.includes("ทัศนคติ") || fname.includes("ปฐมนิเทศ") || fname.includes("Form") || fname.includes("HR14")) {
+        try {
+          const opened = SpreadsheetApp.open(file);
+          if (opened && !allSheetsToRead.some(s => s.getId() === opened.getId())) {
+            allSheetsToRead.push(opened);
           }
-        }
-        if (!ss) {
-          const allSheets = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
-          if (allSheets.hasNext()) {
-            ss = SpreadsheetApp.open(allSheets.next());
-          }
-        }
+        } catch (err) {}
       }
     }
-
-    if (!ss) {
-      return ContentService.createTextOutput(JSON.stringify({
-        status: 'success',
-        totalRecords: 0,
-        results: [],
-        message: 'ยังไม่พบข้อมูล Google Sheet ที่ผูกกับแบบสอบถาม'
-      })).setMimeType(ContentService.MimeType.JSON);
-    }
-
-    const sheet = ss.getActiveSheet();
-    const rows = sheet.getDataRange().getValues();
-    const attemptCounter = {};
 
     const results = [];
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || !row[0]) continue;
 
-      const rawScore = String(row[1] || '0');
-      const scoreMatch = rawScore.match(/^(\d+)/);
-      const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+    allSheetsToRead.forEach(function(ss) {
+      const sheets = ss.getSheets();
+      sheets.forEach(function(sheet) {
+        const rows = sheet.getDataRange().getValues();
+        if (!rows || rows.length < 2) return;
 
-      const empCode = String(row[2] || "").trim();
-      if (!empCode) continue;
+        // Dynamic Header Detection
+        const header = rows[0].map(function(h) { return String(h || '').trim().toLowerCase(); });
+        let empIdx = header.findIndex(function(h) { return h.includes('รหัส') || h.includes('emp'); });
+        let scoreIdx = header.findIndex(function(h) { return h.includes('คะแนน') || h.includes('score'); });
+        let nameIdx = header.findIndex(function(h) { return h.includes('ชื่อ') || h.includes('name'); });
+        let deptIdx = header.findIndex(function(h) { return h.includes('แผนก') || h.includes('dept'); });
+        let phaseIdx = header.findIndex(function(h) { return h.includes('รอบ') || h.includes('phase') || h.includes('ก่อน') || h.includes('หลัง'); });
 
-      const employeeName = String(row[3] || "").trim();
-      const department = String(row[4] || "").trim();
-      const phaseText = String(row[5] || "");
-      const isPreTest = phaseText.includes("ก่อน");
+        if (empIdx === -1 && rows[0].length >= 3) empIdx = 2;
+        if (scoreIdx === -1 && rows[0].length >= 2) scoreIdx = 1;
+        if (nameIdx === -1 && rows[0].length >= 4) nameIdx = 3;
+        if (deptIdx === -1 && rows[0].length >= 5) deptIdx = 4;
+        if (phaseIdx === -1 && rows[0].length >= 6) phaseIdx = 5;
 
-      // Auto-detect question count based on remaining columns (from index 6 onwards)
-      const questionColsCount = Math.max(0, row.length - 6);
-      const isSafety = questionColsCount <= 14;
-      const totalQuestions = isSafety ? 14 : 30;
-      const percentage = Math.round((scoreNum / totalQuestions) * 100);
-      const isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
+        const attemptCounter = {};
 
-      attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (!row || !row[0]) continue;
 
-      const answersDetail = [];
-      for (let col = 6; col < row.length; col++) {
-        const qNo = col - 5;
-        answersDetail.push({
-          questionNo: qNo,
-          questionText: "ข้อที่ " + qNo,
-          userAnswer: String(row[col] || ""),
-          correctAnswer: "ดูในเฉลย Google Form",
-          isCorrect: true
-        });
-      }
+          const empCode = String(row[empIdx] || '').trim().toUpperCase();
+          if (!empCode) continue;
 
-      results.push({
-        id: 'gas-row-' + i,
-        attemptNumber: attemptCounter[empCode],
-        submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
-        empCode: empCode,
-        employeeName: employeeName,
-        department: department,
-        score: scoreNum,
-        totalQuestions: totalQuestions,
-        percentage: percentage,
-        isPassed: isPassed,
-        source: 'GOOGLE_FORMS',
-        examType: isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION',
-        phase: isPreTest ? 'PRE_TEST' : 'POST_TEST',
-        answersDetail: answersDetail
+          const rawScore = String(row[scoreIdx] || '0');
+          const scoreMatch = rawScore.match(/^(\d+)/);
+          const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
+
+          const employeeName = nameIdx !== -1 ? String(row[nameIdx] || '').trim() : '';
+          const department = deptIdx !== -1 ? String(row[deptIdx] || '').trim() : '';
+          const phaseText = phaseIdx !== -1 ? String(row[phaseIdx] || '') : '';
+          const isPreTest = phaseText.includes('ก่อน') || phaseText.toUpperCase().includes('PRE');
+
+          // Auto-detect total questions from score string (e.g., 6/14) or column count
+          const slashMatch = rawScore.match(/\/(\d+)/);
+          let totalQuestions = 30;
+          if (slashMatch) {
+            totalQuestions = parseInt(slashMatch[1], 10);
+          } else {
+            const colCount = Math.max(0, row.length - 6);
+            totalQuestions = colCount <= 14 ? 14 : 30;
+          }
+
+          const isSafety = totalQuestions <= 14;
+          const percentage = Math.round((scoreNum / totalQuestions) * 100);
+          const isPassed = isSafety ? scoreNum >= 12 : scoreNum >= 24;
+
+          attemptCounter[empCode] = (attemptCounter[empCode] || 0) + 1;
+
+          results.push({
+            id: 'gas-' + sheet.getId() + '-' + i,
+            attemptNumber: attemptCounter[empCode],
+            submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
+            empCode: empCode,
+            employeeName: employeeName,
+            department: department,
+            score: scoreNum,
+            totalQuestions: totalQuestions,
+            percentage: percentage,
+            isPassed: isPassed,
+            source: 'GOOGLE_FORMS',
+            examType: isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION',
+            phase: isPreTest ? 'PRE_TEST' : 'POST_TEST',
+            answersDetail: []
+          });
+        }
       });
-    }
+    });
 
-    const payload = JSON.stringify({
+    return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
       totalRecords: results.length,
       results: results
-    });
+    })).setMimeType(ContentService.MimeType.JSON);
 
-    return ContentService.createTextOutput(payload).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'error',
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 }
