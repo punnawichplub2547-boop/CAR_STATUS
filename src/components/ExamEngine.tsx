@@ -168,14 +168,17 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               const newMap: Record<string, GoogleFormExamResult[]> = { ...prevMap };
               let updatedCount = 0;
               json.results.forEach((item: GoogleFormExamResult) => {
-                if (!newMap[item.empCode]) newMap[item.empCode] = [];
-                const idx = newMap[item.empCode].findIndex(
+                const empCode = (item.empCode || '').trim().toUpperCase();
+                if (!empCode) return;
+                const normalizedItem = { ...item, empCode };
+                if (!newMap[empCode]) newMap[empCode] = [];
+                const idx = newMap[empCode].findIndex(
                   (r) => r.attemptNumber === item.attemptNumber && r.examType === item.examType && r.phase === item.phase
                 );
                 if (idx >= 0) {
-                  newMap[item.empCode][idx] = item;
+                  newMap[empCode][idx] = normalizedItem;
                 } else {
-                  newMap[item.empCode].push(item);
+                  newMap[empCode].push(normalizedItem);
                   updatedCount++;
                 }
               });
