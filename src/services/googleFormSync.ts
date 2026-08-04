@@ -2,10 +2,10 @@ import type { GoogleFormExamResult, PreTestLockMap, ExamType, ExamPhase } from '
 import * as XLSX from 'xlsx';
 
 export const DEFAULT_SAFETY_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSeJe2ML2M96vJsjwzkbnOxlP9Fgb38-QHRH6WXgTclIw4ANUg/viewform';
+  'https://docs.google.com/forms/d/e/1FAIpQLSeeN4En-RK89jp7siyulMa5wETaEslsjab6SYRqAkivbqnbxQ/viewform';
 
 export const DEFAULT_ORIENTATION_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSePpjkzTp7Fm6oE1Ri636x2BBHeNlGB8pNffDJ1Pg66lWkKaQ/viewform';
+  'https://docs.google.com/forms/d/e/1FAIpQLSdp8RptuiNYlHxiN4qChHDqxKnXra32PxtWR0DYXEBowDW5Pw/viewform';
 
 export const DEFAULT_GOOGLE_FORM_URL = DEFAULT_SAFETY_FORM_URL;
 
