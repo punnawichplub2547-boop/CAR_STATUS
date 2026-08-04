@@ -25,10 +25,11 @@ import {
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
   INITIAL_ATTENDANCES,
+  EXAM_QUESTIONS,
   INITIAL_NOTIFICATIONS,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, TrainingAttendance, NotificationItem } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, TrainingAttendance, NotificationItem, ExamSubmission } from './types';
 
 function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
@@ -203,6 +204,18 @@ export function App() {
     );
   };
 
+  const handleSaveExamSubmission = (sub: ExamSubmission) => {
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}`,
+      title: sub.isPassed ? 'สอบปฐมนิเทศผ่านเกณฑ์' : 'สอบปฐมนิเทศไม่ผ่านเกณฑ์',
+      message: `${sub.employeeName} ทำแบบทดสอบได้ ${sub.score}/${sub.totalQuestions} คะแนน (${sub.percentage}%)`,
+      type: 'EXAM_PASSED',
+      date: new Date().toISOString().split('T')[0],
+      read: false,
+    };
+    setNotifications([newNotif, ...notifications]);
+  };
+
   const expiringCertsCount = certificates.filter((c) => {
     const status = computeCertificateStatus(c.expiryDate);
     return status === 'EXPIRING_SOON' || status === 'EXPIRED';
@@ -297,8 +310,9 @@ export function App() {
 
           {activeTab === 'exam' && (
             <ExamEngine
+              questions={EXAM_QUESTIONS}
               currentUser={currentUser}
-              employees={employees}
+              onSaveSubmission={handleSaveExamSubmission}
             />
           )}
 

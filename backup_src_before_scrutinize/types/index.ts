@@ -223,34 +223,11 @@ export interface ExamSubmission {
   submittedAt: string;
 }
 
-export interface GoogleFormQuestionDetail {
-  questionNo: number;
-  questionText: string;
-  userAnswer: string;
-  correctAnswer: string;
-  isCorrect: boolean;
-}
-
-export interface GoogleFormExamResult {
-  id: string;
-  attemptNumber: number;
-  submittedAt: string;
-  empCode: string;
-  employeeName: string;
-  department: string;
-  score: number; // e.g. 26 out of 30
-  totalQuestions: number; // 30
-  percentage: number; // Math.round((score / 30) * 100)
-  isPassed: boolean; // score >= 24
-  answersDetail: GoogleFormQuestionDetail[];
-  source: 'GOOGLE_FORMS';
-}
-
 export interface NotificationItem {
   id: string;
   title: string;
   message: string;
-  type: 'PROBATION_DUE' | 'CERT_EXPIRING' | 'SKILL_EVAL_DUE' | 'EXAM_PASSED' | 'EXAM_FAILED';
+  type: 'PROBATION_DUE' | 'CERT_EXPIRING' | 'SKILL_EVAL_DUE' | 'EXAM_PASSED';
   date: string;
   read: boolean;
   actionUrl?: string;

@@ -95,7 +95,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'exam',
       label: 'ข้อสอบปฐมนิเทศออนไลน์',
       icon: FileCheck2,
-      badge: 'Google Forms',
+      badge: '30 ข้อ',
       badgeColor: 'badge-purple',
     },
     {
