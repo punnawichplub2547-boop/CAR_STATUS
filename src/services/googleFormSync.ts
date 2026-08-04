@@ -736,7 +736,7 @@ export async function parseExcelOrCsvFile(file: File): Promise<{
     const scoreMatch = rawScore.match(/^(\d+)/);
     const scoreNum = scoreMatch ? parseInt(scoreMatch[1], 10) : 0;
 
-    const empCode = String(row[empIdx] || '').trim();
+    const empCode = String(row[empIdx] || '').trim().toUpperCase();
     if (!empCode) continue;
 
     const employeeName = String(row[nameIdx] || '').trim();

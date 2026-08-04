@@ -214,7 +214,8 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
   // Helper functions using state
   const getEmployeeExamResults = (empCode: string): GoogleFormExamResult[] => {
-    return examResultsMap[empCode] || [];
+    const key = (empCode || '').trim().toUpperCase();
+    return examResultsMap[key] || examResultsMap[empCode] || [];
   };
 
   // Start Online Web Quiz
