@@ -1494,13 +1494,24 @@ th.sticky-col {
   object-fit: contain;
 }
 
+.login-company-fullname {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #0f172a;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+  text-align: center;
+  line-height: 1.35;
+}
+
 .login-eyebrow {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   color: #1560d0;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .login-title {

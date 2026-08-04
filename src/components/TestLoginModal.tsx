@@ -63,17 +63,6 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
       />
       <div className="login-bg-overlay"></div>
 
-      {/* Brand mark top-left */}
-      <div className="login-brand-header">
-        <div className="login-brand-logo">
-          <img src="/assets/car-logo.png" alt="CAR Logo" className="brand-img" />
-        </div>
-        <div className="login-brand-text">
-          <span className="brand-title">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</span>
-          <span className="brand-subtitle">Skill Management & Orientation System</span>
-        </div>
-      </div>
-
       {/* Top-Right Exit Button */}
       <button className="login-close-btn" onClick={onClose} title="ปิดหน้าต่างทดสอบ">
         <X size={18} /> ปิดหน้าต่างทดสอบ
@@ -85,9 +74,10 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
           <div className="login-logo-pop">
             <img src="/assets/car-logo.png" alt="CAR Logo" />
           </div>
-          <div className="login-eyebrow">Skill Management Portal</div>
+          <div className="login-company-fullname">COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
+          <div className="login-eyebrow">Skill Management & Orientation System</div>
           <h1 className="login-title">เข้าสู่ระบบ</h1>
-          <p className="login-desc">ระบบบริหารทักษะความสามารถพนักงาน (F-HR-014 & Orientation)</p>
+          <p className="login-desc">ระบบบริหารทักษะความสามารถพนักงาน (F-HR-014)</p>
         </div>
 
         {loginAlert && (
