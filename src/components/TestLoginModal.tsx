@@ -82,6 +82,9 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
       {/* Centered Glass Login Card */}
       <div className="login-glass-card">
         <div className="login-card-header">
+          <div className="login-logo-pop">
+            <img src="/assets/car-logo.png" alt="CAR Logo" />
+          </div>
           <div className="login-eyebrow">Skill Management Portal</div>
           <h1 className="login-title">เข้าสู่ระบบ</h1>
         </div>
