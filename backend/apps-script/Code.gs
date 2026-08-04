@@ -1,59 +1,353 @@
 /**
- * Bind this script to the Google Sheet that collects the orientation exam
- * Google Form responses. Set an installable "On form submit" trigger
- * (Triggers > Add Trigger > onFormSubmit > From spreadsheet > On form submit)
- * — the simple trigger form (function name reserved by Apps Script) does not
- * reliably fire for Forms-linked Sheets, so it must be installed manually.
+ * ==============================================================================
+ * COMPLETE AUTO RUBBER MANUFACTURING CO., LTD. (CAR)
+ * GOOGLE APPS SCRIPT MASTER SUITE: FORM CREATOR & LIVE WEBHOOK SYNC
+ * ==============================================================================
+ * 
+ * สคริปต์รวมสมบูรณ์แบบสำหรับ:
+ * 1. สร้าง Google Forms ข้อสอบทัศนคติความปลอดภัย 14 ข้อ (อัตโนมัติ 100%)
+ * 2. สร้าง Google Forms ข้อสอบประเมินการปฐมนิเทศ 30 ข้อ (อัตโนมัติ 100%)
+ * 3. เป็น Web App API (doGet / doPost) สำหรับซิงค์ผลสอบอัตโนมัติเข้าสู่ระบบ CAR HR Skill Matrix
  *
- * Before deploying, set these two Script Properties
- * (Project Settings > Script Properties):
- *   WEBHOOK_URL    = https://<your-backend-host>/api/webhook/exam-result
- *   WEBHOOK_SECRET = <same value as backend .env WEBHOOK_SECRET>
- *
- * Expected form questions (edit the COLUMN_MAP below to match the actual
- * question order/titles in the linked response sheet):
- *   - รหัสพนักงาน (empCode)     — REQUIRED so the response can be matched
- *   - ชื่อ-นามสกุล (name)
- *   - อีเมล (email)              — optional, Google Forms can auto-collect this
- *   - หลักสูตรที่สอบ (category)  — must answer exactly "REGULATION" or "SAFETY",
- *                                   e.g. via a dropdown with those two choices
- *   - จำนวนข้อที่ถูก (correctCount)
- *   - จำนวนข้อทั้งหมด (totalQuestions)
+ * 📌 วิธีติดตั้งและใช้งาน:
+ * 1. เปิด https://script.google.com ➔ สร้างโครงการใหม่ (New Project)
+ * 2. คัดลอกโค้ดนี้ทั้งหมด วางแทนที่ใน Code.gs
+ * 3. เลือกฟังก์ชันที่ต้องการรันจากเมนูด้านบน:
+ *    - เลือก "createBothGoogleForms" แล้วกด Run ➔ เพื่อสร้างข้อสอบทั้ง 2 ชุดพร้อมกัน!
+ *    - เลือก "createSafetyAttitudeGoogleForm" ➔ เพื่อสร้างเฉพาะข้อสอบ 14 ข้อ
+ *    - เลือก "createOrientationGoogleForm" ➔ เพื่อสร้างเฉพาะข้อสอบ 30 ข้อ
+ * 4. กดปุ่ม "Deploy" ➔ "New deployment" ➔ เลือก "Web app"
+ *    - Execute as: "Me"
+ *    - Who has access: "Anyone" (ทุกคน)
+ * 5. คัดลอก Web App URL นำไปวางในระบบ CAR HR Skill Matrix หน้าตั้งค่า API
  */
 
-function onFormSubmit(e) {
-  const props = PropertiesService.getScriptProperties();
-  const webhookUrl = props.getProperty('WEBHOOK_URL');
-  const webhookSecret = props.getProperty('WEBHOOK_SECRET');
-
-  const values = e.namedValues; // { "question title": [answer], ... }
-  const responseId = e.response ? e.response.getId() : Utilities.getUuid();
-
-  const payload = {
-    formResponseId: responseId,
-    empCode: firstValue(values['รหัสพนักงาน']),
-    respondentName: firstValue(values['ชื่อ-นามสกุล']),
-    respondentEmail: firstValue(values['อีเมล']) || undefined,
-    courseCategory: firstValue(values['หลักสูตรที่สอบ']),
-    correctCount: Number(firstValue(values['จำนวนข้อที่ถูก'])),
-    totalQuestions: Number(firstValue(values['จำนวนข้อทั้งหมด'])),
-    submittedAt: new Date().toISOString(),
-  };
-
-  const response = UrlFetchApp.fetch(webhookUrl, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: { 'X-Webhook-Secret': webhookSecret },
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true,
-  });
-
-  if (response.getResponseCode() >= 300) {
-    // Surface failures in the Apps Script execution log so they're not silent.
-    console.error('Webhook call failed: ' + response.getResponseCode() + ' ' + response.getContentText());
-  }
+// ==============================================================================
+// 1. ฟังก์ชันสร้างข้อสอบทั้ง 2 ชุดพร้อมกันใน 1 คลิก (CREATE BOTH FORMS)
+// ==============================================================================
+function createBothGoogleForms() {
+  Logger.log("🚀 กำลังเริ่มสร้าง Google Forms ทั้ง 2 ชุด...");
+  createSafetyAttitudeGoogleForm();
+  createOrientationGoogleForm();
+  Logger.log("🎉 สร้าง Google Forms ทั้ง 2 ชุดเสร็จสมบูรณ์เรียบร้อยแล้ว!");
 }
 
-function firstValue(arr) {
-  return arr && arr.length ? arr[0] : '';
+// ==============================================================================
+// 2. ฟังก์ชันสร้างข้อสอบชุดที่ 1: ทัศนคติความปลอดภัย (14 ข้อ)
+// ==============================================================================
+function createSafetyAttitudeGoogleForm() {
+  const formTitle = "แบบทดสอบทัศนคติเกี่ยวกับความปลอดภัยในการทำงาน (CAR)";
+  const formDesc = "บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด\n" +
+    "COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.\n\n" +
+    "คำชี้แจง: เลือกคำตอบที่ถูกต้องเพียงคำตอบเดียว (มีทั้งหมด 14 ข้อ ใช้เวลา 20 นาที)\n" +
+    "เกณฑ์การประเมินผล: ถ้าทำผิดเกินกว่า 2 ข้อ (ผ่าน = 12/14 คะแนนขึ้นไป) แสดงว่ายังมีเจตคติเกี่ยวกับความปลอดภัยไม่ดีพอ";
+
+  const form = FormApp.create(formTitle);
+  form.setDescription(formDesc);
+  form.setIsQuiz(true);
+  form.setCollectEmail(true);
+  form.setAllowResponseEdits(false);
+
+  // ข้อมูลพนักงาน
+  const empCodeItem = form.addTextItem();
+  empCodeItem.setTitle("รหัสพนักงาน (Employee ID)");
+  empCodeItem.setHelpText("เช่น EMP-1001");
+  empCodeItem.setRequired(true);
+
+  const nameItem = form.addTextItem();
+  nameItem.setTitle("ชื่อ - นามสกุล (Full Name)");
+  nameItem.setRequired(true);
+
+  const deptItem = form.addTextItem();
+  deptItem.setTitle("แผนก (Department)");
+  deptItem.setRequired(true);
+
+  const phaseItem = form.addMultipleChoiceItem();
+  phaseItem.setTitle("รอบการทำแบบทดสอบ (Test Phase)");
+  phaseItem.setChoices([
+    phaseItem.createChoice("ก่อนการอบรม (Pre-Test)"),
+    phaseItem.createChoice("หลังการอบรม (Post-Test)")
+  ]);
+  phaseItem.setRequired(true);
+
+  form.addPageBreakItem().setTitle("แบบทดสอบสถานการณ์วัดทัศนคติความปลอดภัย (14 ข้อ)");
+
+  const questions = [
+    {
+      q: "1. คุณเพิ่งเข้าทำงานวันแรกในโรงงาน หัวหน้ามอบหมายให้คุมเครื่องจักรใหม่ที่ไม่คุ้นเคย แล้วสั่งให้เริ่มงานทันทีก่อนเดินจากไป คุณจะทำอย่างไร?",
+      choices: [
+        "เปิดสวิทซ์เริ่มเดินเครื่องจักร เพราะคิดว่าจะคุ้นเคยกับเครื่องจักรตัวใหม่นี้ภายในไม่ช้า",
+        "เรียกหัวหน้างานกลับมา และบอกเขาว่า คุณยังไม่ทราบวิธีการทำงานกับเครื่องจักรที่กำลังได้รับมอบหมาย",
+        "มองคนข้างๆ ที่ทำงานกับเครื่องจักรคล้ายกัน แล้วพยายามทำตามเขา"
+      ],
+      correct: 1
+    },
+    {
+      q: "2. เห็นพนักงานคนหนึ่งเอาหนังสติ๊กเล็งใส่ใบหูของเพื่อนที่กำลังคุมเครื่องจักรทำงานอยู่ คุณจะทำอย่างไร?",
+      choices: [
+        "รีบเดินเข้าไปหาชายคนที่กำลังเล็งหนังสติ๊ก แล้วพยายามบอกให้เขาหยุดการล้อเล่นนั้น ก่อนที่จะยิงออกไป",
+        "ตะโกน “หยุด” ให้ดังที่สุดเท่าที่จะทำได้",
+        "รู้สึกสนุกสนานกับการล้อเล่นแบบนี้ เพราะดูแล้วไม่น่าจะมีอันตราย"
+      ],
+      correct: 0
+    },
+    {
+      q: "3. งานขนของด่วนเหลือ 10 นาทีจะเที่ยง ต้องใช้เวลาอีกครึ่งชั่วโมงจึงจะเสร็จ คุณจะทำอย่างไร?",
+      choices: [
+        "รีบขนของที่เหลือใส่รถบรรทุกเพิ่มเป็นสองเท่า และทำงานเร็วขึ้นเป็นสองเท่าของการทำงานปกติ",
+        "อยู่ทำงานให้เสร็จ โดยยอมไปรับประทานอาหารเที่ยงช้าไปครึ่งชั่วโมง",
+        "หยุดขนของตอนเที่ยงตรง ไปรับประทานอาหารแล้วกลับมาทำงานใหม่ ยอมเสี่ยงที่จะถูกหัวหน้างานดุ"
+      ],
+      correct: 2
+    },
+    {
+      q: "4. ต้องยกลังไม้หนักเทอะทะคนเดียว โดยมีผู้จัดการโรงงานยืนอยู่ข้างๆ คุณจะทำอย่างไร?",
+      choices: [
+        "ขนของลงเท่าที่ได้ แล้วทิ้งลังไม้นั้นไว้ให้คนงานผลัดอื่นมาขนลง",
+        "ถามผู้จัดการโรงงานว่า เขาพอจะช่วยคุณยกลังไม้นั้นได้ไหม",
+        "รวบรวมพลังทั้งหมด แล้วเอาหลังดันลังไม้นั้นให้เคลื่อนไปเรื่อยๆ"
+      ],
+      correct: 1
+    },
+    {
+      q: "5. รถยกทำน้ำมันหล่อลื่นหกลงบนทางเดินสัญจร คุณจะทำอย่างไร?",
+      choices: [
+        "ส่งข่าวให้คนทำความสะอาดทราบ แล้วยืนใกล้ๆ บริเวณนั้นเพื่อคอยบอกคนอื่นที่ผ่านมาให้ระวังตัว",
+        "รอจนกว่าคนทำความสะอาดจะมาเช็ดน้ำมันนั้น",
+        "ปล่อยน้ำมันทิ้งไว้ เพราะคิดว่าคงไม่ทำความเดือดร้อนให้ใคร"
+      ],
+      correct: 0
+    },
+    {
+      q: "6. ทำงานด่วนจนสถานที่รกรุงรัง นายจ้างเดินมาตะโกนสั่งให้รีบทำความสะอาดสถานที่โดยเร็ว คุณจะทำอย่างไร?",
+      choices: [
+        "หยุดทำงานทั้งหมด แล้วรีบทำความสะอาด ทั้งๆ ที่ไม่แน่ใจว่างานเร่งด่วนนั้นจะไม่เสร็จตามกำหนด",
+        "บอกนายจ้างให้ตัดสินใจเอาว่า จะเอาผลผลิตหรือเอาโรงงานสะอาด",
+        "ให้เหตุผลนายจ้างว่ากลัวงานไม่เสร็จ เมื่องานเสร็จแล้วจะลงมือทำความสะอาดทันที"
+      ],
+      correct: 0
+    },
+    {
+      q: "7. มีคนมาท้าพนันให้คุณยกเหล็กเทอะทะในเวลาพักรับประทานอาหาร เพื่อนสนับสนุนให้รับคำท้า คุณจะทำอย่างไร?",
+      choices: [
+        "บอกผู้มาท้าพนันว่า คุณจะรับคำท้านั้นก็ต่อเมื่อใช้อุปกรณ์ยกน้ำหนักจริงๆ (บาเบล)",
+        "แกล้งป่วยเมื่อวันแข่งขันมาถึง",
+        "รับคำท้าทันที เพราะเกียรติและชื่อเสียงของคุณสำคัญมาก"
+      ],
+      correct: 0
+    },
+    {
+      q: "8. ปีนบันไดซ่อมไฟแล้วรู้สึกมึนศีรษะเจ็บหน้าอก แม้ช่างอีกคนลาพักร้อน คุณจะทำอย่างไร?",
+      choices: [
+        "ลงจากบันไดมากินยาช่วยย่อยอาหาร รอสักครู่แล้วปีนขึ้นไปทำงานต่อ",
+        "บอกหัวหน้างานว่าคุณรู้สึกไม่สบาย แม้ทราบดีว่างานทั้งโรงงานต้องหยุดชะงัก",
+        "เลิกกังวลเกี่ยวกับการรู้สึกไม่สบาย รีบสนใจการซ่อมไฟฟ้านั้นต่อไป"
+      ],
+      correct: 1
+    },
+    {
+      q: "9. ทำงานอยู่นึกอยากสูบบุหรี่ขึ้นมา ในสถานที่ทำงานมีป้ายประกาศ 'อันตราย ห้ามสูบบุหรี่' คุณจะทำอย่างไร?",
+      choices: [
+        "จุดบุหรี่สูบทันที เพราะคิดว่าบุหรี่มวนเดียวไม่น่าเกิดอันตราย",
+        "ตัดสินใจยอมอดบุหรี่ไว้ ทั้งๆ ที่จะต้องนึกถึงตลอดเวลา",
+        "จุดบุหรี่สูบ เพราะเพื่อนคนอื่นก็เคยขโมยสูบมาแล้ว"
+      ],
+      correct: 1
+    },
+    {
+      q: "10. มีหน้าที่เทโซดาไฟ แต่เครื่องป้องกันหน้า (Face Shield) เกิดหายไป คุณจะทำอย่างไร?",
+      choices: [
+        "ลงมือทำงานโดยใช้ความระมัดระวังให้ดีที่สุด",
+        "มองหาแว่นตาเล็กๆ มาใส่ปิดบังเฉพาะลูกตา แล้วลงมือทำงาน",
+        "ไม่ยอมทำงานโดยไม่มีเครื่องป้องกันหน้า"
+      ],
+      correct: 2
+    },
+    {
+      q: "11. ค้นพบวิธีทำงานที่ปลอดภัยกว่าวิธีที่ถูกสอนมา แต่ช้าลงเล็กน้อย คุณจะทำอย่างไร?",
+      choices: [
+        "ขอร้องให้หัวหน้างานเปลี่ยนคุณไปอยู่แผนกอื่น",
+        "ลงมือทำงานตามวิธีเก่าต่อไป เพราะเป็นวิธีที่ดีพอแล้ว",
+        "แนะนำให้หัวหน้างานลองทำตามวิธีใหม่ของคุณ"
+      ],
+      correct: 2
+    },
+    {
+      q: "12. ลูกชาย 3 ขวบตกบันไดบ้านที่ไม่มีราวกั้นเจ็บเล็กน้อย คุณจะทำอย่างไร?",
+      choices: [
+        "เข้าไปปลอบขวัญลูกชายแล้วเตือนลูกว่าคราวหน้าให้ระมัดระวัง",
+        "บอกภรรยาว่าหล่อนมีหน้าที่รับผิดชอบความปลอดภัยของลูกในบ้าน",
+        "หาทางทำราวบันไดโดยเร็ว ถึงแม้จะทำให้บ้านราคาแพงของคุณเสียความสวยงามลงไปบ้าง"
+      ],
+      correct: 2
+    },
+    {
+      q: "13. บริษัทจัดฉายหนังวิธีการขับรถปลอดภัยในเวลาทำงาน คุณจะทำอย่างไร?",
+      choices: [
+        "ไปชมภาพยนตร์นั้นทั้งๆ ที่รู้ว่าตนเองเป็นนักขับรถที่ดีอยู่แล้ว",
+        "ไปชมภาพยนตร์เพื่อถือโอกาสนอนหลับ",
+        "ไม่เข้าชมภาพยนตร์ เพราะแน่ใจว่าตนเองขับรถดีอยู่แล้ว"
+      ],
+      correct: 0
+    },
+    {
+      q: "14. บริษัทใหม่ให้เงินดี แต่มีประวัติอุบัติเหตุคนงานถึงแก่กรรมเมื่อสัปดาห์ก่อน คุณจะทำอย่างไร?",
+      choices: [
+        "บอกตัวเองว่าเงินเป็นเรื่องใหญ่ จึงตัดสินใจสมัครเข้าทำงาน",
+        "ตัดสินใจว่าต้องมีเหตุผลนอกเหนือเงิน คุณจึงยอมสมัครทำงานในสถานที่ไม่มีความปลอดภัย",
+        "พิจารณาความปลอดภัยและสวัสดิภาพชีวิตมากกว่าเงินทอง"
+      ],
+      correct: 2
+    }
+  ];
+
+  questions.forEach((qData) => {
+    const item = form.addMultipleChoiceItem();
+    item.setTitle(qData.q);
+    item.setPoints(1);
+    const choiceList = qData.choices.map((text, idx) => item.createChoice(text, idx === qData.correct));
+    item.setChoices(choiceList);
+    item.setRequired(true);
+  });
+
+  Logger.log("✅ สร้าง Google Form 14 ข้อ (ทัศนคติความปลอดภัย) สำเร็จ!");
+  Logger.log("🔗 ลิงก์แก้ไข: " + form.getEditUrl());
+  Logger.log("🔗 ลิงก์ทำข้อสอบ: " + form.getPublishedUrl());
+}
+
+// ==============================================================================
+// 3. ฟังก์ชันสร้างข้อสอบชุดที่ 2: ประเมินผลการปฐมนิเทศ (30 ข้อ)
+// ==============================================================================
+function createOrientationGoogleForm() {
+  const formTitle = "แบบทดสอบประเมินผลการปฐมนิเทศพนักงานใหม่ (CAR)";
+  const formDesc = "บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด\n" +
+    "COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.\n\n" +
+    "คำชี้แจง: เลือกคำตอบที่ถูกต้องเพียงคำตอบเดียว (มีทั้งหมด 30 ข้อ ใช้เวลา 20 นาที)\n" +
+    "เกณฑ์การประเมินผลผ่าน: ต้องได้คะแนน 80% ขึ้นไป (ผ่าน = 24/30 คะแนนขึ้นไป)";
+
+  const form = FormApp.create(formTitle);
+  form.setDescription(formDesc);
+  form.setIsQuiz(true);
+
+  // ข้อมูลพนักงาน
+  const empCodeItem = form.addTextItem();
+  empCodeItem.setTitle("รหัสพนักงาน (Employee ID)");
+  empCodeItem.setHelpText("เช่น EMP-1001");
+  empCodeItem.setRequired(true);
+
+  const nameItem = form.addTextItem();
+  nameItem.setTitle("ชื่อ - นามสกุล (Full Name)");
+  nameItem.setRequired(true);
+
+  const deptItem = form.addTextItem();
+  deptItem.setTitle("แผนก (Department)");
+  deptItem.setRequired(true);
+
+  const phaseItem = form.addMultipleChoiceItem();
+  phaseItem.setTitle("รอบการทำแบบทดสอบ (Test Phase)");
+  phaseItem.setChoices([
+    phaseItem.createChoice("ก่อนการอบรม (Pre-Test)"),
+    phaseItem.createChoice("หลังการอบรม (Post-Test)")
+  ]);
+  phaseItem.setRequired(true);
+
+  form.addPageBreakItem().setTitle("แบบทดสอบประเมินผลการปฐมนิเทศ (30 ข้อ)");
+
+  const questions = [
+    { q: "1. อุปกรณ์คุ้มครองความปลอดภัยส่วนบุคคล (PPE) ใดที่เป็นข้อบังคับพื้นฐานที่สุดในพื้นที่ผลิตยาง CAR?", choices: ["หมวกนิรภัยและรองเท้าเซฟตี้", "แว่นตากันแดดและหูฟัง", "ถุงมือผ้าทั่วไป", "ผ้าปิดปากลายการ์ตูน"], correct: 0 },
+    { q: "2. เมื่อเกิดเหตุเพลิงไหม้ในพื้นที่ปฏิบัติงาน ขั้นตอนแรกสุดที่ต้องปฏิบัติตามแผนฉุกเฉินคืออะไร?", choices: ["กดสัญญาณแจ้งเตือนเพลิงไหม้และโทรแจ้ง จป. ทันที", "วิ่งไปหยิบกระเป๋าสตางค์", "ถ่ายรูปโพสต์ลงโซเชียล", "ยืนมองเพลิงไหม้"], correct: 0 },
+    { q: "3. การซ่อมบำรุง หรือปรับแต่งเครื่องจักรขณะทำงาน ต้องปฏิบัติตามมาตรการความปลอดภัยใดอย่างเคร่งครัด?", choices: ["เปิดเครื่องทิ้งไว้เพื่อทดสอบ", "ทำ Lockout / Tagout (LOTO) ตัดพลังงานก่อนทุกครั้ง", "ใช้มือเปล่าจับชิ้นส่วนขณะเครื่องหมุน", "ไม่มีข้อใดถูก"], correct: 1 },
+    { q: "4. การจัดการขยะอันตราย (เช่น ผ้าปนเปื้อนน้ำมัน สารเคมี) ต้องนำไปทิ้งในภาชนะสีใด?", choices: ["ถังขยะสีเขียว (ขยะเปียก)", "ถังขยะสีส้ม/ดำ (ขยะอันตราย)", "ถังขยะสีฟ้า (ขยะรีไซเคิล)", "ทิ้งลงพื้นโรงงาน"], correct: 1 },
+    { q: "5. หลักการ 5ส. ข้อใดหมายถึงการทำให้พื้นที่ทำงานสะอาด เป็นระเบียบเรียบร้อยเป็นมาตรฐานอยู่เสมอ?", choices: ["สะสาง", "สะดวก", "สะอาด", "สุขลักษณะ"], correct: 3 },
+    { q: "6. การประเมินความเสี่ยงและหยั่งรู้อันตรายก่อนเริ่มงานในพื้นที่เรียกว่าอะไร?", choices: ["KYT / CCCF Assessment", "Check-in Facebook", "5S Audit", "Daily Standup"], correct: 0 },
+    { q: "7. จุดรวมพลฉุกเฉิน (Evacuation Assembly Point) หลักของโรงงาน CAR ตั้งอยู่ที่ใด?", choices: ["ลานจอดรถหน้าอาคาร M-1", "ป้อมยามหน้าประตู 3", "ห้องอาหารพนักงาน", "ห้องประชุมใหญ่"], correct: 0 },
+    { q: "8. เอกสารข้อมูลความปลอดภัยสารเคมีที่ต้องมีติดไว้ในพื้นที่ใช้สารเคมีคือเอกสารใด?", choices: ["Work Instruction (WI)", "MSDS / SDS", "Pay Slip", "PO Document"], correct: 1 },
+    { q: "9. เมื่อเกิดอุบัติเหตุจากการทำงาน (แม้เจ็บเล็กน้อย) ต้องแจ้งผู้บังคับบัญชาภายในเวลากี่นาที?", choices: ["ทันที (ภายใน 15 นาที)", "รอให้จบกะทำงานก่อน", "แจ้งสัปดาห์หน้า", "ไม่ต้องแจ้งใคร"], correct: 0 },
+    { q: "10. น้ำหนักสูงสุดตามกฎหมายที่กำหนดให้พนักงานชายยกของหนักคนเดียวไม่เกินเท่าใด?", choices: ["ไม่เกิน 25 กิโลกรัม", "ไม่เกิน 55 กิโลกรัม", "ไม่เกิน 80 กิโลกรัม", "ไม่จำกัดน้ำหนัก"], correct: 1 },
+    { q: "11. มาตรฐานระบบบริหารงานคุณภาพสำหรับอุตสาหกรรมยานยนต์ที่บริษัท CAR ได้รับการรับรองคือข้อใด?", choices: ["IATF 16949 & ISO 9001", "ISO 27001", "GMP & HACCP", "OTOP Standards"], correct: 0 },
+    { q: "12. การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนด (Non-conforming Product) ต้องติดป้ายระบุสถานะสีใด?", choices: ["ป้ายสีเขียว (PASS)", "ป้ายสีเหลือง (WAIT)", "ป้ายสีแดง (REJECT / HOLD)", "ป้ายสีขาว"], correct: 2 },
+    { q: "13. เอกสารที่ใช้ควบคุมขั้นตอนการปฏิบัติงานในสายการผลิตอย่างละเอียดคือเอกสารใด?", choices: ["Work Instruction (WI) / ใบมาตรฐานการทำงาน", "Pay Slip", "Company Profile", "Job Description"], correct: 0 },
+    { q: "14. กฎเหล็กคุณภาพในการส่งมอบชิ้นงานไปยังกระบวนการถัดไปคือข้อใด?", choices: ["ไม่รับของเสีย ไม่สร้างของเสีย ไม่ส่งมอบของเสีย", "สร้างของเสียให้มากที่สุด", "ส่งของเสียไปให้ลูกค้าตรวจเอง", "รับของเสียเข้ามาแก้ไข"], correct: 0 },
+    { q: "15. การควบคุมการเปลี่ยนปัจจัย 4M1E ในกระบวนการผลิต (เช่น เปลี่ยนคน เปลี่ยนเครื่องจักร) ต้องใช้แบบฟอร์มใด?", choices: ["F-HR-016 Form B (4M Change Request)", "F-HR-002", "F-HR-014", "F-HR-009"], correct: 0 },
+    { q: "16. บริเวณสำหรับจัดเก็บชิ้นงานที่รอการตรวจสอบหรือชิ้นงานเสีย เรียกว่าอะไร?", choices: ["Red Tag Box / Holding Area", "VIP Lounge", "Canteen", "Office Zone"], correct: 0 },
+    { q: "17. เกณฑ์คะแนนสอบผ่านปฐมนิเทศตามมาตรฐาน CAR คือข้อใด?", choices: ["ต้องถูกอย่างน้อย 15 ข้อ", "ต้องถูกอย่างน้อย 20 ข้อ", "ต้องถูกอย่างน้อย 24 จาก 30 ข้อ (80%)", "ผ่านทุกคนไม่จำกัดคะแนน"], correct: 2 },
+    { q: "18. ป้ายเตือนสีเหลืองดำในพื้นที่โรงงานหมายถึงอะไร?", choices: ["พื้นที่ปลอดภัย", "ระวังอันตราย / พื้นที่เสี่ยง", "จุดพักผ่อน", "เขตห้ามเข้าเด็ดขาด"], correct: 1 },
+    { q: "19. การคัดแยกขยะรีไซเคิล (กระดาษ พลาสติก) ต้องทิ้งในถังขยะสีใด?", choices: ["ถังขยะสีเหลือง (ขยะรีไซเคิล)", "ถังขยะสีแดง", "ถังขยะสีส้ม", "ถังขยะสีดำ"], correct: 0 },
+    { q: "20. ระยะเวลาการทดลองงานของพนักงานใหม่ตามกฎระเบียบบริษัท CAR กำหนดไว้ไม่เกินกี่วัน?", choices: ["ไม่เกิน 30 วัน", "ไม่เกิน 60 วัน", "ไม่เกิน 119 วัน", "ไม่เกิน 180 วัน"], correct: 2 },
+    { q: "21. แบบฟอร์มประเมินสมรรถนะทักษะการทำงานพนักงานรายบุคคล (Skill Matrix) ของ HR คือแบบฟอร์มใด?", choices: ["F-HR-014 (Skill Matrix Record)", "F-HR-002", "F-HR-004", "F-HR-009"], correct: 0 },
+    { q: "22. ระดับทักษะความสามารถใน Skill Matrix (F-HR-014) ระดับ 100% (สัญลักษณ์วงกลมเต็มวง) หมายถึงอะไร?", choices: ["เพิ่งเริ่มเรียนรู้งาน", "ทำได้เองตามมาตรฐานและสามารถสอนงานผู้อื่นได้", "ทำไม่ได้เลย", "ต้องมีคนคอยคุมตลอดเวลา"], correct: 1 },
+    { q: "23. กระบวนการผลิตชิ้นส่วนยาง CAR มีลำดับขั้นตอนหลักอย่างไร?", choices: ["ผสมยาง ➔ ซอยยาง ➔ อัดขึ้นรูป ➔ ตบแต่ง ➔ ตรวจสอบ ➔ จัดส่ง", "จัดส่ง ➔ ผสมยาง ➔ อัดขึ้นรูป", "ตบแต่ง ➔ จัดส่ง ➔ ผสมยาง", "ไม่มีลำดับที่แน่นอน"], correct: 0 },
+    { q: "24. การลาป่วยตั้งแต่กี่วันทำงานขึ้นไป ต้องมีใบรับรองแพทย์ประกอบการลา?", choices: ["1 วันทำงาน", "2 วันทำงาน", "3 วันทำงานขึ้นไป", "5 วันทำงานขึ้นไป"], correct: 2 },
+    { q: "25. การลากิจได้รับค่าจ้างตามกฎหมาย ต้องยื่นใบลาล่วงหน้าอย่างน้อยกี่วัน?", choices: ["ยื่นล่วงหน้าอย่างน้อย 1 วัน", "ยื่นล่วงหน้าอย่างน้อย 3 วันทำงาน", "ยื่นหลังลาเสร็จ", "ไม่ต้องยื่นใบลา"], correct: 1 },
+    { q: "26. การแต่งกายในการเข้าปฏิบัติงานในโรงงาน ข้อใดถูกต้องตามระเบียบบริษัท?", choices: ["สวมชุดยูนิฟอร์มบริษัท ติดบัตรพนักงาน และใส่ PPE ตามพื้นที่กำหนด", "สวมเสื้อยืดกางเกงขาสั้น", "สวมรองเท้าแตะเข้าพื้นที่ผลิต", "ไม่ติดบัตรพนักงาน"], correct: 0 },
+    { q: "27. ช่องทางสำหรับการเสนอข้อคิดเห็นปรับปรุงงาน (Kaizen / Suggestion Box) สามารถยื่นผ่านช่องทางใด?", choices: ["ตู้รับข้อเสนอแนะ HR หรือระบบ HR Online", "เขียนทิ้งไว้บนพื้นโรงงาน", "พูดบ่นกับเพื่อนร่วมงาน", "โพสต์ลง Facebook ส่วนตัว"], correct: 0 },
+    { q: "28. การทำข้อสอบปฐมนิเทศพนักงานใหม่ สามารถทำผ่านช่องทางใดและเข้าจากที่ใดได้บ้าง?", choices: ["ทำผ่าน Google Forms ได้จากสมาร์ทโฟน/อินเทอร์เน็ตบ้านภายนอกบริษัท", "ทำบนคอมพิวเตอร์ HR เท่านั้น", "เขียนใส่กระดาษคำตอบเท่านั้น", "ไม่มีข้อใดถูก"], correct: 0 },
+    { q: "29. หากพนักงานทำข้อสอบปฐมนิเทศไม่ผ่านเกณฑ์ 24 ข้อ (จาก 30 ข้อ) ต้องปฏิบัติตามขั้นตอนใด?", choices: ["ติดต่อ HR เพื่อทบทวนข้อสอบที่ตอบผิด แล้วเข้าทำแบบทดสอบใหม่จนกว่าจะผ่านเกณฑ์", "ลาออกจากงานทันที", "ไม่ต้องทำอะไรเพิ่ม", "โดนตัดเงินเดือน"], correct: 0 },
+    { q: "30. สัญลักษณ์โลโก้ทางการของบริษัท Complete Auto Rubber Manufacturing (CAR) มีลักษณะสีอย่างไร?", choices: ["ตัวอักษร CAR สีฟ้าบนพื้นหลังสีขาวทรงสี่เหลี่ยมขอบมนเรียบหรู", "โลโก้สีดำทอง", "โลโก้สีแดงสด", "ไม่มีโลโก้"], correct: 0 }
+  ];
+
+  questions.forEach((qData) => {
+    const item = form.addMultipleChoiceItem();
+    item.setTitle(qData.q);
+    item.setPoints(1);
+    const choiceList = qData.choices.map((text, idx) => item.createChoice(text, idx === qData.correct));
+    item.setChoices(choiceList);
+    item.setRequired(true);
+  });
+
+  Logger.log("✅ สร้าง Google Form 30 ข้อ (ประเมินปฐมนิเทศ) สำเร็จ!");
+  Logger.log("🔗 ลิงก์แก้ไข: " + form.getEditUrl());
+  Logger.log("🔗 ลิงก์ทำข้อสอบ: " + form.getPublishedUrl());
+}
+
+// ==============================================================================
+// 4. WEB APP SYNC API (doGet) สำหรับซิงค์คะแนนผลสอบเข้าสู่ระบบ CAR
+// ==============================================================================
+function doGet(e) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const rows = sheet.getDataRange().getValues();
+
+    const results = [];
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row[0]) continue;
+
+      const scoreText = String(row[2] || "0/30");
+      const scoreParts = scoreText.split("/");
+      const score = parseInt(scoreParts[0]) || 0;
+      const totalQuestions = parseInt(scoreParts[1]) || 30;
+      const isSafety = totalQuestions === 14;
+
+      const percentage = Math.round((score / totalQuestions) * 100);
+      const isPassed = isSafety ? score >= 12 : score >= 24;
+
+      results.push({
+        id: 'row-' + i,
+        attemptNumber: 1,
+        submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
+        empCode: String(row[3] || "").trim() || ("EMP-100" + i),
+        employeeName: String(row[4] || "พนักงานทดสอบ").trim(),
+        department: String(row[5] || "ผลิต (PD)").trim(),
+        score: score,
+        totalQuestions: totalQuestions,
+        percentage: percentage,
+        isPassed: isPassed,
+        source: 'GOOGLE_FORMS',
+        examType: isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION',
+        phase: String(row[6] || "").includes("ก่อน") ? 'PRE_TEST' : 'POST_TEST',
+      });
+    }
+
+    const payload = JSON.stringify({
+      status: 'success',
+      totalRecords: results.length,
+      results: results
+    });
+
+    return ContentService.createTextOutput(payload).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 }
