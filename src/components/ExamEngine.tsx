@@ -23,6 +23,8 @@ import type { Employee, GoogleFormExamResult, ExamType, ExamPhase } from '../typ
 import {
   DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_GOOGLE_FORM_URL,
+  DEFAULT_SAFETY_FORM_URL,
+  DEFAULT_ORIENTATION_FORM_URL,
   SAFETY_ATTITUDE_QUESTIONS_BANK,
   MASTER_QUESTIONS_BANK,
   ensureAnswersDetail,
@@ -271,13 +273,13 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
           </button>
 
           <a
-            href={googleFormUrl}
+            href={isSafetySelected ? DEFAULT_SAFETY_FORM_URL : DEFAULT_ORIENTATION_FORM_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-secondary"
             style={{ borderRadius: 14, padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
           >
-            <ExternalLink size={18} /> เปิด Google Forms ภายนอก
+            <ExternalLink size={18} /> เปิด Google Forms ({isSafetySelected ? '14 ข้อ' : '30 ข้อ'})
           </a>
 
           <button

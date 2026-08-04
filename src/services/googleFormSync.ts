@@ -1,8 +1,13 @@
 import type { GoogleFormExamResult } from '../types';
 import * as XLSX from 'xlsx';
 
-export const DEFAULT_GOOGLE_FORM_URL =
-  'https://docs.google.com/forms/d/e/1FAIpQLSdwlTwGNNMrvtcYBt9aEFmxSF2NiT7AzOGf0_jFlorzXqtH7g/viewform';
+export const DEFAULT_SAFETY_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSeJe2ML2M96vJsjwzkbnOxlP9Fgb38-QHRH6WXgTclIw4ANUg/viewform';
+
+export const DEFAULT_ORIENTATION_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLSePpjkzTp7Fm6oE1Ri636x2BBHeNlGB8pNffDJ1Pg66lWkKaQ/viewform';
+
+export const DEFAULT_GOOGLE_FORM_URL = DEFAULT_SAFETY_FORM_URL;
 
 export const DEFAULT_APPS_SCRIPT_URL =
   'https://script.google.com/macros/s/AKfycbyz-Vdq9YI6Fkyxtf1KZKaYwCvtlk-zkiFxDCDZ6tIy9hFc6n4QHQB2phcNEmJ5KXz9/exec';
