@@ -1750,6 +1750,33 @@ th.sticky-col {
   color: #64748b;
 }
 
+.role-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.role-pill.role-admin {
+  background: rgba(21, 96, 208, 0.12);
+  color: #1560d0;
+  border: 1px solid rgba(21, 96, 208, 0.25);
+}
+
+.role-pill.role-supervisor {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+
+.role-pill.role-operator {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
 .login-footer-status {
   position: absolute;
   bottom: 24px;
