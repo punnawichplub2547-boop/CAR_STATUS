@@ -10,7 +10,7 @@ export const DEFAULT_ORIENTATION_FORM_URL =
 export const DEFAULT_GOOGLE_FORM_URL = DEFAULT_SAFETY_FORM_URL;
 
 export const DEFAULT_APPS_SCRIPT_URL =
-  'https://script.google.com/macros/s/AKfycbyz-Vdq9YI6Fkyxtf1KZKaYwCvtlk-zkiFxDCDZ6tIy9hFc6n4QHQB2phcNEmJ5KXz9/exec';
+  'https://script.google.com/macros/s/AKfycbzg-28mAyNuZjHAPiFTpJ4aab8GZAXDzvudxavHzSyaddXNERDsNbqCeE9MdHgeq538/exec';
 
 export const INITIAL_DEMO_EXAM_RESULTS: Record<string, GoogleFormExamResult[]> = {
   'EMP-1001': [

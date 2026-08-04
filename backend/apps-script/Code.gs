@@ -305,7 +305,29 @@ function createOrientationGoogleForm() {
 // ==============================================================================
 function doGet(e) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    let ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) {
+      const sheetId = (e && e.parameter && e.parameter.sheetId) ? e.parameter.sheetId : null;
+      if (sheetId) {
+        ss = SpreadsheetApp.openById(sheetId);
+      } else {
+        const files = DriveApp.getFilesByType(MimeType.GOOGLE_SHEETS);
+        if (files.hasNext()) {
+          ss = SpreadsheetApp.open(files.next());
+        }
+      }
+    }
+
+    if (!ss) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: 'success',
+        totalRecords: 0,
+        results: [],
+        message: 'ยังไม่พบข้อมูล Google Sheet ที่ผูกกับแบบสอบถาม'
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const sheet = ss.getActiveSheet();
     const rows = sheet.getDataRange().getValues();
 
     const results = [];
@@ -322,13 +344,17 @@ function doGet(e) {
       const percentage = Math.round((score / totalQuestions) * 100);
       const isPassed = isSafety ? score >= 12 : score >= 24;
 
+      const empCode = String(row[3] || "").trim() || ("EMP-100" + i);
+      const employeeName = String(row[4] || "พนักงานทดสอบ").trim();
+      const department = String(row[5] || "ผลิต (PD)").trim();
+
       results.push({
         id: 'row-' + i,
         attemptNumber: 1,
         submittedAt: Utilities.formatDate(new Date(row[0]), "Asia/Bangkok", "yyyy-MM-dd HH:mm:ss"),
-        empCode: String(row[3] || "").trim() || ("EMP-100" + i),
-        employeeName: String(row[4] || "พนักงานทดสอบ").trim(),
-        department: String(row[5] || "ผลิต (PD)").trim(),
+        empCode: empCode,
+        employeeName: employeeName,
+        department: department,
         score: score,
         totalQuestions: totalQuestions,
         percentage: percentage,
