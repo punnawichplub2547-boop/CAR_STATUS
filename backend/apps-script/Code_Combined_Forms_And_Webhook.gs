@@ -154,9 +154,11 @@ function createSafetyAttitudeGoogleForm() {
     item.setRequired(true);
   });
 
+  Logger.log("--------------------------------------------------");
   Logger.log("✅ สร้าง Google Form 14 ข้อ (ทัศนคติความปลอดภัย) สำเร็จ!");
-  Logger.log("🔗 ลิงก์แก้ไข: " + form.getEditUrl());
-  Logger.log("🔗 ลิงก์ทำข้อสอบ: " + form.getPublishedUrl());
+  Logger.log("🔗 ลิงก์แก้ไข (Edit Form): " + form.getEditUrl());
+  Logger.log("🔗 ลิงก์ทำข้อสอบ (Published Form): " + form.getPublishedUrl());
+  Logger.log("--------------------------------------------------");
 }
 
 // ==============================================================================
@@ -172,6 +174,8 @@ function createOrientationGoogleForm() {
   const form = FormApp.create(formTitle);
   form.setDescription(formDesc);
   form.setIsQuiz(true);
+  form.setCollectEmail(false);
+  form.setAllowResponseEdits(false);
 
   // ข้อมูลพนักงาน
   const empCodeItem = form.addTextItem();
@@ -359,13 +363,15 @@ function createOrientationGoogleForm() {
     item.setRequired(true);
   });
 
+  Logger.log("--------------------------------------------------");
   Logger.log("✅ สร้าง Google Form 30 ข้อ (ประเมินปฐมนิเทศ) สำเร็จ!");
-  Logger.log("🔗 ลิงก์แก้ไข: " + form.getEditUrl());
-  Logger.log("🔗 ลิงก์ทำข้อสอบ: " + form.getPublishedUrl());
+  Logger.log("🔗 ลิงก์แก้ไข (Edit Form): " + form.getEditUrl());
+  Logger.log("🔗 ลิงก์ทำข้อสอบ (Published Form): " + form.getPublishedUrl());
+  Logger.log("--------------------------------------------------");
 }
 
 // ==============================================================================
-// 4. WEB APP SYNC API (doGet) สำหรับซิงค์คะแนนผลสอบเข้าสู่ระบบ CAR
+// 4. WEB APP SYNC API (doGet / doPost) สำหรับซิงค์คะแนนอัตโนมัติเข้าเว็บ CAR
 // ==============================================================================
 function doGet(e) {
   try {

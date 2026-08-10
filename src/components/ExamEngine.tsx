@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ExternalLink,
   RefreshCw,
@@ -14,16 +14,26 @@ import {
   X,
   Sparkles,
   Upload,
+  ShieldCheck,
+  Award,
+  ArrowRight,
+  ClipboardList,
 } from 'lucide-react';
-import type { Employee, GoogleFormExamResult } from '../types';
+import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap } from '../types';
 import {
   DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_GOOGLE_FORM_URL,
+  DEFAULT_SAFETY_FORM_URL,
+  DEFAULT_ORIENTATION_FORM_URL,
+  SAFETY_ATTITUDE_QUESTIONS_BANK,
+  MASTER_QUESTIONS_BANK,
   ensureAnswersDetail,
   getSampleGoogleAppsScriptCode,
   loadExamResultsFromLocalStorage,
+  loadPreTestLockStatusFromLocalStorage,
   parseExcelOrCsvFile,
   saveExamResultsToLocalStorage,
+  savePreTestLockStatusToLocalStorage,
 } from '../services/googleFormSync';
 
 interface ExamEngineProps {
@@ -32,6 +42,9 @@ interface ExamEngineProps {
 }
 
 export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }) => {
+  const [selectedExamType, setSelectedExamType] = useState<ExamType>('SAFETY_ATTITUDE');
+  const [selectedPhase, setSelectedPhase] = useState<ExamPhase>('PRE_TEST');
+
   const [googleFormUrl, setGoogleFormUrl] = useState(() => {
     const saved = localStorage.getItem('hrskill_google_form_url');
     if (!saved || saved.includes('EXAMPLE_FORM_ID')) {
@@ -41,7 +54,8 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   });
   const [appsScriptUrl, setAppsScriptUrl] = useState(() => {
     const saved = localStorage.getItem('hrskill_apps_script_url');
-    if (!saved) {
+    if (!saved || saved !== DEFAULT_APPS_SCRIPT_URL) {
+      localStorage.setItem('hrskill_apps_script_url', DEFAULT_APPS_SCRIPT_URL);
       return DEFAULT_APPS_SCRIPT_URL;
     }
     return saved;
@@ -51,8 +65,47 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [isSyncing, setIsSyncing] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
 
-  // Dynamic Exam Results Map
+  const isHR = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR';
+
+  // Pre-Test Lock Status Map
+  const [preTestLockMap, setPreTestLockMap] = useState<PreTestLockMap>(() =>
+    loadPreTestLockStatusFromLocalStorage()
+  );
+
+  const isPreTestClosed = Boolean(preTestLockMap[currentUser.empCode]?.[selectedExamType]);
+
+  const handleTogglePreTestLock = (empCode: string) => {
+    const currentStatus = Boolean(preTestLockMap[empCode]?.[selectedExamType]);
+    const updatedMap: PreTestLockMap = {
+      ...preTestLockMap,
+      [empCode]: {
+        ...(preTestLockMap[empCode] || {}),
+        [selectedExamType]: !currentStatus,
+      },
+    };
+    setPreTestLockMap(updatedMap);
+    savePreTestLockStatusToLocalStorage(updatedMap);
+    setImportStatusMessage(
+      `🔒 อัปเดตสถานะการสอบ ${selectedExamType === 'SAFETY_ATTITUDE' ? 'ทัศนคติความปลอดภัย' : 'ปฐมนิเทศ'} ของรหัส ${empCode}: ${
+        !currentStatus
+          ? 'ปิดการสอบก่อนอบรมแล้ว (เปิดรับการสอบหลังอบรมแล้ว ✅)'
+          : 'เปิดการสอบก่อนอบรมอยู่ (สอบหลังอบรมถูกล็อคอยู่ 🔒)'
+      }`
+    );
+    setTimeout(() => setImportStatusMessage(null), 5000);
+  };
+
+  // Online Web Quiz State
+  const [showOnlineQuizModal, setShowOnlineQuizModal] = useState(false);
+  const [userQuizAnswers, setUserQuizAnswers] = useState<Record<number, string>>({});
+
+  // Dynamic Exam Results Map (100% Real Live Google Sheet / Form Data Only)
   const [examResultsMap, setExamResultsMap] = useState<Record<string, GoogleFormExamResult[]>>(() => {
+    if (!localStorage.getItem('hrskill_zero_mock_v1')) {
+      localStorage.removeItem('hrskill_google_form_exam_results_v1');
+      localStorage.setItem('hrskill_zero_mock_v1', 'true');
+      return {};
+    }
     return loadExamResultsFromLocalStorage();
   });
 
@@ -80,10 +133,16 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
     try {
       setIsSyncing(true);
-      const updatedResults = await parseExcelOrCsvFile(file);
+      const { results: updatedResults, detectedExamType, detectedPhase } = await parseExcelOrCsvFile(file);
       setExamResultsMap(updatedResults);
-      setImportStatusMessage(`✅ อัปเดตผลสอบจากไฟล์ "${file.name}" เรียบร้อยแล้ว!`);
-      setTimeout(() => setImportStatusMessage(null), 5000);
+      if (detectedExamType) setSelectedExamType(detectedExamType);
+      if (detectedPhase) setSelectedPhase(detectedPhase);
+      setImportStatusMessage(
+        `✅ อัปเดตและซิงค์ผลสอบจากไฟล์ "${file.name}" เรียบร้อยแล้ว! (${
+          detectedExamType === 'SAFETY_ATTITUDE' ? 'ทัศนคติความปลอดภัย 14 ข้อ' : 'ประเมินการปฐมนิเทศ 30 ข้อ'
+        } - ${detectedPhase === 'PRE_TEST' ? 'รอบ Pre-Test' : 'รอบ Post-Test'})`
+      );
+      setTimeout(() => setImportStatusMessage(null), 6000);
     } catch (err: any) {
       alert(`❌ เกิดข้อผิดพลาดในการอ่านไฟล์: ${err?.message || 'รูปแบบไฟล์ไม่ถูกต้อง'}`);
     } finally {
@@ -94,9 +153,9 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     }
   };
 
-  // Sync Logic / Live Apps Script Fetch
-  const handleSyncData = async () => {
-    setIsSyncing(true);
+  // Sync Logic / Live Apps Script Fetch (High-Performance Optimized)
+  const handleSyncData = useCallback(async (silent: boolean = false) => {
+    if (!silent) setIsSyncing(true);
     const targetUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
     if (targetUrl) {
       try {
@@ -104,31 +163,85 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         const text = await res.text();
         if (text.startsWith('{')) {
           const json = JSON.parse(text);
-          if (json.status === 'success' && json.results) {
-            const newMap: Record<string, GoogleFormExamResult[]> = { ...examResultsMap };
-            json.results.forEach((item: GoogleFormExamResult) => {
-              if (!newMap[item.empCode]) newMap[item.empCode] = [];
-              const idx = newMap[item.empCode].findIndex((r) => r.attemptNumber === item.attemptNumber);
-              if (idx >= 0) newMap[item.empCode][idx] = item;
-              else newMap[item.empCode].push(item);
+          if (json.status === 'success' && json.results && json.results.length > 0) {
+            setExamResultsMap((prevMap) => {
+              let hasChanges = false;
+              let updatedCount = 0;
+              const newMap: Record<string, GoogleFormExamResult[]> = { ...prevMap };
+
+              json.results.forEach((item: GoogleFormExamResult) => {
+                const empCode = (item.empCode || '').trim().toUpperCase();
+                if (!empCode) return;
+                const normalizedItem = { ...item, empCode };
+                if (!newMap[empCode]) {
+                  newMap[empCode] = [normalizedItem];
+                  hasChanges = true;
+                  updatedCount++;
+                } else {
+                  const existingList = newMap[empCode];
+                  const idx = existingList.findIndex(
+                    (r) => r.attemptNumber === item.attemptNumber && r.examType === item.examType && r.phase === item.phase
+                  );
+                  if (idx >= 0) {
+                    const prevItem = existingList[idx];
+                    if (
+                      prevItem.score !== item.score ||
+                      prevItem.submittedAt !== item.submittedAt ||
+                      prevItem.isPassed !== item.isPassed
+                    ) {
+                      existingList[idx] = normalizedItem;
+                      hasChanges = true;
+                      updatedCount++;
+                    }
+                  } else {
+                    existingList.push(normalizedItem);
+                    hasChanges = true;
+                    updatedCount++;
+                  }
+                }
+              });
+
+              if (hasChanges) {
+                saveExamResultsToLocalStorage(newMap);
+                if (!silent || updatedCount > 0) {
+                  setImportStatusMessage(`⚡️ ซิงค์ผลสอบสดจาก Google Forms เรียบร้อยแล้ว (${json.totalRecords} รายการ)`);
+                  setTimeout(() => setImportStatusMessage(null), 4000);
+                }
+                return newMap;
+              }
+              
+              if (!silent) {
+                setImportStatusMessage(`⚡️ ข้อมูลเป็นปัจจุบันแล้ว (${json.totalRecords} รายการ)`);
+                setTimeout(() => setImportStatusMessage(null), 3000);
+              }
+              return prevMap; // Return same reference -> NO RE-RENDER!
             });
-            setExamResultsMap(newMap);
-            saveExamResultsToLocalStorage(newMap);
-            setImportStatusMessage(`✅ ซิงค์ข้อมูลล่าสุดสำเร็จ! พบข้อมูลทั้งสิ้น ${json.totalRecords || 0} รายการ`);
-            setTimeout(() => setImportStatusMessage(null), 5000);
           }
-        } else {
+        } else if (!silent) {
           setImportStatusMessage('⚠️ ติดสิทธิ์การเข้าถึง Google: โปรดตรวจสอบว่าใน Apps Script ตั้งค่า "ผู้มีสิทธิ์เข้าถึง" เป็น "ทุกคน (Anyone)" แล้วกด Deploy ใหม่');
           setTimeout(() => setImportStatusMessage(null), 8000);
         }
       } catch (err) {
-        console.error('Apps Script Sync Error:', err);
+        console.error('Apps Script Auto Sync Error:', err);
       }
     }
-    setTimeout(() => {
-      setIsSyncing(false);
-    }, 800);
-  };
+    if (!silent) {
+      setTimeout(() => {
+        setIsSyncing(false);
+      }, 500);
+    }
+  }, [appsScriptUrl]);
+
+  // Smart Live Auto-Sync Polling (Every 30s & Only When Page Visible)
+  useEffect(() => {
+    handleSyncData(true);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        handleSyncData(true);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [handleSyncData]);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(getSampleGoogleAppsScriptCode());
@@ -138,18 +251,86 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
   // Helper functions using state
   const getEmployeeExamResults = (empCode: string): GoogleFormExamResult[] => {
-    return examResultsMap[empCode] || [];
+    const key = (empCode || '').trim().toUpperCase();
+    return examResultsMap[key] || examResultsMap[empCode] || [];
   };
 
-  const getLatestEmployeeExamResult = (empCode: string): GoogleFormExamResult | null => {
-    const list = getEmployeeExamResults(empCode);
-    if (!list.length) return null;
-    return list[list.length - 1];
+  // Start Online Web Quiz
+  const handleStartOnlineQuiz = () => {
+    if (selectedPhase === 'POST_TEST' && !isPreTestClosed) {
+      alert(
+        '🔒 ไม่สามารถทำแบบทดสอบรอบหลังการอบรม (Post-Test) ได้:\n\nเจ้าหน้าที่ HR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะสามารถทำแบบทดสอบรอบหลังการอบรมและบันทึกผลได้ครับ'
+      );
+      return;
+    }
+    setUserQuizAnswers({});
+    setShowOnlineQuizModal(true);
   };
 
-  // Active User Results
-  const activeUserHistory = getEmployeeExamResults(currentUser.empCode);
-  const activeUserLatest = getLatestEmployeeExamResult(currentUser.empCode);
+  // Submit Online Web Quiz
+  const handleSubmitOnlineQuiz = () => {
+    const isSafety = selectedExamType === 'SAFETY_ATTITUDE';
+    const bank = isSafety ? SAFETY_ATTITUDE_QUESTIONS_BANK : MASTER_QUESTIONS_BANK;
+    const total = bank.length;
+
+    let score = 0;
+    const answersDetail = bank.map((q) => {
+      const userAns = userQuizAnswers[q.questionNo] || '(ไม่ได้รับคำตอบ)';
+      const isCorrect = userAns.trim() === q.correctAnswer.trim();
+      if (isCorrect) score++;
+      return {
+        questionNo: q.questionNo,
+        questionText: q.questionText,
+        userAnswer: userAns,
+        correctAnswer: q.correctAnswer,
+        isCorrect,
+      };
+    });
+
+    const percentage = Math.round((score / total) * 100);
+    const isPassed = isSafety ? score >= 12 : score >= 24;
+
+    const newResult: GoogleFormExamResult = {
+      id: `web-${currentUser.empCode}-${selectedExamType}-${selectedPhase}-${Date.now()}`,
+      attemptNumber: (examResultsMap[currentUser.empCode]?.length || 0) + 1,
+      submittedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      empCode: currentUser.empCode,
+      employeeName: currentUser.name,
+      department: currentUser.department,
+      score,
+      totalQuestions: total,
+      percentage,
+      isPassed,
+      answersDetail,
+      source: 'ONLINE_WEB',
+      examType: selectedExamType,
+      phase: selectedPhase,
+    };
+
+    const newMap = { ...examResultsMap };
+    if (!newMap[currentUser.empCode]) newMap[currentUser.empCode] = [];
+    newMap[currentUser.empCode].push(newResult);
+
+    setExamResultsMap(newMap);
+    saveExamResultsToLocalStorage(newMap);
+    setShowOnlineQuizModal(false);
+
+    setImportStatusMessage(`🎉 บันทึกผลสอบ ${isSafety ? 'ทัศนคติความปลอดภัย' : 'ปฐมนิเทศ'} (${selectedPhase === 'PRE_TEST' ? 'ก่อนอบรม' : 'หลังอบรม'}) เรียบร้อยแล้ว! คะแนน: ${score}/${total} (${percentage}%) - ${isPassed ? 'ผ่านเกณฑ์ ✅' : 'ไม่ผ่านเกณฑ์ ❌'}`);
+    setTimeout(() => setImportStatusMessage(null), 6000);
+  };
+
+  // Active User Results filtered by current ExamType and Phase
+  const allUserResults = getEmployeeExamResults(currentUser.empCode);
+  const activeUserHistory = allUserResults.filter((r) => {
+    const matchType = (r.examType || 'ORIENTATION') === selectedExamType;
+    const matchPhase = (r.phase || 'POST_TEST') === selectedPhase;
+    return matchType && matchPhase;
+  });
+  const activeUserLatest = activeUserHistory.length > 0 ? activeUserHistory[activeUserHistory.length - 1] : null;
+
+  // Pre-Test vs Post-Test Comparison for active user
+  const preResult = allUserResults.find((r) => (r.examType || 'ORIENTATION') === selectedExamType && r.phase === 'PRE_TEST');
+  const postResult = allUserResults.find((r) => (r.examType || 'ORIENTATION') === selectedExamType && (r.phase === 'POST_TEST' || !r.phase));
 
   // Filtered employees for Admin Directory
   const filteredEmployees = employees.filter((e) => {
@@ -159,6 +340,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
       e.empCode.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesDept && matchesSearch;
   });
+
+  const isSafetySelected = selectedExamType === 'SAFETY_ATTITUDE';
+  const totalQuestionsCount = isSafetySelected ? 14 : 30;
+  const passCriteriaText = isSafetySelected ? 'เกณฑ์ผ่าน: ผิดไม่เกิน 2 ข้อ (≥ 12/14 ข้อ)' : 'เกณฑ์ผ่าน: 80% ขึ้นไป (≥ 24/30 ข้อ)';
 
   return (
     <div className="exam-page content-container">
@@ -175,23 +360,31 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div className="eyebrow-tag">
-            <FileCheck2 size={14} /> GOOGLE FORMS INTEGRATION • เกณฑ์ผ่าน ≥ 24/30 ข้อ (80%)
+            <FileCheck2 size={14} /> DUAL EXAM ENGINE • {passCriteriaText}
           </div>
-          <h1 className="page-title gradient-text">ระบบข้อสอบปฐมนิเทศพนักงานใหม่ (Google Forms)</h1>
+          <h1 className="page-title gradient-text">ระบบข้อสอบปฐมนิเทศ & ทัศนคติความปลอดภัย</h1>
           <p className="page-subtitle">
-            ทำข้อสอบปฐมนิเทศผ่าน Google Forms จากอินเทอร์เน็ตภายนอก พร้อมซิงค์คะแนนล่าสุดและดูแผ่นเฉลยคำตอบย้อนหลังรายบุคคล
+            แบบทดสอบพนักงานใหม่บริษัท COMPLETE AUTO RUBBER MANUFACTURING CO., LTD. (Pre-Test & Post-Test)
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleStartOnlineQuiz}
+            className="btn btn-primary"
+            style={{ borderRadius: 14, padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}
+          >
+            <BookOpen size={18} /> ทำแบบทดสอบในระบบ (Web Exam)
+          </button>
+
           <a
-            href={googleFormUrl}
+            href={isSafetySelected ? DEFAULT_SAFETY_FORM_URL : DEFAULT_ORIENTATION_FORM_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-primary"
+            className="btn btn-secondary"
             style={{ borderRadius: 14, padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}
           >
-            <ExternalLink size={18} /> ทำแบบทดสอบผ่าน Google Forms
+            <ExternalLink size={18} /> เปิด Google Forms ({isSafetySelected ? '14 ข้อ' : '30 ข้อ'})
           </a>
 
           <button
@@ -206,7 +399,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
           <button
             className="btn btn-secondary"
-            onClick={handleSyncData}
+            onClick={() => handleSyncData(false)}
             disabled={isSyncing}
             style={{ borderRadius: 14, padding: '10px 16px' }}
           >
@@ -227,6 +420,132 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         </div>
       </div>
 
+      {/* EXAM SELECTION & PHASE SWITCHER TABS BAR */}
+      <div className="glass-card" style={{ padding: '16px 20px', marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Row 1: Exam Type Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110 }}>
+            <ClipboardList size={16} /> ชุดข้อสอบ:
+          </span>
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', flex: 1 }}>
+            <button
+              onClick={() => setSelectedExamType('SAFETY_ATTITUDE')}
+              className={`btn ${selectedExamType === 'SAFETY_ATTITUDE' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                borderRadius: 12,
+                padding: '8px 18px',
+                fontSize: '0.9rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: selectedExamType === 'SAFETY_ATTITUDE' ? 'linear-gradient(135deg, #059669, #047857)' : undefined,
+                border: selectedExamType === 'SAFETY_ATTITUDE' ? 'none' : '1px solid var(--border-color)',
+              }}
+            >
+              <ShieldCheck size={18} /> ชุดที่ 1: ทัศนคติความปลอดภัย (14 ข้อ)
+            </button>
+
+            <button
+              onClick={() => setSelectedExamType('ORIENTATION')}
+              className={`btn ${selectedExamType === 'ORIENTATION' ? 'btn-primary' : 'btn-secondary'}`}
+              style={{
+                borderRadius: 12,
+                padding: '8px 18px',
+                fontSize: '0.9rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: selectedExamType === 'ORIENTATION' ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' : undefined,
+                border: selectedExamType === 'ORIENTATION' ? 'none' : '1px solid var(--border-color)',
+              }}
+            >
+              <Award size={18} /> ชุดที่ 2: ประเมินผลการปฐมนิเทศ (30 ข้อ)
+            </button>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: 'var(--border-color)', opacity: 0.6 }} />
+
+        {/* Row 2: Phase Switcher & HR Lock Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 110 }}>
+            <BookOpen size={16} /> รอบการสอบ:
+          </span>
+
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => setSelectedPhase('PRE_TEST')}
+              style={{
+                borderRadius: 10,
+                padding: '6px 16px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: selectedPhase === 'PRE_TEST' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                color: selectedPhase === 'PRE_TEST' ? '#b45309' : 'var(--text-muted)',
+                border: selectedPhase === 'PRE_TEST' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid transparent',
+              }}
+            >
+              📝 ก่อนการอบรม (Pre-Test)
+            </button>
+
+            <button
+              onClick={() => {
+                if (!isPreTestClosed) {
+                  alert('🔒 รอบหลังการอบรม (Post-Test) ถูกล็อคอยู่:\nHR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะทำข้อสอบหลังอบรมได้ครับ');
+                }
+                setSelectedPhase('POST_TEST');
+              }}
+              style={{
+                borderRadius: 10,
+                padding: '6px 16px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                background: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)') : 'transparent',
+                color: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '#047857' : '#b91c1c') : 'var(--text-muted)',
+                border: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)') : '1px solid transparent',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              {isPreTestClosed ? '✅ หลังการอบรม (Post-Test)' : '🔒 หลังการอบรม (Post-Test - รอล็อคปิด Pre-Test)'}
+            </button>
+
+            {/* HR Control: Toggle Pre-Test Lock Status */}
+            {isHR && (
+              <button
+                className={`btn btn-xs ${isPreTestClosed ? 'btn-secondary' : 'btn-warning'}`}
+                onClick={() => handleTogglePreTestLock(currentUser.empCode)}
+                style={{ borderRadius: 10, padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                title="HR กดเพื่อปิดการสอบก่อนอบรมและปลดล็อคให้สอบหลังอบรม"
+              >
+                {isPreTestClosed ? <CheckCircle2 size={14} className="text-green" /> : <AlertTriangle size={14} />}
+                {isPreTestClosed ? '🔓 เปิดสอบหลังอบรมแล้ว (Pre-Test ปิดแล้ว)' : '🔒 HR กดปิดสอบก่อนอบรม (เพื่อเปิดสอบหลังอบรม)'}
+              </button>
+            )}
+          </div>
+
+          {/* Pre-Test vs Post-Test Progress Badge */}
+          {(preResult || postResult) && (
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', background: 'rgba(255,255,255,0.05)', padding: '6px 14px', borderRadius: 10, border: '1px solid var(--border-color)' }}>
+              <span style={{ color: 'var(--text-muted)' }}>พัฒนาการสอบ (Pre ➔ Post):</span>
+              <span style={{ fontWeight: 700, color: '#b45309' }}>Pre: {preResult ? `${preResult.score}/${preResult.totalQuestions}` : '-'}</span>
+              <ArrowRight size={14} className="text-muted" />
+              <span style={{ fontWeight: 700, color: '#047857' }}>Post: {postResult ? `${postResult.score}/${postResult.totalQuestions}` : '-'}</span>
+              {preResult && postResult && (
+                <span className="badge badge-green" style={{ marginLeft: 4, padding: '2px 8px', fontSize: '0.75rem' }}>
+                  +{postResult.percentage - preResult.percentage}%
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       {importStatusMessage && (
         <div style={{ background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#047857', padding: '12px 18px', borderRadius: 12, marginBottom: 20, marginTop: 20, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Sparkles size={18} /> {importStatusMessage}
@@ -238,10 +557,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h2 style={{ fontSize: '1.2rem', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BookOpen size={20} className="text-blue" /> ผลการสอบปฐมนิเทศของคุณ ({currentUser.name})
+              <BookOpen size={20} className="text-blue" /> ผลการสอบ{isSafetySelected ? 'ทัศนคติความปลอดภัย (14 ข้อ)' : 'ประเมินผลการปฐมนิเทศ (30 ข้อ)'} ({currentUser.name})
             </h2>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              รหัสพนักงาน: {currentUser.empCode} • {currentUser.department} ({currentUser.position})
+              รหัสพนักงาน: {currentUser.empCode} • {currentUser.department} ({currentUser.position}) • รอบ: <strong>{selectedPhase === 'PRE_TEST' ? 'ก่อนการอบรม (Pre-Test)' : 'หลังการอบรม (Post-Test)'}</strong>
             </span>
           </div>
 
@@ -265,9 +584,9 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 textAlign: 'center',
               }}
             >
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 4 }}>คะแนนสอบล่าสุดจาก Google Forms</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 4 }}>คะแนนสอบล่าสุด ({activeUserLatest.source === 'ONLINE_WEB' ? 'ระบบเว็บ' : 'Google Forms'})</div>
               <div style={{ fontSize: '2.4rem', fontWeight: 900, color: activeUserLatest.isPassed ? '#047857' : '#b91c1c' }}>
-                {activeUserLatest.score} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>/ 30 ข้อ</span>
+                {activeUserLatest.score} <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>/ {activeUserLatest.totalQuestions} ข้อ</span>
               </div>
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: activeUserLatest.isPassed ? '#047857' : '#b91c1c', marginTop: 2 }}>
                 คิดเป็น {activeUserLatest.percentage}%
@@ -282,10 +601,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               {!activeUserLatest.isPassed ? (
                 <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: 16, borderRadius: 14, marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, color: '#b45309', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                    <AlertTriangle size={18} /> แจ้งเตือน: คะแนนสอบไม่ถึงเกณฑ์ 24/30 ข้อ
+                    <AlertTriangle size={18} /> แจ้งเตือน: คะแนนสอบยังไม่ถึงเกณฑ์บังคับ
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
-                    คุณทำข้อสอบได้ {activeUserLatest.score}/30 ข้อ (ยังไม่ถึงเกณฑ์ผ่าน 24 ข้อ) ระบบได้แจ้งเตือน HR เรียบร้อยแล้ว กรุณากดดูข้อที่ตอบผิดเพื่อทบทวน แล้วคลิกทำข้อสอบใหม่ผ่าน Google Forms ครับ
+                    คุณทำข้อสอบได้ {activeUserLatest.score}/{activeUserLatest.totalQuestions} ข้อ ({passCriteriaText}) ระบบได้แจ้งเตือน HR เรียบร้อยแล้ว กรุณากดดูข้อที่ตอบผิดเพื่อทบทวน แล้วเข้าทำข้อสอบใหม่ครับ
                   </div>
                 </div>
               ) : (
@@ -294,7 +613,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                     <CheckCircle2 size={18} /> ผ่านการทดสอบปฐมนิเทศเรียบร้อยแล้ว
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
-                    ยินดีด้วย! คุณทำคะแนนสอบได้ {activeUserLatest.score}/30 ข้อ (สูงกว่าเกณฑ์บังคับ 24 ข้อ) ข้อมูลผลสอบได้รับการบันทึกเข้าประวัติพนักงานเรียบร้อยแล้ว
+                    ยินดีด้วย! คุณทำคะแนนสอบได้ {activeUserLatest.score}/{activeUserLatest.totalQuestions} ข้อ ({passCriteriaText}) ข้อมูลผลสอบได้รับการบันทึกเข้าประวัติพนักงานเรียบร้อยแล้ว
                   </div>
                 </div>
               )}
@@ -420,16 +739,26 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 <tr>
                   <th>พนักงาน</th>
                   <th>แผนก / ตำแหน่ง</th>
-                  <th>คะแนนสอบล่าสุด (Google Form)</th>
-                  <th>จำนวนรอบที่ทำ</th>
-                  <th>สถานะ</th>
+                  <th>🛡️ ทัศนคติความปลอดภัย (14 ข้อ)</th>
+                  <th>🏆 ประเมินการปฐมนิเทศ (30 ข้อ)</th>
+                  <th>สถานะรวม</th>
                   <th>การดำเนินการ</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => {
-                  const history = getEmployeeExamResults(emp.empCode);
-                  const latest = getLatestEmployeeExamResult(emp.empCode);
+                  const allRecords = getEmployeeExamResults(emp.empCode);
+                  const safetyRecords = allRecords.filter((r) => r.examType === 'SAFETY_ATTITUDE' || r.totalQuestions === 14);
+                  const oriRecords = allRecords.filter((r) => r.examType === 'ORIENTATION' || r.totalQuestions === 30);
+
+                  const safetyPre = safetyRecords.filter((r) => r.phase === 'PRE_TEST').pop();
+                  const safetyPost = safetyRecords.filter((r) => r.phase === 'POST_TEST').pop();
+
+                  const oriPre = oriRecords.filter((r) => r.phase === 'PRE_TEST').pop();
+                  const oriPost = oriRecords.filter((r) => r.phase === 'POST_TEST').pop();
+
+                  const isSafetyPassed = (safetyPost?.isPassed) || (safetyPre?.isPassed);
+                  const isOriPassed = (oriPost?.isPassed) || (oriPre?.isPassed);
 
                   return (
                     <tr key={emp.id}>
@@ -446,45 +775,110 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                         <div>{emp.department}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{emp.position}</div>
                       </td>
+
+                      {/* Safety 14Q Score Column */}
                       <td>
-                        {latest ? (
-                          <div>
-                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: latest.isPassed ? '#047857' : '#b91c1c' }}>
-                              {latest.score} / 30 ข้อ
-                            </span>
-                            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginLeft: 6 }}>({latest.percentage}%)</span>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>ส่งเมื่อ: {latest.submittedAt}</div>
+                        {safetyPre || safetyPost ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {safetyPre && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Pre: </span>
+                                <span style={{ fontWeight: 800, color: safetyPre.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {safetyPre.score} / 14 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({safetyPre.percentage}%)</span>
+                              </div>
+                            )}
+                            {safetyPost && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
+                                <span style={{ fontWeight: 800, color: safetyPost.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {safetyPost.score} / 14 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({safetyPost.percentage}%)</span>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({safetyRecords.length} รอบ)</div>
                           </div>
                         ) : (
-                          <span style={{ color: 'var(--text-dim)' }}>ยังไม่มีข้อมูล</span>
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (14 ข้อ)</span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'center', fontWeight: 700 }}>
-                        {history.length > 0 ? `${history.length} รอบ` : '-'}
-                      </td>
+
+                      {/* Orientation 30Q Score Column */}
                       <td>
-                        {latest ? (
-                          <span className={`badge ${latest.isPassed ? 'badge-green' : 'badge-red'}`}>
-                            {latest.isPassed ? 'PASSED (ผ่าน)' : 'FAILED (ต้องสอบใหม่)'}
+                        {oriPre || oriPost ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {oriPre && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Pre: </span>
+                                <span style={{ fontWeight: 800, color: oriPre.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {oriPre.score} / 30 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPre.percentage}%)</span>
+                              </div>
+                            )}
+                            {oriPost && (
+                              <div style={{ fontSize: '0.85rem' }}>
+                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
+                                <span style={{ fontWeight: 800, color: oriPost.isPassed ? '#047857' : '#b91c1c' }}>
+                                  {oriPost.score} / 30 ข้อ
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPost.percentage}%)</span>
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({oriRecords.length} รอบ)</div>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>ยังไม่มีข้อมูล (30 ข้อ)</span>
+                        )}
+                      </td>
+
+                      {/* Overall Status Badge */}
+                      <td>
+                        {isSafetyPassed && isOriPassed ? (
+                          <span className="badge badge-green">PASSED ทั้ง 2 ชุด (ผ่าน)</span>
+                        ) : (safetyRecords.length > 0 || oriRecords.length > 0) ? (
+                          <span className={`badge ${isSafetyPassed || isOriPassed ? 'badge-amber' : 'badge-red'}`}>
+                            {isSafetyPassed || isOriPassed ? 'ผ่าน 1/2 ชุด' : 'FAILED (ต้องสอบใหม่)'}
                           </span>
                         ) : (
                           <span className="badge badge-amber">ยังไม่ได้ทำข้อสอบ</span>
                         )}
                       </td>
-                      <td>
-                        {latest ? (
+
+                      {/* Action Buttons */}
+                      <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {(safetyPost || safetyPre) && (
                           <button
                             className="btn btn-xs btn-secondary"
-                            onClick={() => {
-                              setViewingResult(latest);
-                            }}
-                            style={{ borderRadius: 8, padding: '5px 12px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            onClick={() => setViewingResult((safetyPost || safetyPre)!)}
+                            style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            title="ดูคำตอบข้อสอบทัศนคติความปลอดภัย 14 ข้อ"
                           >
-                            <Eye size={14} /> ดูประวัติ & เฉลย
+                            <Eye size={14} /> เฉลย (14 ข้อ)
                           </button>
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>-</span>
                         )}
+
+                        {(oriPost || oriPre) && (
+                          <button
+                            className="btn btn-xs btn-secondary"
+                            onClick={() => setViewingResult((oriPost || oriPre)!)}
+                            style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                            title="ดูคำตอบข้อสอบประเมินการปฐมนิเทศ 30 ข้อ"
+                          >
+                            <Eye size={14} /> เฉลย (30 ข้อ)
+                          </button>
+                        )}
+
+                        <button
+                          className={`btn btn-xs ${preTestLockMap[emp.empCode]?.[selectedExamType] ? 'btn-secondary' : 'btn-warning'}`}
+                          onClick={() => handleTogglePreTestLock(emp.empCode)}
+                          style={{ borderRadius: 8, padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                          title="HR สลับสถานะปิดก่อนอบรมเพื่อปลดล็อคการสอบหลังอบรม"
+                        >
+                          {preTestLockMap[emp.empCode]?.[selectedExamType] ? '🔓 Post-Test เปิด' : '🔒 HR กดปิด Pre-Test'}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -535,7 +929,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 <div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>ผลสรุปคะแนนสอบ</div>
                   <div style={{ fontSize: '1.8rem', fontWeight: 900, color: viewingResult.isPassed ? '#047857' : '#b91c1c' }}>
-                    {viewingResult.score} / 30 ข้อ ({viewingResult.percentage}%)
+                    {viewingResult.score} / {viewingResult.totalQuestions} ข้อ ({viewingResult.percentage}%)
                   </div>
                 </div>
 
@@ -544,7 +938,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                     {viewingResult.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED (ไม่ผ่านเกณฑ์)'}
                   </span>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                    เกณฑ์ผ่านบังคับ: 24 / 30 ข้อขึ้นไป
+                    {viewingResult.totalQuestions === 14 ? 'เกณฑ์ผ่าน: ผิดไม่เกิน 2 ข้อ (≥ 12/14)' : 'เกณฑ์ผ่านบังคับ: 24 / 30 ข้อขึ้นไป'}
                   </div>
                 </div>
               </div>
@@ -553,7 +947,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               {!viewingResult.isPassed && (
                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: 14, borderRadius: 12, marginBottom: 20, fontSize: '0.88rem' }}>
                   <div style={{ fontWeight: 700, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <AlertTriangle size={16} /> HR Diagnostic Notice: พนักงานตอบผิดทั้งหมด {30 - viewingResult.score} ข้อ
+                    <AlertTriangle size={16} /> HR Diagnostic Notice: พนักงานตอบผิดทั้งหมด {viewingResult.totalQuestions - viewingResult.score} ข้อ
                   </div>
                   <div style={{ color: 'var(--text-main)', lineHeight: 1.4 }}>
                     กรุณาแนะแนวนโยบายและกฎความปลอดภัยในข้อที่ตอบผิดด้านล่าง จากนั้นแจ้งให้พนักงานเข้าทำข้อสอบใหม่ผ่าน Google Forms ครับ
@@ -561,50 +955,63 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 </div>
               )}
 
-              {/* Itemized Question Answer Sheet */}
-              {(() => {
-                const detailedAnswers = ensureAnswersDetail(viewingResult);
-                return (
-                  <>
-                    <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>
-                      📋 รายการคำตอบและข้อที่ตอบผิด ({detailedAnswers.length} ข้อ):
-                    </h4>
+              {/* Itemized Question Answer Sheet (HR ONLY) */}
+              {!isHR ? (
+                <div style={{ padding: 24, textAlign: 'center', background: 'rgba(245, 158, 11, 0.08)', borderRadius: 16, border: '1px solid rgba(245, 158, 11, 0.3)', marginTop: 12 }}>
+                  <ShieldCheck size={36} className="text-amber" style={{ marginBottom: 10 }} />
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '1.05rem', color: '#b45309', fontWeight: 700 }}>
+                    🔒 สิทธิ์การเปิดดูเฉลยและข้อที่ตอบผิดถูกจำกัด
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    ระบบเปิดให้เฉพาะเจ้าหน้าที่ <strong>HR / Admin</strong> เป็นผู้เปิดดูและทบทวนรายละเอียดเฉลยคำตอบเพื่อความสุจริตของแบบทดสอบ<br />
+                    หากต้องการทบทวนคำตอบข้อที่สงสัย สามารถติดต่อเจ้าหน้าที่ HR เพื่อขอคำแนะนำเพิ่มเติมได้ครับ
+                  </p>
+                </div>
+              ) : (
+                (() => {
+                  const detailedAnswers = ensureAnswersDetail(viewingResult);
+                  return (
+                    <>
+                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: 12 }}>
+                        📋 รายการคำตอบและข้อที่ตอบผิด ({detailedAnswers.length} ข้อ):
+                      </h4>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {detailedAnswers.map((q, idx) => (
-                        <div
-                          key={q.questionNo || idx}
-                          style={{
-                            padding: 14,
-                            borderRadius: 12,
-                            background: q.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
-                            border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                            <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                              {q.questionText}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {detailedAnswers.map((q, idx) => (
+                          <div
+                            key={q.questionNo || idx}
+                            style={{
+                              padding: 14,
+                              borderRadius: 12,
+                              background: q.isCorrect ? 'rgba(16, 185, 129, 0.04)' : 'rgba(239, 68, 68, 0.05)',
+                              border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                                {q.questionText}
+                              </div>
+                              <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
+                                {q.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
+                              </span>
                             </div>
-                            <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
-                              {q.isCorrect ? '✅ ถูกต้อง' : '❌ ตอบผิด'}
-                            </span>
-                          </div>
 
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                            คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
-                          </div>
-
-                          {!q.isCorrect && (
-                            <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
-                              เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
+                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                              คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
+
+                            {!q.isCorrect && (
+                              <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
+                                เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -677,6 +1084,167 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               <button className="btn btn-primary" onClick={() => setShowConfigModal(false)} style={{ borderRadius: 12, padding: '8px 20px' }}>
                 บันทึกการตั้งค่า
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL 3: Interactive Online Web Quiz Modal */}
+      {showOnlineQuizModal && (
+        <div className="modal-backdrop" style={{ zIndex: 1100 }}>
+          <div className="glass-card modal-container" style={{ maxWidth: 880, width: '94%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
+            {/* Modal Header */}
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isSafetySelected ? 'linear-gradient(135deg, rgba(5, 150, 105, 0.1), rgba(16, 185, 129, 0.05))' : 'linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.05))' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {isSafetySelected ? <ShieldCheck size={20} className="text-green" /> : <Award size={20} className="text-blue" />}
+                  แบบทดสอบ{isSafetySelected ? 'ทัศนคติเกี่ยวกับความปลอดภัย (14 ข้อ)' : 'ประเมินผลการปฐมนิเทศ (30 ข้อ)'}
+                </h3>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                  พนักงาน: <strong>{currentUser.name} ({currentUser.empCode})</strong> • รอบ: <span className="badge badge-amber">{selectedPhase === 'PRE_TEST' ? 'ก่อนอบรม (Pre-Test)' : 'หลังอบรม (Post-Test)'}</span> • {passCriteriaText}
+                </div>
+              </div>
+
+              <button className="btn-icon" onClick={() => setShowOnlineQuizModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Questions Body */}
+            <div style={{ padding: 24, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {(() => {
+                const bank = isSafetySelected ? SAFETY_ATTITUDE_QUESTIONS_BANK : MASTER_QUESTIONS_BANK;
+                return bank.map((q) => {
+                  const selectedOpt = userQuizAnswers[q.questionNo];
+                  return (
+                    <div
+                      key={q.questionNo}
+                      style={{
+                        padding: 16,
+                        borderRadius: 14,
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        border: selectedOpt ? '1px solid rgba(37, 99, 235, 0.4)' : '1px solid var(--border-color)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-main)', marginBottom: 12, lineHeight: 1.4 }}>
+                        {q.questionText}
+                      </div>
+
+                      {/* Option Choices */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {(() => {
+                          let options: string[] = [];
+                          if (isSafetySelected) {
+                            options = [
+                              q.correctAnswer,
+                              q.questionNo === 1 ? 'ลองเปิดสวิทช์เริ่มเดินเครื่องทดสอบด้วยตัวเอง' :
+                              q.questionNo === 2 ? 'ตะโกน "หยุด" จากระยะไกลแล้วหัวเราะสนุกสนาน' :
+                              q.questionNo === 3 ? 'ทำต่อจนเสร็จยอมอดอาหารกลางวันเพราะกลัวงานไม่เสร็จ' :
+                              q.questionNo === 4 ? 'ฝืนยกลังไม้นั้นด้วยตัวเองเพราะไม่อยากให้ผู้จัดการมองว่าอ่อนแอ' :
+                              q.questionNo === 5 ? 'รอคนทำความสะอาดมาเจอเองแล้วเดินผ่านไป' :
+                              q.questionNo === 6 ? 'พยายามบอกเหตุผลนายจ้างและขอทำความสะอาดหลังจบชิฟท์' :
+                              q.questionNo === 7 ? 'รับคำท้าพนันทันทีเพื่อแสดงความแข็งแรง' :
+                              q.questionNo === 8 ? 'ทานยาแก้ปวดแล้วปีนขึ้นไปซ่อมไฟต่อให้เสร็จ' :
+                              q.questionNo === 9 ? 'แอบจุดสูบบุหรี่ในมุมอับเพราะคนอื่นก็ทำ' :
+                              q.questionNo === 10 ? 'ใช้แว่นตาธรรมดาใส่แทนแล้วเทโซดาไฟต่อ' :
+                              q.questionNo === 11 ? 'ทำงานด้วยวิธีเดิมต่อเพราะเกรงว่างานจะช้าลง' :
+                              q.questionNo === 12 ? 'บอกภรรยาว่าเป็นหน้าที่รับผิดชอบในการดูแลลูก' :
+                              q.questionNo === 13 ? 'ไม่เข้าชมภาพยนตร์เพราะถือว่าขับรถเก่งอยู่แล้ว' :
+                              'รับงานทันทีเพราะเงินตอบแทนสูง',
+
+                              q.questionNo === 1 ? 'สอบถามเพื่อนพนักงานข้างๆ แล้วเริ่มทำงานทันที' :
+                              q.questionNo === 2 ? 'ไม่สนใจอะไรเพราะไม่ใช่เรื่องของเรา' :
+                              q.questionNo === 3 ? 'รีบขนของเพิ่มเป็นสองเท่าเพื่อโกงเวลา' :
+                              q.questionNo === 4 ? 'ทิ้งลังไม้นั้นไว้อย่างนั้นแล้วเดินหนี' :
+                              q.questionNo === 5 ? 'เอาทรายหรือผ้ามาเช็ดบางส่วนแล้วทิ้งไว้' :
+                              q.questionNo === 6 ? 'บอกนายจ้างให้เลือกระหว่างผลผลิตหรือความสะอาด' :
+                              q.questionNo === 7 ? 'แกล้งทำเป็นเจ็บหลังเพื่อปฏิเสธคำท้า' :
+                              q.questionNo === 8 ? 'ฝืนทำงานต่อโดยไม่บอกใคร' :
+                              q.questionNo === 9 ? 'จุดสูบบุหรี่แล้วรีบดับทันที' :
+                              q.questionNo === 10 ? 'ทำงานด้วยความระมัดระวังเป็นพิเศษโดยไม่ต้องใส่หน้ากาก' :
+                              q.questionNo === 11 ? 'ขอเปลี่ยนไปอยู่แผนกอื่น' :
+                              q.questionNo === 12 ? 'เตือนลูกให้ระมัดระวังเมื่อเดินขึ้นลงบันได' :
+                              q.questionNo === 13 ? 'ไปชมภาพยนตร์เพื่อถือโอกาสพักผ่อนนอนหลับ' :
+                              'ลังเลและไม่สามารถตัดสินใจได้',
+                            ];
+
+                            // Sort deterministically by string value so correct answer position varies predictably
+                            options.sort((a, b) => (a.length % 3) - (b.length % 3));
+                          } else {
+                            options = [
+                              q.correctAnswer,
+                              'อุปกรณ์มาตรฐานทั่วไปที่ไม่บังคับใช้ในโรงงาน',
+                              'แจ้งผู้รับเหมาภายนอกเข้ามาดำเนินการแทน',
+                              'ไม่มีข้อใดถูกต้องตามมาตรฐาน CAR',
+                            ];
+                          }
+
+                          return options.map((opt, oIdx) => {
+                            const isSelected = selectedOpt === opt;
+                            return (
+                              <label
+                                key={oIdx}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 10,
+                                  padding: '10px 14px',
+                                  borderRadius: 10,
+                                  cursor: 'pointer',
+                                  background: isSelected ? 'rgba(37, 99, 235, 0.12)' : 'rgba(255, 255, 255, 0.02)',
+                                  border: isSelected ? '1px solid rgba(37, 99, 235, 0.4)' : '1px solid rgba(255, 255, 255, 0.06)',
+                                  fontSize: '0.88rem',
+                                  color: isSelected ? '#3b82f6' : 'var(--text-main)',
+                                  fontWeight: isSelected ? 600 : 400,
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`q_${q.questionNo}`}
+                                  checked={isSelected}
+                                  onChange={() => {
+                                    setUserQuizAnswers((prev) => ({
+                                      ...prev,
+                                      [q.questionNo]: opt,
+                                    }));
+                                  }}
+                                  style={{ accentColor: '#2563eb', width: 16, height: 16 }}
+                                />
+                                <span>{opt}</span>
+                              </label>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                ตอบไปแล้ว <strong>{Object.keys(userQuizAnswers).length}</strong> จาก <strong>{totalQuestionsCount}</strong> ข้อ
+              </span>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn btn-secondary" onClick={() => setShowOnlineQuizModal(false)} style={{ borderRadius: 12, padding: '8px 20px' }}>
+                  ยกเลิก
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleSubmitOnlineQuiz}
+                  disabled={Object.keys(userQuizAnswers).length < totalQuestionsCount}
+                  style={{
+                    borderRadius: 12,
+                    padding: '8px 24px',
+                    opacity: Object.keys(userQuizAnswers).length < totalQuestionsCount ? 0.6 : 1,
+                  }}
+                >
+                  ส่งข้อสอบ (Submit Exam)
+                </button>
+              </div>
             </div>
           </div>
         </div>
