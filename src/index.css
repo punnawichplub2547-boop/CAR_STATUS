@@ -762,6 +762,7 @@ h4 { font-size: 1.1rem; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 2px;
 }
 
@@ -1841,4 +1842,16 @@ th.sticky-col {
   border-radius: 50%;
   background: #5fe1a4;
   box-shadow: 0 0 10px #5fe1a4;
+}
+
+/* Org Chart Builder (React Flow) — bigger hit area + grow-on-hover so the
+   connect handles are easy to grab with a mouse. */
+.react-flow__handle {
+  transition: transform 0.12s ease;
+}
+.react-flow__handle:hover {
+  transform: scale(1.4);
+}
+.react-flow__handle-connecting {
+  background: var(--primary-hover) !important;
 }

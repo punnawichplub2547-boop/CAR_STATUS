@@ -1,11 +1,14 @@
 import React, { useRef, useState } from 'react';
 import { Users, Search, Filter, UserPlus, Network, Pencil, Camera } from 'lucide-react';
-import type { Employee } from '../types';
+import type { Employee, OrgChartNode } from '../types';
+import { OrgChartBuilder } from './OrgChartBuilder';
 
 interface EmployeeManagementProps {
   employees: Employee[];
   onAddEmployee: (newEmp: Employee) => void;
   onEditEmployee: (updatedEmp: Employee) => void;
+  orgChartNodes: OrgChartNode[];
+  onChangeOrgChartNodes: (nodes: OrgChartNode[]) => void;
 }
 
 const DEPARTMENT_OPTIONS = [
@@ -22,60 +25,12 @@ const statusLabel: Record<Employee['status'], string> = {
   RESIGNED: 'ลาออกแล้ว',
 };
 
-// Recursive org chart node — children resolved from employees[].supervisorId
-const OrgNode: React.FC<{ employee: Employee; employees: Employee[]; isRoot?: boolean }> = ({
-  employee,
-  employees,
-  isRoot,
-}) => {
-  const reports = employees.filter((e) => e.supervisorId === employee.id);
-
-  if (isRoot) {
-    return (
-      <div className="glass-card" style={{ padding: 16, width: 220 }}>
-        <div className="badge badge-purple" style={{ marginBottom: 8 }}>{employee.position}</div>
-        <div style={{ fontWeight: 600 }}>{employee.name}</div>
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{employee.department}</div>
-
-        {reports.length > 0 && (
-          <>
-            <div style={{ width: 2, height: 16, background: 'var(--border-color)', margin: '12px auto 8px' }}></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {reports.map((r) => (
-                <OrgNode key={r.id} employee={r} employees={employees} />
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="glass-card" style={{ padding: 10, background: 'rgba(255,255,255,0.03)', textAlign: 'left' }}>
-        <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{employee.name}</div>
-        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-          {employee.position}
-          {employee.status === 'PROBATION' ? ' (Probation)' : ''}
-        </div>
-      </div>
-
-      {reports.length > 0 && (
-        <div style={{ marginLeft: 16, marginTop: 6, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {reports.map((r) => (
-            <OrgNode key={r.id} employee={r} employees={employees} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   employees,
   onAddEmployee,
   onEditEmployee,
+  orgChartNodes,
+  onChangeOrgChartNodes,
 }) => {
   const [viewMode, setViewMode] = useState<'list' | 'orgChart'>('list');
   const [searchTerm, setSearchTerm] = useState('');
@@ -294,27 +249,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
           </div>
         </>
       ) : (
-        /* Org Chart View — derived from employees[].supervisorId, not hardcoded */
-        <div className="glass-card" style={{ padding: 24, textAlign: 'center' }}>
-          <h2 style={{ marginBottom: 20 }}>โครงสร้างองค์กร (CAR Organization Chart)</h2>
-
-          {/* Managing Director Top Node — no employee record backs this role in the data */}
-          <div style={{ display: 'inline-block', padding: '16px 24px', background: 'rgba(59, 130, 246, 0.15)', border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: 12, marginBottom: 24 }}>
-            <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#60a5fa' }}>Managing Director (MD)</div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>ผู้บริหารสูงสุด บจก. คอมพลีท โอโต รับเบอร์</div>
-          </div>
-
-          <div style={{ width: 2, height: 24, background: 'var(--border-color)', margin: '0 auto 24px' }}></div>
-
-          {/* Department heads: employees with no supervisorId */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 30, flexWrap: 'wrap' }}>
-            {employees
-              .filter((e) => !e.supervisorId)
-              .map((head) => (
-                <OrgNode key={head.id} employee={head} employees={employees} isRoot />
-              ))}
-          </div>
-        </div>
+        <OrgChartBuilder nodes={orgChartNodes} onChange={onChangeOrgChartNodes} employees={employees} />
       )}
 
       {/* Add Employee Modal */}

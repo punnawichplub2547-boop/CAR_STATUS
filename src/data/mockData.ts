@@ -13,7 +13,9 @@ import type {
   ExamQuestion,
   ExamSubmission,
   NotificationItem,
+  OrgChartNode,
 } from '../types';
+import { autoLayoutOrgChart } from '../utils/orgChartLayout';
 
 export const INITIAL_EMPLOYEES: Employee[] = [
   {
@@ -86,6 +88,41 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     supervisorName: 'นางสาว วรรณา สุขเจริญ',
   },
 ];
+
+const MD_ROOT_NODE_ID = 'org-md-root';
+
+function inferOrgLevel(position: string): OrgChartNode['level'] {
+  if (/manager|ผู้จัดการ/i.test(position)) return 'mgr';
+  if (/senior|อาวุโส/i.test(position)) return 'sr_officer';
+  return 'officer';
+}
+
+// Seed the freeform org chart from employees[].supervisorId so it starts
+// looking like the reporting lines already in the data. Positions are
+// computed once here via dagre; after that, drags overwrite x/y directly.
+export const INITIAL_ORG_CHART_NODES: OrgChartNode[] = autoLayoutOrgChart([
+  {
+    id: MD_ROOT_NODE_ID,
+    name: 'Managing Director (MD)',
+    title: 'ผู้บริหารสูงสุด',
+    department: 'บจก. คอมพลีท โอโต รับเบอร์',
+    // No level tag — matches the real F-HR-038 file, where MD/GM boxes
+    // carry no (…) position tag either.
+    parentId: null,
+    x: 0,
+    y: 0,
+  },
+  ...INITIAL_EMPLOYEES.map((e) => ({
+    id: `org-${e.id}`,
+    name: e.name,
+    title: e.position,
+    department: e.department,
+    level: inferOrgLevel(e.position),
+    parentId: e.supervisorId ? `org-${e.supervisorId}` : MD_ROOT_NODE_ID,
+    x: 0,
+    y: 0,
+  })),
+]);
 
 export const INITIAL_SKILL_STANDARDS: SkillStandard[] = [
   { id: 'std-1', position: 'พนักงานทั่วไป (ยางรถยนต์)', department: 'FMG-A', category: 'เครื่องจักร & การผลิต', skillName: 'การใช้งานเครื่องจักรฉีดอัดยาง', targetLevel: 75 },

@@ -34,6 +34,38 @@ export interface Employee {
   supervisorName?: string;
 }
 
+// The actual position tags used in F-HR-038 (the real CAR org chart) —
+// swapped in for an earlier invented 5-tier scheme so the dropdown matches
+// vocabulary staff already recognize. Top roles like MD/GM carry no tag in
+// the source file either, hence this is optional on OrgChartNode below.
+export type OrgChartLevel =
+  | 'mgr'
+  | 'asst_mgr'
+  | 'sr_sv'
+  | 'sr_officer'
+  | 'sr_engineer'
+  | 'leader'
+  | 'sv'
+  | 'sub_leader'
+  | 'engineer'
+  | 'officer'
+  | 'tech'
+  | 'secretary'
+  | 'asst_secretary';
+
+// Freeform, user-arrangeable org chart box. Independent of Employee records
+// so HR can sketch/reshuffle the chart without touching payroll/skill data.
+export interface OrgChartNode {
+  id: string;
+  name: string;
+  title: string;
+  department?: string;
+  level?: OrgChartLevel;
+  parentId: string | null;
+  x: number;
+  y: number;
+}
+
 export interface SkillStandard {
   id: string;
   position: string;

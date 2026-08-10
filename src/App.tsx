@@ -26,9 +26,10 @@ import {
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
   INITIAL_NOTIFICATIONS,
+  INITIAL_ORG_CHART_NODES,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode } from './types';
 
 function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
@@ -68,11 +69,12 @@ export function App() {
   const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', INITIAL_CERTIFICATES);
   const [courses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
   const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
+  const [orgChartNodes, setOrgChartNodes] = usePersistentState<OrgChartNode[]>('orgChartNodes', INITIAL_ORG_CHART_NODES);
 
   // Reset Demo Data
   const handleResetDemoData = () => {
     if (window.confirm('คุณต้องการรีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?')) {
-      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications'];
+      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications', 'orgChartNodes'];
       keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
       window.location.reload();
     }
@@ -194,6 +196,8 @@ export function App() {
               employees={employees}
               onAddEmployee={handleAddEmployee}
               onEditEmployee={handleEditEmployee}
+              orgChartNodes={orgChartNodes}
+              onChangeOrgChartNodes={setOrgChartNodes}
             />
           )}
 
