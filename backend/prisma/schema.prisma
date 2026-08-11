@@ -7,9 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Phase 1 scope only: Employee + orientation training (F-HR-002) + exam
-// results synced from the Google Form. Certificate / SkillEvaluation / OJT
-// tables from the full design doc get added table-by-table in later phases.
+// Phase 1: Employee + orientation training (F-HR-002) + exam results synced
+// from the Google Form. Phase 2 (in progress): OJT (F-HR-004) + Probation
+// (F-HR-009) evaluations. Certificate / SkillEvaluation / Org Chart tables
+// from the full design doc get added table-by-table in later phases.
 
 model Employee {
   id                Int      @id @default(autoincrement())
@@ -25,8 +26,10 @@ model Employee {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  examSubmissions     ExamSubmission[]
-  trainingAttendances TrainingAttendance[]
+  examSubmissions      ExamSubmission[]
+  trainingAttendances  TrainingAttendance[]
+  ojtParticipants      OjtParticipant[]
+  probationEvaluations ProbationEvaluation[]
 
   @@map("employees")
 }
@@ -88,4 +91,106 @@ model ExamSubmission {
 
   @@index([empCode])
   @@map("exam_submissions")
+}
+
+// F-HR-004 Form A: one OJT training session (Form B — multi-trainee — uses
+// the same shape; the frontend just doesn't send >1 participant yet).
+model OjtSession {
+  id                   Int      @id @default(autoincrement())
+  formType             String // "A_NEW_HIRE" | "B_CHANGE"
+  department           String
+  position             String
+  courseName           String
+  instructor           String
+  location             String
+  trainingDateFrom     DateTime
+  trainingDateTo       DateTime
+  timeRange            String
+  evaluationMethod     String // "PRE_POST_TEST" | "PRACTICAL" | "Q_AND_A"
+  hasAttachment        Boolean  @default(false)
+  purposeType          String? // "NEW_HIRE" | "TRANSFER" — Form A only
+  changeReasonCategory String? // Form B only
+  assessorName         String
+  managerName          String
+  createdAt            DateTime @default(now())
+
+  contentItems OjtContentItem[]
+  participants OjtParticipant[]
+
+  @@map("ojt_sessions")
+}
+
+// A content/topic line within a session (Form A: up to 25 lines). Owned by
+// its session — meaningless without it, so cascades like TrainingAttendance
+// does off Employee.
+model OjtContentItem {
+  id                   Int        @id @default(autoincrement())
+  sessionId            Int
+  session              OjtSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sequence             Int
+  description          String
+  instructorSignedDate DateTime?
+  resultPercent        Int? // 0 | 25 | 50 | 75 | 100
+  remark               String?
+
+  @@unique([sessionId, sequence])
+  @@map("ojt_content_items")
+}
+
+// A trainee attending a session (Form B: up to ~10 per session). employeeId
+// is resolved server-side from empCode, same pattern as ExamSubmission.
+model OjtParticipant {
+  id                     Int        @id @default(autoincrement())
+  sessionId              Int
+  session                OjtSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  empCode                String
+  employeeId             Int?
+  employee               Employee?  @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  employeeName           String
+  preScore               Int?
+  postScore              Int?
+  instructorScorePercent Int // 0 | 25 | 50 | 75 | 100
+  isPassed               Boolean
+  remarks                String?
+
+  @@index([empCode])
+  @@map("ojt_participants")
+}
+
+// F-HR-009: 10 criteria, each scored 1-5 with weight x2 (max 100), blended
+// 80/20 with attendance. employeeId resolved server-side from empCode, same
+// pattern as ExamSubmission/OjtParticipant.
+model ProbationEvaluation {
+  id                    Int       @id @default(autoincrement())
+  empCode               String
+  employeeId            Int?
+  employee              Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  employeeName          String
+  department            String
+  position              String
+  period                String // "30_DAYS" | "90_DAYS" | "119_DAYS"
+  startingDate          DateTime
+  evalDate              DateTime
+  knowledge             Int
+  diligence             Int
+  responsibility        Int
+  teamwork              Int
+  attitude              Int
+  regulationCompliance  Int
+  problemSolving        Int
+  learningAbility       Int
+  ppeUse                Int
+  activityParticipation Int
+  criteriaTotalScore    Int
+  criteriaPercentage    Float
+  attendancePercentage  Float
+  resultScore           Float
+  grade                 String // "A+" | "A" | "B" | "C" | "D"
+  isPassed              Boolean
+  comments              String?   @db.Text
+  assessorName          String
+  createdAt             DateTime  @default(now())
+
+  @@index([empCode])
+  @@map("probation_evaluations")
 }

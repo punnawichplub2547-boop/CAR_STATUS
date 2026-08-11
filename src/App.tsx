@@ -12,7 +12,7 @@ import { ExamEngine } from './components/ExamEngine';
 import { AuditReportExporter } from './components/AuditReportExporter';
 import { TestLoginModal } from './components/TestLoginModal';
 import { computeCertificateStatus } from './utils/certificateStatus';
-import { createBackendEmployee } from './utils/api';
+import { createBackendEmployee, createBackendOjtSession, createBackendProbationEvaluation } from './utils/api';
 
 import {
   INITIAL_EMPLOYEES,
@@ -116,10 +116,82 @@ export function App() {
     setOjtSessions([session, ...ojtSessions]);
     setOjtContentItems([...contentItems, ...ojtContentItems]);
     setOjtParticipants([...participants, ...ojtParticipants]);
+    // Mirror into the backend (F-HR-004) — same best-effort pattern as
+    // handleAddEmployee. Local state above is already updated either way.
+    createBackendOjtSession({
+      formType: session.formType,
+      department: session.department,
+      position: session.position,
+      courseName: session.courseName,
+      instructor: session.instructor,
+      location: session.location,
+      trainingDateFrom: session.trainingDateFrom,
+      trainingDateTo: session.trainingDateTo,
+      timeRange: session.timeRange,
+      evaluationMethod: session.evaluationMethod,
+      hasAttachment: session.hasAttachment,
+      purposeType: session.purposeType,
+      changeReasonCategory: session.changeReasonCategory,
+      assessorName: session.assessorName,
+      managerName: session.managerName,
+      contentItems: contentItems.map((c) => ({
+        sequence: c.sequence,
+        description: c.description,
+        instructorSignedDate: c.instructorSignedDate,
+        resultPercent: c.resultPercent,
+        remark: c.remark,
+      })),
+      participants: participants.map((p) => ({
+        empCode: p.empCode,
+        employeeName: p.employeeName,
+        preScore: p.preScore,
+        postScore: p.postScore,
+        instructorScorePercent: p.instructorScorePercent,
+        isPassed: p.isPassed,
+        remarks: p.remarks,
+      })),
+    }).catch((err) => {
+      window.alert(
+        `บันทึกผล OJT ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
+      );
+    });
   };
 
   const handleAddProbationEval = (evalRec: ProbationEvaluation) => {
     setProbationEvaluations([evalRec, ...probationEvaluations]);
+    // Mirror into the backend (F-HR-009) — same best-effort pattern as
+    // handleAddEmployee.
+    createBackendProbationEvaluation({
+      empCode: evalRec.empCode,
+      employeeName: evalRec.employeeName,
+      department: evalRec.department,
+      position: evalRec.position,
+      period: evalRec.period,
+      startingDate: evalRec.startingDate,
+      evalDate: evalRec.evalDate,
+      knowledge: evalRec.scores.knowledge,
+      diligence: evalRec.scores.diligence,
+      responsibility: evalRec.scores.responsibility,
+      teamwork: evalRec.scores.teamwork,
+      attitude: evalRec.scores.attitude,
+      regulationCompliance: evalRec.scores.regulationCompliance,
+      problemSolving: evalRec.scores.problemSolving,
+      learningAbility: evalRec.scores.learningAbility,
+      ppeUse: evalRec.scores.ppeUse,
+      activityParticipation: evalRec.scores.activityParticipation,
+      criteriaTotalScore: evalRec.criteriaTotalScore,
+      criteriaPercentage: evalRec.criteriaPercentage,
+      attendancePercentage: evalRec.attendancePercentage,
+      resultScore: evalRec.resultScore,
+      grade: evalRec.grade,
+      isPassed: evalRec.isPassed,
+      comments: evalRec.comments,
+      assessorName: evalRec.assessorName,
+    }).catch((err) => {
+      window.alert(
+        `บันทึกผลประเมินทดลองงานในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
+      );
+    });
   };
 
   const handleAddCertificate = (cert: Certificate) => {

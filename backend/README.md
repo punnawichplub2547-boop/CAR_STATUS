@@ -1,8 +1,9 @@
-# CAR_STATUS Backend (Phase 1 — F-HR-002 Orientation)
+# CAR_STATUS Backend
 
-Express + Prisma + MySQL API. Scope for this phase: employee lookup for the
-F-HR-002 name list, and a webhook that receives orientation exam scores from
-a Google Form (via Google Apps Script) in real time.
+Express + Prisma + MySQL API. Phase 1 scope: employee lookup for the F-HR-002
+name list, and a webhook that receives orientation exam scores from a Google
+Form (via Google Apps Script) in real time. Phase 2 (in progress): OJT
+(F-HR-004) and Probation (F-HR-009) evaluations.
 
 ## Local setup
 
@@ -32,6 +33,10 @@ npm run dev                 # http://localhost:4000
 | GET | `/api/exam-results?empCode=EMP-1234` | exam submissions, optionally filtered |
 | GET | `/api/exam-results/:empCode` | one employee's submissions |
 | POST | `/api/webhook/exam-result` | called by Google Apps Script on form submit — requires `X-Webhook-Secret` header matching `WEBHOOK_SECRET` |
+| POST | `/api/ojt-sessions` | create an OJT session (F-HR-004) with its content lines and participants in one write; each participant's `empCode` is resolved to a backend employee if one matches |
+| GET | `/api/ojt-sessions?empCode=EMP-1234` | OJT sessions, optionally filtered to ones a given employee participated in |
+| POST | `/api/probation-evaluations` | create a probation evaluation (F-HR-009); `empCode` resolved to a backend employee if one matches |
+| GET | `/api/probation-evaluations?empCode=EMP-1234` | probation evaluations, optionally filtered |
 
 ## Google Form → backend wiring
 
