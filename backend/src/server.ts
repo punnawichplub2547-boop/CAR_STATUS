@@ -6,11 +6,25 @@ import { examResultsRouter } from './routes/examResults.js';
 
 const app = express();
 
-const corsOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
-  : ['http://localhost:5173', 'http://localhost:8088'];
-
-app.use(cors({ origin: corsOrigins }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests from localhost and intranet network IPs (e.g. 10.x.x.x, 192.168.x.x, 172.x.x.x)
+      if (
+        !origin ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://10.') ||
+        origin.startsWith('http://172.') ||
+        origin.startsWith('http://192.168.')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
