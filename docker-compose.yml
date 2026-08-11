@@ -18,9 +18,8 @@ services:
     environment:
       DATABASE_URL: "mysql://car_user:car_password@car-status-mysql:3306/car_status"
     ports:
-      # host 4001 (not 4000) — 4000 is already bound by a Windows/WSL
-      # networking process on this machine; container listens on 4000 internally
-      - "4001:4000"
+      # host 4002 — container listens on 4000 internally
+      - "4002:4000"
     depends_on:
       car-status-mysql:
         condition: service_healthy
