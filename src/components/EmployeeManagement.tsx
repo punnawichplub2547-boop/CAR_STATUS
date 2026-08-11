@@ -25,6 +25,35 @@ const statusLabel: Record<Employee['status'], string> = {
   RESIGNED: 'ลาออกแล้ว',
 };
 
+export function calculateTenure(startingDateStr?: string): string {
+  if (!startingDateStr) return '-';
+  const start = new Date(startingDateStr);
+  const now = new Date();
+  if (isNaN(start.getTime())) return '-';
+
+  let years = now.getFullYear() - start.getFullYear();
+  let months = now.getMonth() - start.getMonth();
+  let days = now.getDate() - start.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  if (years < 0) return 'เพิ่งเริ่มงาน';
+
+  const parts: string[] = [];
+  if (years > 0) parts.push(`${years} ปี`);
+  if (months > 0) parts.push(`${months} เดือน`);
+  if (years === 0 && months === 0) parts.push(`${Math.max(1, days)} วัน`);
+
+  return parts.join(' ');
+}
 export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   employees,
   onAddEmployee,
@@ -75,6 +104,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   const [department, setDepartment] = useState('FMG-A');
   const [section, setSection] = useState('');
   const [position, setPosition] = useState('พนักงานทั่วไป');
+  const [startingDate, setStartingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [status, setStatus] = useState<'PROBATION' | 'PERMANENT'>('PROBATION');
   const [role, setRole] = useState<Employee['role']>('EMPLOYEE');
   const [supervisorId, setSupervisorId] = useState('');
@@ -115,7 +145,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
       department,
       section: section || `${department} Section`,
       position,
-      startingDate: new Date().toISOString().split('T')[0],
+      startingDate: startingDate || new Date().toISOString().slice(0, 10),
       status,
       avatar,
       role,
@@ -129,6 +159,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
     setName('');
     setEmail('');
     setSection('');
+    setStartingDate(new Date().toISOString().slice(0, 10));
     setRole('EMPLOYEE');
     setSupervisorId('');
     setAvatar('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80');
@@ -211,6 +242,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                   <th>ชื่อ - นามสกุล</th>
                   <th>แผนก / หน่วยงาน</th>
                   <th>ตำแหน่ง</th>
+                  <th>วันเริ่มงาน / อายุงาน</th>
                   <th>สถานะ</th>
                   <th>การจัดการ</th>
                 </tr>
@@ -232,6 +264,12 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                       <span className="badge badge-blue">{emp.department}</span>
                     </td>
                     <td>{emp.position}</td>
+                    <td>
+                      <div style={{ fontSize: '0.88rem' }}>{emp.startingDate || '-'}</div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: 2 }}>
+                        อายุงาน: {calculateTenure(emp.startingDate)}
+                      </div>
+                    </td>
                     <td>
                       {emp.status === 'PROBATION' ? (
                         <span className="badge badge-amber">ทดลองงาน (Probation)</span>
@@ -363,6 +401,16 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                       placeholder="เช่น พนักงานทั่วไป / เจ้าหน้าที่"
                       value={position}
                       onChange={(e) => setPosition(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">วันที่เริ่มงาน (Starting Date)*</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      value={startingDate}
+                      onChange={(e) => setStartingDate(e.target.value)}
+                      required
                     />
                   </div>
                   <div className="form-group">
@@ -517,6 +565,16 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                       />
                     </div>
                     <div className="form-group">
+                      <label className="form-label">วันที่เริ่มงาน</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={editForm.startingDate ? editForm.startingDate.slice(0, 10) : ''}
+                        onChange={(e) => setEditForm({ ...editForm, startingDate: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
                       <label className="form-label">สถานะ</label>
                       <select
                         className="form-control"
@@ -577,7 +635,12 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                     />
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '1.4rem' }}>{viewingEmployee.name}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>{viewingEmployee.position}</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>
+                        {viewingEmployee.position} • {viewingEmployee.department}{' '}
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.88rem', marginLeft: 4 }}>
+                          (อายุงาน {calculateTenure(viewingEmployee.startingDate)})
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -586,7 +649,12 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                     <div><strong>อีเมล:</strong> {viewingEmployee.email}</div>
                     <div><strong>แผนก:</strong> {viewingEmployee.department}</div>
                     <div><strong>หน่วยงาน:</strong> {viewingEmployee.section}</div>
-                    <div><strong>วันเริ่มงาน:</strong> {viewingEmployee.startingDate}</div>
+                    <div>
+                      <strong>วันเริ่มงาน:</strong> {viewingEmployee.startingDate || '-'}{' '}
+                      <span style={{ color: 'var(--text-dim)', fontSize: '0.88rem', marginLeft: 4 }}>
+                        (อายุงาน {calculateTenure(viewingEmployee.startingDate)})
+                      </span>
+                    </div>
                     <div><strong>สถานะ:</strong> {statusLabel[viewingEmployee.status]}</div>
                     <div><strong>สิทธิ์ผู้ใช้:</strong> {viewingEmployee.role}</div>
                     <div>

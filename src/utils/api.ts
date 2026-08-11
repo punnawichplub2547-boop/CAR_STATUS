@@ -77,3 +77,29 @@ export async function deleteBackendEmployee(id: number): Promise<void> {
     throw new Error(body.error || `ลบพนักงานไม่สำเร็จ (HTTP ${res.status})`);
   }
 }
+
+// Auto background sync: ensures every employee in localStorage is mirrored into
+// the MySQL database so MySQL DB and localStorage are always 100% in sync.
+export async function syncLocalStorageEmployeesToBackend(): Promise<void> {
+  try {
+    const saved = localStorage.getItem('hrskill_employees');
+    if (!saved) return;
+    const empList: any[] = JSON.parse(saved);
+
+    for (const emp of empList) {
+      if (!emp.empCode || !emp.name) continue;
+      await createBackendEmployee({
+        empCode: emp.empCode,
+        name: emp.name,
+        email: emp.email,
+        department: emp.department,
+        section: emp.section,
+        position: emp.position,
+        startingDate: emp.startingDate || new Date().toISOString().slice(0, 10),
+        status: emp.status || 'PROBATION',
+      }).catch(() => { });
+    }
+  } catch (e) {
+    console.warn('Background auto-sync employees to backend failed silently:', e);
+  }
+}

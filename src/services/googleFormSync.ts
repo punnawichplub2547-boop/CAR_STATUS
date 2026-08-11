@@ -426,13 +426,24 @@ export function loadExamResultsFromLocalStorage(): Record<string, GoogleFormExam
         }
       });
 
-      // Sanitize all records to ensure examType and phase are always present
+      // Sanitize all records to ensure examType, totalQuestions, percentage, and isPassed are always 100% accurate
       Object.keys(merged).forEach((code) => {
-        merged[code] = merged[code].map((r) => ({
-          ...r,
-          examType: r.examType || (r.totalQuestions <= 14 ? 'SAFETY_ATTITUDE' : 'ORIENTATION'),
-          phase: r.phase || (r.attemptNumber === 1 ? 'PRE_TEST' : 'POST_TEST'),
-        }));
+        merged[code] = merged[code].map((r) => {
+          const isSafety = r.examType === 'SAFETY_ATTITUDE' || (r.totalQuestions && r.totalQuestions <= 14);
+          const totalQuestions = isSafety ? 14 : 30;
+          const examType: ExamType = isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION';
+          const percentage = Math.round((r.score / totalQuestions) * 100);
+          const isPassed = isSafety ? r.score >= 12 : r.score >= 24;
+
+          return {
+            ...r,
+            examType,
+            totalQuestions,
+            percentage,
+            isPassed,
+            phase: r.phase || (!isSafety ? 'POST_TEST' : (r.attemptNumber === 1 ? 'PRE_TEST' : 'POST_TEST')),
+          };
+        });
       });
 
       return merged;

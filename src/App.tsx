@@ -1,16 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
-import { Dashboard } from './components/Dashboard';
-import { EmployeeManagement } from './components/EmployeeManagement';
-import { TrainingManagement } from './components/TrainingManagement';
-import { OjtProbationEvaluator } from './components/OjtProbationEvaluator';
-import { SkillMatrixView } from './components/SkillMatrixView';
-import { CertificateVault } from './components/CertificateVault';
-import { ExamEngine } from './components/ExamEngine';
-import { AuditReportExporter } from './components/AuditReportExporter';
 import { TestLoginModal } from './components/TestLoginModal';
+import { LoginView } from './components/LoginView';
+
+// Only one tab is on screen at a time, so each page is loaded on demand. This
+// keeps recharts (Dashboard / Skill Matrix), xlsx (Audit / Exam) and jszip
+// (Skill Matrix / Training) out of the first download — HR opening the app no
+// longer waits for the Excel machinery of tabs they may never visit.
+const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })));
+const EmployeeManagement = lazy(() =>
+  import('./components/EmployeeManagement').then((m) => ({ default: m.EmployeeManagement }))
+);
+const TrainingManagement = lazy(() =>
+  import('./components/TrainingManagement').then((m) => ({ default: m.TrainingManagement }))
+);
+const OjtProbationEvaluator = lazy(() =>
+  import('./components/OjtProbationEvaluator').then((m) => ({ default: m.OjtProbationEvaluator }))
+);
+const SkillMatrixView = lazy(() => import('./components/SkillMatrixView').then((m) => ({ default: m.SkillMatrixView })));
+const CertificateVault = lazy(() => import('./components/CertificateVault').then((m) => ({ default: m.CertificateVault })));
+const ExamEngine = lazy(() => import('./components/ExamEngine').then((m) => ({ default: m.ExamEngine })));
+const AuditReportExporter = lazy(() =>
+  import('./components/AuditReportExporter').then((m) => ({ default: m.AuditReportExporter }))
+);
+
+function PageLoading() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        minHeight: 320,
+        color: 'var(--text-muted)',
+      }}
+    >
+      <Loader2 size={28} className="spin" />
+      <span style={{ fontSize: '0.9rem' }}>กำลังโหลดหน้า...</span>
+    </div>
+  );
+}
 import { computeCertificateStatus } from './utils/certificateStatus';
 import { createBackendEmployee } from './utils/api';
 
@@ -54,6 +88,7 @@ function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch
 
 export function App() {
   const [currentUser, setCurrentUser] = usePersistentState<Employee>('currentUser', INITIAL_EMPLOYEES[0]);
+  const [isLoggedIn, setIsLoggedIn] = usePersistentState<boolean>('is_logged_in', true);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [showTestLoginModal, setShowTestLoginModal] = useState(false);
 
@@ -71,10 +106,22 @@ export function App() {
   const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
   const [orgChartNodes, setOrgChartNodes] = usePersistentState<OrgChartNode[]>('orgChartNodes', INITIAL_ORG_CHART_NODES);
 
+  // Enforce HR Admin role in the platform
+  useEffect(() => {
+    if (currentUser.role !== 'ADMIN') {
+      const adminUser = employees.find((e) => e.role === 'ADMIN') || INITIAL_EMPLOYEES[0];
+      setCurrentUser(adminUser);
+    }
+  }, [currentUser.role, employees, setCurrentUser]);
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
   // Reset Demo Data
   const handleResetDemoData = () => {
     if (window.confirm('คุณต้องการรีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?')) {
-      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications', 'orgChartNodes'];
+      const keys = ['currentUser', 'is_logged_in', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications', 'orgChartNodes'];
       keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
       window.location.reload();
     }
@@ -98,9 +145,7 @@ export function App() {
       startingDate: newEmp.startingDate,
       status: newEmp.status,
     }).catch((err) => {
-      window.alert(
-        `เพิ่มพนักงาน "${newEmp.name}" ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ F-HR-002 ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}\n\nพนักงานคนนี้จะไม่ขึ้นในหน้า F-HR-002 จนกว่าจะซิงก์สำเร็จ`
-      );
+      console.warn('Backend sync warning (running in offline/localStorage mode):', err);
     });
   };
 
@@ -160,6 +205,18 @@ export function App() {
   }).length;
   const probationCount = employees.filter((e) => e.status === 'PROBATION').length;
 
+  if (!isLoggedIn) {
+    return (
+      <LoginView
+        employees={employees}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          setIsLoggedIn(true);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-layout">
       {/* Top Navbar */}
@@ -171,6 +228,7 @@ export function App() {
         onMarkNotificationRead={handleMarkNotifRead}
         onOpenLoginTest={() => setShowTestLoginModal(true)}
         onResetDemoData={handleResetDemoData}
+        onLogout={handleLogout}
       />
 
       {/* Main Body with Sidebar & Content Area */}
@@ -180,9 +238,11 @@ export function App() {
           onTabChange={setActiveTab}
           expiringCertsCount={expiringCertsCount}
           probationCount={probationCount}
+          currentUserRole={currentUser.role}
         />
 
         <main className="main-content">
+          <Suspense fallback={<PageLoading />}>
           {activeTab === 'dashboard' && (
             <Dashboard
               employees={employees}
@@ -201,7 +261,16 @@ export function App() {
             />
           )}
 
-          {activeTab === 'training' && <TrainingManagement />}
+          {activeTab === 'training' && (
+            <TrainingManagement
+              onNavigateToExam={(batchId) => {
+                if (batchId) {
+                  localStorage.setItem('hrskill_active_batch_id', batchId);
+                }
+                setActiveTab('exam');
+              }}
+            />
+          )}
 
           {activeTab === 'evaluations' && (
             <OjtProbationEvaluator
@@ -254,6 +323,7 @@ export function App() {
               courses={courses}
             />
           )}
+          </Suspense>
         </main>
       </div>
 

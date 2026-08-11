@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   ExternalLink,
   RefreshCw,
@@ -19,7 +19,9 @@ import {
   ArrowRight,
   ClipboardList,
 } from 'lucide-react';
-import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap } from '../types';
+import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap, OrientationBatch } from '../types';
+import { loadOrientationBatchesFromLocalStorage } from '../services/orientationBatchService';
+import { calculateTenure } from './EmployeeManagement';
 import {
   DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_GOOGLE_FORM_URL,
@@ -72,14 +74,15 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     loadPreTestLockStatusFromLocalStorage()
   );
 
-  const isPreTestClosed = Boolean(preTestLockMap[currentUser.empCode]?.[selectedExamType]);
+  const isPreTestClosed = selectedExamType === 'ORIENTATION' ? true : Boolean(preTestLockMap[currentUser.empCode]?.[selectedExamType]);
 
   const handleTogglePreTestLock = (empCode: string) => {
     const currentStatus = Boolean(preTestLockMap[empCode]?.[selectedExamType]);
+    const existingLocks = preTestLockMap[empCode] || { SAFETY_ATTITUDE: false, ORIENTATION: false };
     const updatedMap: PreTestLockMap = {
       ...preTestLockMap,
       [empCode]: {
-        ...(preTestLockMap[empCode] || {}),
+        ...existingLocks,
         [selectedExamType]: !currentStatus,
       },
     };
@@ -124,7 +127,22 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
 
   // Filter for Directory
   const [selectedDeptFilter, setSelectedDeptFilter] = useState('ALL');
+  const [selectedBatchId, setSelectedBatchId] = useState(() => {
+    const pending = localStorage.getItem('hrskill_active_batch_id');
+    return pending || 'ALL';
+  });
   const [searchQuery, setSearchQuery] = useState('');
+  const [orientationBatches, setOrientationBatches] = useState<OrientationBatch[]>(() => loadOrientationBatchesFromLocalStorage());
+
+  useEffect(() => {
+    setOrientationBatches(loadOrientationBatchesFromLocalStorage());
+    const pending = localStorage.getItem('hrskill_active_batch_id');
+    if (pending) {
+      setSelectedBatchId(pending);
+      localStorage.removeItem('hrskill_active_batch_id');
+    }
+  }, []);
+
 
   // Handle Excel/CSV File Upload
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,14 +250,14 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
     }
   }, [appsScriptUrl]);
 
-  // Smart Live Auto-Sync Polling (Every 30s & Only When Page Visible)
+  // Smart Live Auto-Sync Polling (Every 15s & Only When Page Visible)
   useEffect(() => {
     handleSyncData(true);
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         handleSyncData(true);
       }
-    }, 30000);
+    }, 15000);
     return () => clearInterval(interval);
   }, [handleSyncData]);
 
@@ -322,24 +340,103 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   // Active User Results filtered by current ExamType and Phase
   const allUserResults = getEmployeeExamResults(currentUser.empCode);
   const activeUserHistory = allUserResults.filter((r) => {
-    const matchType = (r.examType || 'ORIENTATION') === selectedExamType;
-    const matchPhase = (r.phase || 'POST_TEST') === selectedPhase;
+    const isSafety = r.examType === 'SAFETY_ATTITUDE' || (r.totalQuestions && r.totalQuestions <= 14);
+    const recType: ExamType = isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION';
+    const matchType = recType === selectedExamType;
+    const matchPhase = selectedExamType === 'ORIENTATION' ? true : (r.phase || 'POST_TEST') === selectedPhase;
     return matchType && matchPhase;
   });
   const activeUserLatest = activeUserHistory.length > 0 ? activeUserHistory[activeUserHistory.length - 1] : null;
 
   // Pre-Test vs Post-Test Comparison for active user
-  const preResult = allUserResults.find((r) => (r.examType || 'ORIENTATION') === selectedExamType && r.phase === 'PRE_TEST');
-  const postResult = allUserResults.find((r) => (r.examType || 'ORIENTATION') === selectedExamType && (r.phase === 'POST_TEST' || !r.phase));
-
-  // Filtered employees for Admin Directory
-  const filteredEmployees = employees.filter((e) => {
-    const matchesDept = selectedDeptFilter === 'ALL' || e.department === selectedDeptFilter;
-    const matchesSearch =
-      e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      e.empCode.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesDept && matchesSearch;
+  const preResult = allUserResults.find((r) => {
+    const isSafety = r.examType === 'SAFETY_ATTITUDE' || (r.totalQuestions && r.totalQuestions <= 14);
+    return (isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION') === selectedExamType && r.phase === 'PRE_TEST';
   });
+  const postResult = allUserResults.find((r) => {
+    const isSafety = r.examType === 'SAFETY_ATTITUDE' || (r.totalQuestions && r.totalQuestions <= 14);
+    return (isSafety ? 'SAFETY_ATTITUDE' : 'ORIENTATION') === selectedExamType && (r.phase === 'POST_TEST' || !r.phase);
+  });
+
+  // Pagination State for Super Smooth Rendering
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 15;
+
+  const selectedBatch = useMemo(() => {
+    if (selectedBatchId === 'ALL') return null;
+    return orientationBatches.find((b) => b.id === selectedBatchId) || null;
+  }, [selectedBatchId, orientationBatches]);
+
+  const handleUnlockBatchPreTest = (batch: OrientationBatch) => {
+    const updatedMap: PreTestLockMap = { ...preTestLockMap };
+    batch.empCodes.forEach((code) => {
+      const empCode = code.trim().toUpperCase();
+      const existingLocks = updatedMap[empCode] || { SAFETY_ATTITUDE: false, ORIENTATION: false };
+      updatedMap[empCode] = {
+        ...existingLocks,
+        [selectedExamType]: true,
+      };
+    });
+    setPreTestLockMap(updatedMap);
+    savePreTestLockStatusToLocalStorage(updatedMap);
+    setImportStatusMessage(`🔓 ปลดล็อคข้อสอบหลังอบรม (Post-Test) สำหรับพนักงาน ${batch.empCodes.length} คนในรอบ "${batch.batchName}" เรียบร้อยแล้ว! ✅`);
+    setTimeout(() => setImportStatusMessage(null), 5000);
+  };
+
+  // Filtered employees with useMemo to eliminate render lag
+  const filteredEmployees = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    const batchCodes = selectedBatch ? new Set(selectedBatch.empCodes.map((c) => c.trim().toUpperCase())) : null;
+
+    return employees.filter((e) => {
+      const matchesDept = selectedDeptFilter === 'ALL' || e.department === selectedDeptFilter;
+      const matchesSearch = !q || e.name.toLowerCase().includes(q) || e.empCode.toLowerCase().includes(q);
+      const matchesBatch = !batchCodes || batchCodes.has(e.empCode.trim().toUpperCase());
+      return matchesDept && matchesSearch && matchesBatch;
+    });
+  }, [employees, selectedDeptFilter, selectedBatch, searchQuery]);
+
+  // Comprehensive HR Admin Stats Overview
+  const hrStats = useMemo(() => {
+    let passedBoth = 0;
+    let attemptedSome = 0;
+    let pendingAny = 0;
+
+    employees.forEach((emp) => {
+      const codeKey = (emp.empCode || '').trim().toUpperCase();
+      const allRecords = examResultsMap[codeKey] || examResultsMap[emp.empCode] || [];
+      const safetyPassed = allRecords.some((r) => (r.examType === 'SAFETY_ATTITUDE' || r.totalQuestions === 14) && r.isPassed);
+      const oriPassed = allRecords.some((r) => (r.examType === 'ORIENTATION' || r.totalQuestions === 30) && r.isPassed);
+
+      if (safetyPassed && oriPassed) {
+        passedBoth++;
+      } else if (allRecords.length > 0) {
+        attemptedSome++;
+      } else {
+        pendingAny++;
+      }
+    });
+
+    return { passedBoth, attemptedSome, pendingAny, total: employees.length };
+  }, [employees, examResultsMap]);
+
+  // Reset pagination when filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedDeptFilter, selectedBatchId, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / PAGE_SIZE));
+
+  // The list can also shrink without the filter/search changing (an employee
+  // is deleted, or a sync trims the directory), which would leave currentPage
+  // past the end. Clamping here matters because the pagination bar only
+  // renders while there is more than one page — HR would otherwise be left
+  // staring at an empty table with no button to page back.
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedEmployees = useMemo(() => {
+    const start = (safePage - 1) * PAGE_SIZE;
+    return filteredEmployees.slice(start, start + PAGE_SIZE);
+  }, [filteredEmployees, safePage]);
 
   const isSafetySelected = selectedExamType === 'SAFETY_ATTITUDE';
   const totalQuestionsCount = isSafetySelected ? 14 : 30;
@@ -401,22 +498,30 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             className="btn btn-secondary"
             onClick={() => handleSyncData(false)}
             disabled={isSyncing}
-            style={{ borderRadius: 14, padding: '10px 16px' }}
+            style={{ borderRadius: 14, padding: '10px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
             <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
             {isSyncing ? 'กำลังซิงค์ข้อมูล...' : 'ซิงค์ผลสอบล่าสุด'}
           </button>
 
-          {(currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR') && (
-            <button
-              className="btn btn-ghost"
-              onClick={() => setShowConfigModal(true)}
-              style={{ borderRadius: 14, padding: '10px 14px', border: '1px solid var(--border-color)' }}
-              title="ตั้งค่าลิงก์ Google Form & Apps Script API"
-            >
-              <Settings size={18} /> ตั้งค่า Google API
-            </button>
-          )}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: '0.78rem',
+              color: '#047857',
+              background: 'rgba(16, 185, 129, 0.1)',
+              padding: '6px 12px',
+              borderRadius: 14,
+              border: '1px solid rgba(16, 185, 129, 0.25)',
+              fontWeight: 600,
+            }}
+            title="ระบบเปิด Auto-Sync ดึงคะแนนสดจาก Google Form อัตโนมัติทุก 15 วินาที"
+          >
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+            <span>Live Auto-Sync (15s)</span>
+          </div>
         </div>
       </div>
 
@@ -447,7 +552,10 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             </button>
 
             <button
-              onClick={() => setSelectedExamType('ORIENTATION')}
+              onClick={() => {
+                setSelectedExamType('ORIENTATION');
+                setSelectedPhase('POST_TEST');
+              }}
               className={`btn ${selectedExamType === 'ORIENTATION' ? 'btn-primary' : 'btn-secondary'}`}
               style={{
                 borderRadius: 12,
@@ -460,7 +568,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 border: selectedExamType === 'ORIENTATION' ? 'none' : '1px solid var(--border-color)',
               }}
             >
-              <Award size={18} /> ชุดที่ 2: ประเมินผลการปฐมนิเทศ (30 ข้อ)
+              <Award size={18} /> ชุดที่ 2: ประเมินผลการปฐมนิเทศ (30 ข้อ - มีเฉพาะหลังอบรม)
             </button>
           </div>
         </div>
@@ -475,57 +583,78 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
           </span>
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <button
-              onClick={() => setSelectedPhase('PRE_TEST')}
-              style={{
-                borderRadius: 10,
-                padding: '6px 16px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: selectedPhase === 'PRE_TEST' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-                color: selectedPhase === 'PRE_TEST' ? '#b45309' : 'var(--text-muted)',
-                border: selectedPhase === 'PRE_TEST' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid transparent',
-              }}
-            >
-              📝 ก่อนการอบรม (Pre-Test)
-            </button>
-
-            <button
-              onClick={() => {
-                if (!isPreTestClosed) {
-                  alert('🔒 รอบหลังการอบรม (Post-Test) ถูกล็อคอยู่:\nHR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะทำข้อสอบหลังอบรมได้ครับ');
-                }
-                setSelectedPhase('POST_TEST');
-              }}
-              style={{
-                borderRadius: 10,
-                padding: '6px 16px',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                background: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)') : 'transparent',
-                color: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '#047857' : '#b91c1c') : 'var(--text-muted)',
-                border: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)') : '1px solid transparent',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              {isPreTestClosed ? '✅ หลังการอบรม (Post-Test)' : '🔒 หลังการอบรม (Post-Test - รอล็อคปิด Pre-Test)'}
-            </button>
-
-            {/* HR Control: Toggle Pre-Test Lock Status */}
-            {isHR && (
-              <button
-                className={`btn btn-xs ${isPreTestClosed ? 'btn-secondary' : 'btn-warning'}`}
-                onClick={() => handleTogglePreTestLock(currentUser.empCode)}
-                style={{ borderRadius: 10, padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                title="HR กดเพื่อปิดการสอบก่อนอบรมและปลดล็อคให้สอบหลังอบรม"
+            {selectedExamType === 'ORIENTATION' ? (
+              <div
+                style={{
+                  background: 'rgba(37, 99, 235, 0.1)',
+                  color: '#1d4ed8',
+                  padding: '6px 14px',
+                  borderRadius: 10,
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  border: '1px solid rgba(37, 99, 235, 0.25)',
+                }}
               >
-                {isPreTestClosed ? <CheckCircle2 size={14} className="text-green" /> : <AlertTriangle size={14} />}
-                {isPreTestClosed ? '🔓 เปิดสอบหลังอบรมแล้ว (Pre-Test ปิดแล้ว)' : '🔒 HR กดปิดสอบก่อนอบรม (เพื่อเปิดสอบหลังอบรม)'}
-              </button>
+                <CheckCircle2 size={16} /> หลังการอบรม (Post-Test Only — ชุด 30 ข้อมีเฉพาะหลังการอบรม)
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={() => setSelectedPhase('PRE_TEST')}
+                  style={{
+                    borderRadius: 10,
+                    padding: '6px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: selectedPhase === 'PRE_TEST' ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
+                    color: selectedPhase === 'PRE_TEST' ? '#b45309' : 'var(--text-muted)',
+                    border: selectedPhase === 'PRE_TEST' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid transparent',
+                  }}
+                >
+                  📝 ก่อนการอบรม (Pre-Test)
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!isPreTestClosed) {
+                      alert('🔒 รอบหลังการอบรม (Post-Test) ถูกล็อคอยู่:\nHR ต้องกดปิดการสอบก่อนอบรม (Close Pre-Test) ในระบบก่อน จึงจะทำข้อสอบหลังอบรมได้ครับ');
+                    }
+                    setSelectedPhase('POST_TEST');
+                  }}
+                  style={{
+                    borderRadius: 10,
+                    padding: '6px 16px',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    background: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)') : 'transparent',
+                    color: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '#047857' : '#b91c1c') : 'var(--text-muted)',
+                    border: selectedPhase === 'POST_TEST' ? (isPreTestClosed ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)') : '1px solid transparent',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {isPreTestClosed ? '✅ หลังการอบรม (Post-Test)' : '🔒 หลังการอบรม (Post-Test - รอล็อคปิด Pre-Test)'}
+                </button>
+
+                {/* HR Control: Toggle Pre-Test Lock Status */}
+                {isHR && (
+                  <button
+                    className={`btn btn-xs ${isPreTestClosed ? 'btn-secondary' : 'btn-warning'}`}
+                    onClick={() => handleTogglePreTestLock(currentUser.empCode)}
+                    style={{ borderRadius: 10, padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                    title="HR กดเพื่อปิดการสอบก่อนอบรมและปลดล็อคให้สอบหลังอบรม"
+                  >
+                    {isPreTestClosed ? <CheckCircle2 size={14} className="text-green" /> : <AlertTriangle size={14} />}
+                    {isPreTestClosed ? '🔒 HR กดปิด Pre-Test แล้ว (เปิด Post-Test)' : '🔓 HR กดปิด Pre-Test'}
+                  </button>
+                )}
+              </>
             )}
           </div>
 
@@ -618,13 +747,31 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 </div>
               )}
 
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => setViewingResult(activeUserLatest)}
-                style={{ borderRadius: 12, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              >
-                <Eye size={16} /> ดูรายละเอียดคำตอบ & ข้อที่ตอบผิด (รอบล่าสุด)
-              </button>
+              {isHR ? (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setViewingResult(activeUserLatest)}
+                  style={{ borderRadius: 12, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Eye size={16} /> ดูรายละเอียดคำตอบ & ข้อที่ตอบผิด (รอบล่าสุด)
+                </button>
+              ) : (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.8rem',
+                    color: 'var(--text-muted)',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    padding: '6px 12px',
+                    borderRadius: 10,
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  🔒 คุณสามารถดูคะแนนรวมและสถานะผ่าน/ไม่ผ่านได้ที่นี่ (เฉลยรายข้อสงวนสิทธิ์สำหรับ HR)
+                </div>
+              )}
             </div>
           </div>
         ) : (
@@ -669,21 +816,29 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                     <tr key={res.id}>
                       <td style={{ fontWeight: 700 }}>ครั้งที่ {res.attemptNumber}</td>
                       <td>{res.submittedAt}</td>
-                      <td style={{ fontWeight: 800 }}>{res.score} / 30 ข้อ</td>
-                      <td style={{ fontWeight: 700 }}>{res.percentage}%</td>
+                      <td style={{ fontWeight: 800 }}>
+                        {res.score} / {res.totalQuestions || (selectedExamType === 'SAFETY_ATTITUDE' ? 14 : 30)} ข้อ
+                      </td>
+                      <td style={{ fontWeight: 700 }}>
+                        {Math.round((res.score / (res.totalQuestions || (selectedExamType === 'SAFETY_ATTITUDE' ? 14 : 30))) * 100)}%
+                      </td>
                       <td>
                         <span className={`badge ${res.isPassed ? 'badge-green' : 'badge-red'}`}>
                           {res.isPassed ? 'PASSED (ผ่าน)' : 'FAILED (ไม่ผ่าน)'}
                         </span>
                       </td>
                       <td>
-                        <button
-                          className="btn btn-xs btn-secondary"
-                          onClick={() => setViewingResult(res)}
-                          style={{ borderRadius: 8, padding: '4px 10px', fontSize: '0.8rem' }}
-                        >
-                          <Eye size={14} /> ดูแผ่นคำตอบรอบนี้
-                        </button>
+                        {isHR ? (
+                          <button
+                            className="btn btn-xs btn-secondary"
+                            onClick={() => setViewingResult(res)}
+                            style={{ borderRadius: 8, padding: '4px 10px', fontSize: '0.8rem' }}
+                          >
+                            <Eye size={14} /> ดูแผ่นคำตอบรอบนี้
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -697,15 +852,35 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
       {/* SECTION 2: Admin & Supervisor Directory (ตารางผลสอบพนักงานทั้งหมด) */}
       {(currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR') && (
         <div className="glass-card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 16 }}>
             <div>
-              <h2 style={{ fontSize: '1.2rem', margin: 0 }}>📊 ทะเบียนติดตามผลสอบ Google Forms พนักงานทั้งหมด</h2>
+              <h2 style={{ fontSize: '1.2rem', margin: 0 }}>📊 ทะเบียนติดตามผลสอบ Google Forms พนักงานทั้งหมด (HR Executive Dashboard)</h2>
               <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                ตรวจสอบคะแนนสอบล่าสุด ประวัติการทำซ้ำ และคำตอบที่ผิดของพนักงานรายบุคคล
+                ตรวจสอบคะแนนสอบล่าสุด ประวัติการทำซ้ำ สถิติรวม และคำตอบที่ผิดของพนักงานรายบุคคล
               </span>
             </div>
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <select
+                className="form-control"
+                value={selectedBatchId}
+                onChange={(e) => setSelectedBatchId(e.target.value)}
+                style={{
+                  borderRadius: 12,
+                  width: 'auto',
+                  background: selectedBatchId !== 'ALL' ? 'rgba(37, 99, 235, 0.1)' : undefined,
+                  borderColor: selectedBatchId !== 'ALL' ? '#2563eb' : undefined,
+                  fontWeight: selectedBatchId !== 'ALL' ? 600 : undefined,
+                }}
+              >
+                <option value="ALL">📋 รอบอบรม F-HR-002 ทั้งหมด</option>
+                {orientationBatches.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    📅 วันที่ {b.trainingDate} — 🎓 {b.batchName} ({b.empCodes.length} คน)
+                  </option>
+                ))}
+              </select>
+
               <select
                 className="form-control"
                 value={selectedDeptFilter}
@@ -733,12 +908,83 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             </div>
           </div>
 
+          {/* HR Admin Summary KPI Cards */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+              gap: 12,
+              marginBottom: 20,
+            }}
+          >
+            <div style={{ background: 'rgba(37, 99, 235, 0.05)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px 16px', borderRadius: 12 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>👥 พนักงานทั้งหมด</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#1d4ed8', marginTop: 2 }}>{hrStats.total} คน</div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px 16px', borderRadius: 12 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>✅ ผ่านครบทั้ง 2 ชุด</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#047857', marginTop: 2 }}>{hrStats.passedBoth} คน</div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.05)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px 16px', borderRadius: 12 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>⏳ อยู่ระหว่างทำข้อสอบ</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#b45309', marginTop: 2 }}>{hrStats.attemptedSome} คน</div>
+            </div>
+            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px 16px', borderRadius: 12 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>🔴 ยังไม่ได้เริ่มสอบ</div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#b91c1c', marginTop: 2 }}>{hrStats.pendingAny} คน</div>
+            </div>
+          </div>
+
+          {selectedBatch && (
+            <div
+              style={{
+                background: 'rgba(37, 99, 235, 0.08)',
+                border: '1px solid rgba(37, 99, 235, 0.25)',
+                borderRadius: 12,
+                padding: '14px 18px',
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: selectedBatch.courseTopics?.length ? 10 : 0 }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '0.98rem', color: '#1d4ed8' }}>
+                    🎓 รอบการอบรม F-HR-002: {selectedBatch.batchName} {selectedBatch.courseName ? `(${selectedBatch.courseName})` : ''}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    วันที่อบรม: {selectedBatch.trainingDate} • วิทยากร: {selectedBatch.instructor || '-'} • สถานที่: {selectedBatch.location || '-'} • ผู้เข้าร่วมอบรม: <strong>{selectedBatch.empCodes.length} คน</strong>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-xs btn-primary"
+                  onClick={() => handleUnlockBatchPreTest(selectedBatch)}
+                  style={{ borderRadius: 10, padding: '6px 14px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <ShieldCheck size={14} /> ปลดล็อคสอบหลังอบรม (Post-Test) ทั้งรอบนี้
+                </button>
+              </div>
+
+              {selectedBatch.courseTopics && selectedBatch.courseTopics.length > 0 && (
+                <div style={{ background: 'rgba(255, 255, 255, 0.5)', border: '1px dashed rgba(37, 99, 235, 0.3)', padding: '10px 14px', borderRadius: 10 }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>
+                    📚 เนื้อหาหลักสูตรการอบรมในรอบนี้ ({selectedBatch.courseTopics.length} หัวข้อ):
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '4px 12px', fontSize: '0.8rem', color: 'var(--text-main)' }}>
+                    {selectedBatch.courseTopics.map((topic, i) => (
+                      <div key={i}>• {topic}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="table-responsive">
             <table className="table" style={{ width: '100%', fontSize: '0.88rem' }}>
               <thead>
                 <tr>
                   <th>พนักงาน</th>
                   <th>แผนก / ตำแหน่ง</th>
+                  <th>📋 รอบอบรม F-HR-002</th>
                   <th>🛡️ ทัศนคติความปลอดภัย (14 ข้อ)</th>
                   <th>🏆 ประเมินการปฐมนิเทศ (30 ข้อ)</th>
                   <th>สถานะรวม</th>
@@ -746,7 +992,11 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                 </tr>
               </thead>
               <tbody>
-                {filteredEmployees.map((emp) => {
+                {paginatedEmployees.map((emp: Employee) => {
+                  const empBatches = orientationBatches.filter(
+                    (b) => b.empCodes.some((code) => code.trim().toUpperCase() === emp.empCode.trim().toUpperCase())
+                  );
+
                   const allRecords = getEmployeeExamResults(emp.empCode);
                   const safetyRecords = allRecords.filter((r) => r.examType === 'SAFETY_ATTITUDE' || r.totalQuestions === 14);
                   const oriRecords = allRecords.filter((r) => r.examType === 'ORIENTATION' || r.totalQuestions === 30);
@@ -766,7 +1016,14 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                           <img src={emp.avatar} alt={emp.name} style={{ width: 34, height: 34, borderRadius: 8, objectFit: 'cover' }} />
                           <div>
-                            <div style={{ fontWeight: 600 }}>{emp.name}</div>
+                            <div style={{ fontWeight: 600 }}>
+                              {emp.name}{' '}
+                              {emp.startingDate && (
+                                <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 400, marginLeft: 4 }}>
+                                  (อายุงาน {calculateTenure(emp.startingDate)})
+                                </span>
+                              )}
+                            </div>
                             <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{emp.empCode}</div>
                           </div>
                         </div>
@@ -774,6 +1031,37 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                       <td>
                         <div>{emp.department}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{emp.position}</div>
+                      </td>
+
+                      {/* Orientation Batch Info Column */}
+                      <td>
+                        {empBatches.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {empBatches.map((b) => (
+                              <button
+                                key={b.id}
+                                type="button"
+                                onClick={() => setSelectedBatchId(b.id)}
+                                className={`badge ${b.category === 'REGULATION' ? 'badge-blue' : 'badge-green'}`}
+                                style={{
+                                  cursor: 'pointer',
+                                  fontSize: '0.75rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  border: 'none',
+                                  textAlign: 'left',
+                                  padding: '3px 8px',
+                                }}
+                                title={`คลิกเพื่อคัดกรองเฉพาะรอบอบรมนี้ (วิทยากร: ${b.instructor || '-'})`}
+                              >
+                                📅 {b.trainingDate} ({b.category === 'REGULATION' ? 'กฎระเบียบ' : 'ความปลอดภัย'})
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>- ไม่พบรอบอบรม -</span>
+                        )}
                       </td>
 
                       {/* Safety 14Q Score Column */}
@@ -805,28 +1093,19 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
                         )}
                       </td>
 
-                      {/* Orientation 30Q Score Column */}
+                      {/* Orientation 30Q Score Column (Post-Test Only) */}
                       <td>
-                        {oriPre || oriPost ? (
+                        {oriPost || oriPre ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {oriPre && (
-                              <div style={{ fontSize: '0.85rem' }}>
-                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Pre: </span>
-                                <span style={{ fontWeight: 800, color: oriPre.isPassed ? '#047857' : '#b91c1c' }}>
-                                  {oriPre.score} / 30 ข้อ
-                                </span>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPre.percentage}%)</span>
-                              </div>
-                            )}
-                            {oriPost && (
-                              <div style={{ fontSize: '0.85rem' }}>
-                                <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
-                                <span style={{ fontWeight: 800, color: oriPost.isPassed ? '#047857' : '#b91c1c' }}>
-                                  {oriPost.score} / 30 ข้อ
-                                </span>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>({oriPost.percentage}%)</span>
-                              </div>
-                            )}
+                            <div style={{ fontSize: '0.85rem' }}>
+                              <span style={{ fontWeight: 700, color: 'var(--text-dim)' }}>Post: </span>
+                              <span style={{ fontWeight: 800, color: (oriPost || oriPre)!.isPassed ? '#047857' : '#b91c1c' }}>
+                                {(oriPost || oriPre)!.score} / 30 ข้อ
+                              </span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginLeft: 4 }}>
+                                ({(oriPost || oriPre)!.percentage}%)
+                              </span>
+                            </div>
                             <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>({oriRecords.length} รอบ)</div>
                           </div>
                         ) : (
@@ -886,6 +1165,36 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
               </tbody>
             </table>
           </div>
+
+          {/* High-Performance Pagination Controls */}
+          {filteredEmployees.length > PAGE_SIZE && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border-color)', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                แสดงลำดับที่ <strong>{(safePage - 1) * PAGE_SIZE + 1}</strong> ถึง <strong>{Math.min(safePage * PAGE_SIZE, filteredEmployees.length)}</strong> จากทั้งหมด <strong>{filteredEmployees.length}</strong> พนักงาน
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <button
+                  className="btn btn-xs btn-secondary"
+                  onClick={() => setCurrentPage(Math.max(1, safePage - 1))}
+                  disabled={safePage === 1}
+                  style={{ borderRadius: 8, padding: '6px 14px', fontSize: '0.82rem', opacity: safePage === 1 ? 0.5 : 1 }}
+                >
+                  ◀ หน้าก่อนหน้า
+                </button>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, padding: '0 8px' }}>
+                  หน้า {safePage} / {totalPages}
+                </span>
+                <button
+                  className="btn btn-xs btn-secondary"
+                  onClick={() => setCurrentPage(Math.min(totalPages, safePage + 1))}
+                  disabled={safePage === totalPages}
+                  style={{ borderRadius: 8, padding: '6px 14px', fontSize: '0.82rem', opacity: safePage === totalPages ? 0.5 : 1 }}
+                >
+                  หน้าถัดไป ▶
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

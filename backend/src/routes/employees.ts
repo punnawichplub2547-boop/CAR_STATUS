@@ -61,15 +61,27 @@ employeesRouter.post('/employees', async (req, res) => {
     return;
   }
 
-  const employee = await prisma.employee.create({
-    data: {
+  const parsedDate = isNaN(Date.parse(startingDate)) ? new Date() : new Date(startingDate);
+
+  const employee = await prisma.employee.upsert({
+    where: { empCode },
+    update: {
+      name,
+      email,
+      department,
+      section,
+      position,
+      startingDate: parsedDate,
+      status: status ?? 'PROBATION',
+    },
+    create: {
       empCode,
       name,
       email,
       department,
       section,
       position,
-      startingDate: new Date(startingDate),
+      startingDate: parsedDate,
       status: status ?? 'PROBATION',
     },
   });

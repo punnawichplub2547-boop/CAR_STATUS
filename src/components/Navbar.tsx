@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn, RotateCcw } from 'lucide-react';
+import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn, LogOut, RotateCcw } from 'lucide-react';
 import type { Employee, NotificationItem } from '../types';
 
 interface NavbarProps {
@@ -10,6 +10,7 @@ interface NavbarProps {
   onMarkNotificationRead: (id: string) => void;
   onOpenLoginTest?: () => void;
   onResetDemoData?: () => void;
+  onLogout?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -20,6 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onMarkNotificationRead,
   onOpenLoginTest,
   onResetDemoData,
+  onLogout,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -189,26 +191,77 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {showUserMenu && (
             <div className="user-dropdown">
-              <div className="dropdown-title">สลับผู้ใช้งาน (Switch Role Demo)</div>
-              {allUsers.map((u) => (
+              <div className="dropdown-title">บัญชีผู้ใช้งานปัจจุบัน</div>
+              <div style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, marginBottom: 8 }}>
+                <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{currentUser.name}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {currentUser.empCode} • {currentUser.department} ({currentUser.position})
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <span className={`badge ${currentUser.role === 'ADMIN' ? 'badge-purple' : currentUser.role === 'SUPERVISOR' ? 'badge-blue' : 'badge-amber'}`}>
+                    สิทธิ์: {currentUser.role}
+                  </span>
+                </div>
+              </div>
+
+              {allUsers.filter((u) => u.role === 'ADMIN').length > 1 && (
+                <>
+                  <div className="dropdown-title" style={{ marginTop: 8 }}>สลับบัญชีฝ่ายบุคคล (HR Accounts)</div>
+                  {allUsers.filter((u) => u.role === 'ADMIN').map((u) => (
+                    <div
+                      key={u.id}
+                      className={`user-option ${u.id === currentUser.id ? 'active' : ''}`}
+                      onClick={() => {
+                        onSwitchUser(u);
+                        setShowUserMenu(false);
+                      }}
+                    >
+                      <img src={u.avatar} alt={u.name} className="opt-avatar" />
+                      <div className="opt-info">
+                        <span className="opt-name">{u.name}</span>
+                        <span className="opt-role">
+                          {u.role} - {u.position}
+                        </span>
+                      </div>
+                      {u.id === currentUser.id && <UserCheck size={16} className="text-blue" />}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {onLogout && (
                 <div
-                  key={u.id}
-                  className={`user-option ${u.id === currentUser.id ? 'active' : ''}`}
-                  onClick={() => {
-                    onSwitchUser(u);
-                    setShowUserMenu(false);
+                  style={{
+                    marginTop: 10,
+                    paddingTop: 8,
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
                   }}
                 >
-                  <img src={u.avatar} alt={u.name} className="opt-avatar" />
-                  <div className="opt-info">
-                    <span className="opt-name">{u.name}</span>
-                    <span className="opt-role">
-                      {u.role} - {u.position}
-                    </span>
-                  </div>
-                  {u.id === currentUser.id && <UserCheck size={16} className="text-blue" />}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onLogout();
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '8px 12px',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      borderRadius: 8,
+                      color: '#f87171',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <LogOut size={15} /> ออกจากระบบ (Sign Out)
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>

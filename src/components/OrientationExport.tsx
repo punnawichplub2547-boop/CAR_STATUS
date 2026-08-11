@@ -1,18 +1,50 @@
 import React, { useEffect, useState } from 'react';
-import { FileSpreadsheet, RefreshCw, AlertCircle, CheckSquare, Square, Pencil, Trash2, X } from 'lucide-react';
+import { FileSpreadsheet, RefreshCw, AlertCircle, CheckSquare, Square, Pencil, Trash2, X, BookOpen, Layers, ExternalLink } from 'lucide-react';
 import {
   fetchPendingOrientationEmployees,
   updateBackendEmployee,
   deleteBackendEmployee,
+  syncLocalStorageEmployeesToBackend,
   type PendingOrientationEmployee,
   type ExamCategoryStatus,
 } from '../utils/api';
 import { exportOrientationFHR002, ORIENTATION_ROW_CAPACITY, type OrientationCourseCategory } from '../utils/fhr002Exporter';
+import {
+  saveOrientationBatch,
+  loadOrientationBatchesFromLocalStorage,
+  deleteOrientationBatch,
+} from '../services/orientationBatchService';
+import type { OrientationBatch } from '../types';
 
 const COURSE_OPTIONS: { value: OrientationCourseCategory; label: string }[] = [
   { value: 'REGULATION', label: 'กฎระเบียบข้อบังคับในการทำงาน' },
   { value: 'SAFETY', label: 'ความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน' },
 ];
+
+export const DEFAULT_COURSE_TOPICS: Record<OrientationCourseCategory, { courseName: string; topics: string[] }> = {
+  REGULATION: {
+    courseName: 'กฎระเบียบข้อบังคับในการทำงาน',
+    topics: [
+      '1. ประวัติความเป็นมาของบริษัทเบื้องต้น/กฎระเบียบข้อบังคับในการทำงาน',
+      '2. ค่านิยมองค์กร',
+      '3. จรรยาบรรณทางธุรกิจ',
+      '4. มาตรฐานที่ใช้ในการผลิตและมาตรฐานที่เกี่ยวข้อง',
+      '5. ข้อกำหนดและจิตสำนึกด้านคุณภาพ',
+      '6. ความรู้เรื่อง 5 ส.',
+    ],
+  },
+  SAFETY: {
+    courseName: 'ความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน',
+    topics: [
+      '1. ข้อกำหนดและจิตสำนึกด้านสิ่งแวดล้อม',
+      '2. การอนุรักษ์พลังงานและการจัดการด้านสิ่งแวดล้อม',
+      '3. ความรู้เกี่ยวกับความปลอดภัยในการทำงาน',
+      '4. กฎหมายความปลอดภัยอาชีวอนามัยและสภาพแวดล้อมในการทำงาน',
+      '5. คู่มือว่าด้วยความปลอดภัยอาชีวอนามัยและสภาพแวดล้อมในการทำงาน',
+      '6. การจัดการสารต้องห้ามในผลิตภัณฑ์',
+    ],
+  },
+};
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -38,14 +70,19 @@ const ExamStatusBadge: React.FC<{ label: string; status: ExamCategoryStatus | nu
   );
 };
 
-export const OrientationExport: React.FC = () => {
+export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string) => void }> = ({ onNavigateToExam }) => {
   const [category, setCategory] = useState<OrientationCourseCategory>('REGULATION');
   const [trainingDate, setTrainingDate] = useState(todayIso());
   const [timeRange, setTimeRange] = useState('09.00 - 16.00 น.');
   const [morningTime, setMorningTime] = useState('09.00');
   const [afternoonTime, setAfternoonTime] = useState('13.00');
-  const [instructor, setInstructor] = useState('');
+  const [instructor, setInstructor] = useState('เจ้าหน้าที่ ฝ่าย HR&GA');
   const [location, setLocation] = useState('ห้อง TRAINING บจก. คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง');
+
+  const [courseTopicsText, setCourseTopicsText] = useState(() =>
+    DEFAULT_COURSE_TOPICS.REGULATION.topics.join('\n')
+  );
+  const [savedBatches, setSavedBatches] = useState<OrientationBatch[]>([]);
 
   const [pending, setPending] = useState<PendingOrientationEmployee[]>([]);
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
@@ -59,22 +96,66 @@ export const OrientationExport: React.FC = () => {
   const [editError, setEditError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  const loadBatches = () => {
+    setSavedBatches(loadOrientationBatchesFromLocalStorage());
+  };
+
+  const handleCategoryChange = (newCat: OrientationCourseCategory) => {
+    setCategory(newCat);
+    setCourseTopicsText(DEFAULT_COURSE_TOPICS[newCat].topics.join('\n'));
+  };
+
   const loadPending = async () => {
     setLoading(true);
     setLoadError(null);
+    let apiEmployees: PendingOrientationEmployee[] = [];
     try {
-      const employees = await fetchPendingOrientationEmployees();
-      setPending(employees);
-      setSelectedCodes(new Set(employees.map((e) => e.empCode)));
+      apiEmployees = await fetchPendingOrientationEmployees();
     } catch (err) {
-      setLoadError(err instanceof Error ? err.message : 'โหลดรายชื่อพนักงานใหม่ไม่สำเร็จ');
+      console.warn('Backend fetch error, attempting merge with localStorage:', err);
+    }
+
+    try {
+      const savedEmp = localStorage.getItem('hrskill_employees');
+      const empList: any[] = savedEmp ? JSON.parse(savedEmp) : [];
+      const localPending: PendingOrientationEmployee[] = empList
+        .filter((e) => !e.orientationPassed)
+        .map((e, idx) => ({
+          id: typeof e.id === 'number' ? e.id : idx + 1000,
+          empCode: e.empCode,
+          name: e.name,
+          department: e.department,
+          section: e.section || null,
+          position: e.position,
+          startingDate: e.startingDate || todayIso(),
+          status: e.status || 'PROBATION',
+          orientationPassed: false,
+          examStatus: {
+            REGULATION: null,
+            SAFETY: null,
+          },
+        }));
+
+      // Combine both lists, deduplicating by empCode (preferring API if present)
+      const mergedMap = new Map<string, PendingOrientationEmployee>();
+      localPending.forEach((e) => mergedMap.set(e.empCode.trim().toUpperCase(), e));
+      apiEmployees.forEach((e) => mergedMap.set(e.empCode.trim().toUpperCase(), e));
+
+      const mergedList = Array.from(mergedMap.values());
+      setPending(mergedList);
+      setSelectedCodes(new Set(mergedList.map((e) => e.empCode)));
+      setLoadError(null);
+    } catch {
+      setLoadError('โหลดรายชื่อพนักงานใหม่ไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    syncLocalStorageEmployeesToBackend();
     loadPending();
+    loadBatches();
   }, []);
 
   const toggleSelected = (empCode: string) => {
@@ -92,10 +173,30 @@ export const OrientationExport: React.FC = () => {
 
   const selectedAttendees = pending.filter((e) => selectedCodes.has(e.empCode));
 
-  const canExport = selectedAttendees.length > 0 && trainingDate && timeRange && morningTime && afternoonTime && instructor && location && !exporting;
+  const canExport = selectedAttendees.length > 0 && !exporting;
 
   const handleExport = async () => {
-    if (!canExport) return;
+    if (!selectedAttendees.length) {
+      alert('⚠️ กรุณาเลือกพนักงานผู้เข้ารับการอบรมอย่างน้อย 1 คนก่อนครับ');
+      return;
+    }
+    if (!trainingDate) {
+      alert('⚠️ กรุณาเลือกวันที่อบรมก่อนครับ');
+      return;
+    }
+    if (!instructor.trim()) {
+      alert('⚠️ กรุณากรอกชื่อวิทยากรผู้สอนก่อนทำการ Export ครับ');
+      return;
+    }
+    if (!location.trim()) {
+      alert('⚠️ กรุณากรอกสถานที่อบรมก่อนทำการ Export ครับ');
+      return;
+    }
+    if (!morningTime.trim() || !afternoonTime.trim()) {
+      alert('⚠️ กรุณากรอกเวลาอบรมช่วงเช้าและบ่ายให้ครบถ้วนก่อนครับ');
+      return;
+    }
+
     setExporting(true);
     setExportMessage(null);
     try {
@@ -114,10 +215,33 @@ export const OrientationExport: React.FC = () => {
           position: e.position,
         })),
       });
+
+      // Save course batch into localStorage for linking with ExamEngine
+      const catLabel = category === 'REGULATION' ? 'กฎระเบียบข้อบังคับ' : 'ความปลอดภัย';
+      const parsedTopics = courseTopicsText
+        .split('\n')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      saveOrientationBatch({
+        batchName: `อบรม ${catLabel} (${trainingDate})`,
+        category,
+        courseName: DEFAULT_COURSE_TOPICS[category].courseName,
+        courseTopics: parsedTopics,
+        trainingDate,
+        timeRange,
+        morningTime,
+        afternoonTime,
+        instructor,
+        location,
+        empCodes: selectedAttendees.map((e) => e.empCode),
+      });
+      loadBatches();
+
       const truncatedNote = result.truncatedCount > 0
         ? ` (เกินความจุแบบฟอร์ม ${ORIENTATION_ROW_CAPACITY} แถว — ตัดออก ${result.truncatedCount} คน)`
         : '';
-      setExportMessage(`Export สำเร็จ ${result.exportedCount} คน${truncatedNote}`);
+      setExportMessage(`Export และบันทึกรอบการอบรมสำเร็จ ${result.exportedCount} คน${truncatedNote}`);
     } catch (err) {
       setExportMessage(err instanceof Error ? `Export ไม่สำเร็จ: ${err.message}` : 'Export ไม่สำเร็จ');
     } finally {
@@ -193,13 +317,38 @@ export const OrientationExport: React.FC = () => {
       </div>
 
       <div className="grid-cols-2" style={{ gap: 12, marginBottom: 18 }}>
-        <div className="form-group">
-          <label className="form-label">ชื่อหลักสูตร*</label>
-          <select className="form-control" value={category} onChange={(e) => setCategory(e.target.value as OrientationCourseCategory)}>
+        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <label className="form-label">ชื่อหลักสูตร (เลือกเปลี่ยนหลักสูตรได้)*</label>
+          <select className="form-control" value={category} onChange={(e) => handleCategoryChange(e.target.value as OrientationCourseCategory)}>
             {COURSE_OPTIONS.map((c) => (
               <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
+        </div>
+
+        {/* Course Topics Syllabus Textarea Field */}
+        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <label className="form-label" style={{ margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <BookOpen size={16} className="text-blue" /> เนื้อหาหลักสูตร (แก้ไข/ปรับแต่งหัวข้อการอบรมได้):
+            </label>
+            <button
+              type="button"
+              className="btn btn-xs btn-ghost"
+              onClick={() => setCourseTopicsText(DEFAULT_COURSE_TOPICS[category].topics.join('\n'))}
+              style={{ fontSize: '0.78rem', color: 'var(--primary)' }}
+            >
+              🔄 รีเซ็ตเป็นเนื้อหามาตรฐาน
+            </button>
+          </div>
+          <textarea
+            className="form-control"
+            rows={5}
+            value={courseTopicsText}
+            onChange={(e) => setCourseTopicsText(e.target.value)}
+            placeholder="กรอกเนื้อหาหลักสูตรบรรทัดละ 1 หัวข้อ..."
+            style={{ fontFamily: 'inherit', fontSize: '0.88rem', lineHeight: 1.6, padding: '10px 14px', borderRadius: 12 }}
+          />
         </div>
         <div className="form-group">
           <label className="form-label">วันที่อบรม*</label>
@@ -425,6 +574,108 @@ export const OrientationExport: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* SECTION: History of Saved Orientation Batches */}
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Layers size={18} className="text-blue" /> ประวัติรอบการจัดอบรม F-HR-002 ที่บันทึกไว้ ({savedBatches.length} รอบ)
+            </h3>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              รายการรอบการอบรมหลักสูตรปฐมนิเทศที่เคย export และบันทึกลงระบบ สามารถดูเนื้อหาและรายชื่อผู้เข้าอบรมในแต่ละรุ่นได้ที่นี่
+            </span>
+          </div>
+        </div>
+
+        {savedBatches.length === 0 ? (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.02)', borderRadius: 14 }}>
+            ยังไม่มีประวัติการจัดอบรม F-HR-002 (เมื่อกด Export F-HR-002 ข้อมูลจะถูกบันทึกประวัติไว้ที่นี่อัตโนมัติ)
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {savedBatches.map((batch) => (
+              <div
+                key={batch.id}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.04)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: 14,
+                  padding: 18,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 10 }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>{batch.batchName}</span>
+                      <span className={`badge ${batch.category === 'REGULATION' ? 'badge-blue' : 'badge-green'}`}>
+                        {batch.category === 'REGULATION' ? 'กฎระเบียบข้อบังคับ' : 'ความปลอดภัย'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)', marginTop: 6, display: 'flex', gap: 18, flexWrap: 'wrap' }}>
+                      <span>📅 <strong>วันที่อบรม:</strong> {batch.trainingDate} ({batch.timeRange})</span>
+                      <span>👤 <strong>วิทยากร:</strong> {batch.instructor}</span>
+                      <span>📍 <strong>สถานที่:</strong> {batch.location}</span>
+                      <span>👥 <strong>ผู้เข้าอบรม:</strong> <strong>{batch.empCodes.length} คน</strong> ({batch.empCodes.join(', ')})</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-primary"
+                      onClick={() => {
+                        localStorage.setItem('hrskill_active_batch_id', batch.id);
+                        if (onNavigateToExam) {
+                          onNavigateToExam(batch.id);
+                        } else {
+                          // fallback navigation
+                          window.location.hash = '#exam';
+                        }
+                      }}
+                      style={{ borderRadius: 8, padding: '6px 12px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      title="ดึงรายชื่อพนักงานในรอบการอบรมนี้ไปคัดกรองและสอบในหน้าระบบสอบ (Exam Engine)"
+                    >
+                      <ExternalLink size={14} /> 🔗 ดึงรายชื่อไปหน้าสอบ ({batch.empCodes.length} คน)
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-danger"
+                      onClick={() => {
+                        if (window.confirm(`ลบประวัติการอบรม "${batch.batchName}"?`)) {
+                          deleteOrientationBatch(batch.id);
+                          loadBatches();
+                        }
+                      }}
+                      style={{ borderRadius: 8, padding: '6px 10px' }}
+                    >
+                      <Trash2 size={13} /> ลบประวัติ
+                    </button>
+                  </div>
+                </div>
+
+                {/* Course Topics Syllabus List */}
+                {batch.courseTopics && batch.courseTopics.length > 0 && (
+                  <div style={{ background: 'rgba(37, 99, 235, 0.04)', border: '1px solid rgba(37, 99, 235, 0.15)', padding: '12px 16px', borderRadius: 12, marginTop: 12 }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#2563eb', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <BookOpen size={15} /> เนื้อหาหลักสูตรการอบรม ({batch.courseTopics.length} หัวข้อ):
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '6px 14px', fontSize: '0.84rem', color: 'var(--text-main)' }}>
+                      {batch.courseTopics.map((topic, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                          <span style={{ color: 'var(--primary)', fontWeight: 600 }}>•</span>
+                          <span>{topic}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

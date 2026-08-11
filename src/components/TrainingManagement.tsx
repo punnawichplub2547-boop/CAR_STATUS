@@ -2,7 +2,7 @@ import React from 'react';
 import { GraduationCap } from 'lucide-react';
 import { OrientationExport } from './OrientationExport';
 
-export const TrainingManagement: React.FC = () => {
+export const TrainingManagement: React.FC<{ onNavigateToExam?: (batchId?: string) => void }> = ({ onNavigateToExam }) => {
   return (
     <div className="training-page content-container">
       <div className="page-header">
@@ -17,7 +17,7 @@ export const TrainingManagement: React.FC = () => {
         </div>
       </div>
 
-      <OrientationExport />
+      <OrientationExport onNavigateToExam={onNavigateToExam} />
     </div>
   );
 };

@@ -6,7 +6,11 @@ import { examResultsRouter } from './routes/examResults.js';
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }));
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((s) => s.trim())
+  : ['http://localhost:5173', 'http://localhost:8088'];
+
+app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
