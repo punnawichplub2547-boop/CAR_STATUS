@@ -26,12 +26,18 @@
 ## 2. Exam Phase Lock & HR Control Workflow
 - **Pre-Test Lock Status:** รอบการทำแบบทดสอบหลังการอบรม (Post-Test) จะถูก **ล็อคไว้เสมอ (`🔒 รอดำเนินการอบรม`)**
 - **Post-Test Unlock Trigger:** จะปลดล็อคให้เข้าทำแบบทดสอบหลังอบรมและรับคะแนนได้ **ต่อเมื่อ HR กดปิด Pre-Test ในระบบแล้วเท่านั้น** (`🔒 HR กดปิด Pre-Test`)
+- **Factory WiFi & Exam Delivery Policy:**
+  - บริษัทไม่มีนโยบายแจกรหัส WiFi ให้ผู้เข้าอบรมในโรงงาน ดังนั้น **ไม่มีการทำข้อสอบบนระบบเว็บในเครื่องคอมพิวเตอร์**
+  - ข้อสอบจัดส่งผ่าน **Google Forms 100%** (ผู้เข้าอบรมใช้สมาร์ทโฟน/เน็ต 4G ของตนเอง)
+  - ระบบมี **[ExamQrModal.tsx](file:///d:/HrSkill/app/src/components/exam/ExamQrModal.tsx)** สำหรับ Generate QR Code ความละเอียดสูง ให้ HR เปิดขึ้นจอโปรเจกเตอร์หรือพิมพ์ติดห้องอบรม เพื่อให้ผู้เข้าอบรมสแกนเข้าทำข้อสอบได้ทันที
 
-**Implementation (ยืนยันแล้ว) — `src/components/ExamEngine.tsx`:**
-- state `preTestLockMap` (บรรทัด 71) + `isPreTestClosed` (75) + `togglePreTestLock` (78-96)
-- ปุ่มปลดล็อคของ HR อยู่ในตารางรายชื่อพนักงาน บรรทัด 891-896
-- gate จริงที่กันไม่ให้เข้า Post-Test อยู่บรรทัด 260 — **ห้ามย้าย/ลบ gate นี้โดยไม่มีตัวแทน**
-- lock แยกกันรายบุคคล **และ** รายชุดข้อสอบ: type คือ `Record<empCode, Record<ExamType, boolean>>` (`PreTestLockMap` ใน `src/types/index.ts:228`)
+**Implementation (ยืนยันแล้ว) — `src/components/ExamEngine.tsx` & `src/components/exam/`:**
+- `src/components/ExamEngine.tsx` ทำหน้าที่เป็น Main Orchestrator (State + Live Auto-Sync 15s)
+- `src/components/exam/ExamDirectoryTable.tsx`: ตารางทะเบียนติดตามผลสอบ HR, KPI Summary, และปุ่ม Toggle Pre/Post Test Lock รายบุคคล/รายรุ่น
+- `src/components/exam/ExamDetailDrawer.tsx`: แสดงรายละเอียดผลสอบและข้อที่ตอบผิด (มี Gate `isHR`)
+- `src/components/exam/ExamConfigModal.tsx`: หน้าต่างตั้งค่า URL Google Forms & Apps Script
+- `src/components/exam/ExamQrModal.tsx`: หน้าต่างแสดง QR Code สำหรับสแกนเข้าสอบ (พร้อมโหมดพิมพ์ใบ QR Code)
+- lock แยกกันรายบุคคล **และ** รายชุดข้อสอบ: type คือ `Record<empCode, Record<ExamType, boolean>>` (`PreTestLockMap` ใน `src/types/index.ts:229`)
 
 ---
 
@@ -39,7 +45,7 @@
 - **Itemized Answer Breakdown (ข้อที่ตอบผิด/ตอบถูก):** สงวนสิทธิ์ให้เฉพาะ **HR / Admin** (`ADMIN`, `SUPERVISOR`) เป็นผู้เปิดดูรายละเอียดได้เท่านั้น
 - **Non-HR Employee View:** พนักงานทั่วไปเห็นเฉพาะคะแนนรวมและสถานะ ผ่าน/ไม่ผ่าน แต่ไม่เห็นเฉลยรายข้อเพื่อป้องกันการรั่วไหลของข้อสอบ
 
-**Implementation:** `const isHR = role === 'ADMIN' || role === 'SUPERVISOR'` (`ExamEngine.tsx:68`) ใช้ gate 2 จุด — บรรทัด 535 (แผงควบคุม HR) และ 1005 (เฉลยรายข้อ)
+**Implementation:** `const isHR = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR'` ถูกส่งเข้าไปตรวจสอบที่ `src/components/exam/ExamDetailDrawer.tsx`
 ⚠️ ถ้าเพิ่มหน้า/ปุ่มใหม่ที่แสดง `answersDetail` **ต้องผ่าน `isHR` ทุกครั้ง** — เป็นบทเรียนแบบเดียวกับ ERR-0009 ใน `D:\MEMORY` (เพิ่ม permission check ที่ gate เดียวแล้วลืม path อื่น)
 
 ---

@@ -45,15 +45,28 @@ d:\HrSkill\app\
 ├── src/
 │   ├── types/index.ts            # Central Data Types, Interfaces & Enums
 │   ├── data/mockData.ts          # Sanitized Demo Data & Question Bank
+│   ├── constants/
+│   │   └── orientationConstants.ts # Orientation Course Topics & Options
+│   ├── utils/
+│   │   ├── dateUtils.ts          # Tenure & Date Formatting Helpers
+│   │   ├── api.ts                # Backend API Client & Sync
+│   │   ├── fhr002Exporter.ts     # F-HR-002 OpenXML Template Exporter
+│   │   └── excelTemplateExporter.ts # F-HR-014 OpenXML Exporter & Helpers
 │   ├── components/               # Modular UI Components
+│   │   ├── exam/                 # Exam Sub-components
+│   │   │   ├── ExamConfigModal.tsx   # Google Forms API Config Modal
+│   │   │   ├── ExamDetailDrawer.tsx  # Score Detail & Mistakes (isHR Gate)
+│   │   │   ├── ExamDirectoryTable.tsx # HR Tracker, Batch Filters & Locks
+│   │   │   └── ExamQrModal.tsx       # Instant Mobile QR Code Scanner Modal
 │   │   ├── Dashboard.tsx         # Executive Overview & Recharts Visualizations
 │   │   ├── EmployeeManagement.tsx # Org Chart & Employee Directory
 │   │   ├── SkillMatrixView.tsx   # Skill Matrix & Competency Radar Charts
 │   │   ├── OjtProbationEvaluator.tsx # Forms F-HR-016 (Form A/B) & Probation Evaluation
 │   │   ├── CertificateVault.tsx  # Certification Expiry Tracking
 │   │   ├── TrainingManagement.tsx# Training Calendar & QR/Check-in
-│   │   ├── ExamEngine.tsx        # Online Skill Testing & Automatic Grading
+│   │   ├── ExamEngine.tsx        # Exam Engine Orchestrator & Live Sync
 │   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center
+│   │   ├── ErrorBoundary.tsx     # React Runtime Error Protection & Recovery
 │   │   ├── Navbar.tsx            # Header & Test Login Switcher
 │   │   ├── Sidebar.tsx           # Navigation Menu
 │   │   └── TestLoginModal.tsx    # Role Switcher Modal (Admin/Supervisor/Employee)
