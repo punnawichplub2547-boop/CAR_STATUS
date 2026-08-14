@@ -49,6 +49,14 @@ export const SkillStandardManagement: React.FC<SkillStandardManagementProps> = (
   const [viewingStandard, setViewingStandard] = useState<SkillStandard | null>(null);
   const [editForm, setEditForm] = useState<SkillStandard | null>(null);
 
+  // Free-text department entry (see the input list="..." below) needs
+  // suggestions, not a hard whitelist — DEPARTMENT_OPTIONS alone would
+  // silently block adding/editing a standard for any department not in
+  // that short hardcoded list (e.g. departments bulk-imported later).
+  const knownDepartments = Array.from(
+    new Set([...DEPARTMENT_OPTIONS.map((d) => d.value), ...standards.map((s) => s.department)])
+  ).sort();
+
   const filteredStandards = standards.filter((s) => {
     const q = searchTerm.toLowerCase();
     const matchesSearch =
@@ -95,6 +103,11 @@ export const SkillStandardManagement: React.FC<SkillStandardManagementProps> = (
 
   return (
     <div className="employee-page content-container">
+      <datalist id="skill-standard-departments">
+        {knownDepartments.map((d) => (
+          <option key={d} value={d} />
+        ))}
+      </datalist>
       <div className="page-header">
         <div>
           <div className="eyebrow-tag">
@@ -189,16 +202,16 @@ export const SkillStandardManagement: React.FC<SkillStandardManagementProps> = (
               <div className="modal-body">
                 <div className="grid-cols-2" style={{ gap: 12 }}>
                   <div className="form-group">
-                    <label className="form-label">แผนก</label>
-                    <select
+                    <label className="form-label">แผนก*</label>
+                    <input
+                      type="text"
                       className="form-control"
+                      list="skill-standard-departments"
+                      placeholder="เช่น FMG-A, MIX, CUT..."
                       value={addForm.department}
                       onChange={(e) => setAddForm({ ...addForm, department: e.target.value })}
-                    >
-                      {DEPARTMENT_OPTIONS.map((d) => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
-                    </select>
+                      required
+                    />
                   </div>
                   <div className="form-group">
                     <label className="form-label">ตำแหน่ง*</label>
@@ -273,16 +286,15 @@ export const SkillStandardManagement: React.FC<SkillStandardManagementProps> = (
                 <div className="modal-body">
                   <div className="grid-cols-2" style={{ gap: 12 }}>
                     <div className="form-group">
-                      <label className="form-label">แผนก</label>
-                      <select
+                      <label className="form-label">แผนก*</label>
+                      <input
+                        type="text"
                         className="form-control"
+                        list="skill-standard-departments"
                         value={editForm.department}
                         onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                      >
-                        {DEPARTMENT_OPTIONS.map((d) => (
-                          <option key={d.value} value={d.value}>{d.label}</option>
-                        ))}
-                      </select>
+                        required
+                      />
                     </div>
                     <div className="form-group">
                       <label className="form-label">ตำแหน่ง</label>

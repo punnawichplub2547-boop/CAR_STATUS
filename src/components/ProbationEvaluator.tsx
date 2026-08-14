@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Award, CheckCircle2, UserCheck, RotateCcw, FileSpreadsheet } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Award, CheckCircle2, UserCheck, RotateCcw, FileSpreadsheet, Lock, Globe2 } from 'lucide-react';
 import type { Employee, ProbationEvaluation, ProbationCriteriaScores, ProbationPeriod, ProbationOutcome } from '../types';
 import type { EmployeePayload } from '../utils/api';
 import { exportFHR009 } from '../utils/fhr009Exporter';
@@ -30,7 +30,13 @@ const PROBATION_CRITERIA: { key: keyof ProbationCriteriaScores; label: string }[
 ];
 
 export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employees, currentUser, onAddProbationEval, onEditEmployee }) => {
-  const [probEmpId, setProbEmpId] = useState(employees[2]?.id || employees[0]?.id);
+  // Same "ผู้บังคับบัญชาเป็นผู้ประเมิน" restriction as OjtFormAEvaluator:
+  // only a supervisor evaluates their own team; ADMIN keeps full visibility.
+  const canEvaluate = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR';
+  const scopedEmployees =
+    currentUser.role === 'ADMIN' ? employees : employees.filter((e) => e.department === currentUser.department);
+
+  const [probEmpId, setProbEmpId] = useState(scopedEmployees[2]?.id || scopedEmployees[0]?.id);
   const [period, setPeriod] = useState<ProbationPeriod>('30_DAYS');
   const [outcome, setOutcome] = useState<ProbationOutcome>('OJT_REPEAT');
   const [savedEval, setSavedEval] = useState<ProbationEvaluation | null>(null);
@@ -50,7 +56,18 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
   const [exporting, setExporting] = useState(false);
   const [exportMessage, setExportMessage] = useState<string | null>(null);
 
-  const probTargetEmp = employees.find((e) => e.id === probEmpId);
+  // Re-scope the selected employee whenever the logged-in user (and thus
+  // their department) changes, or if the current pick falls outside scope —
+  // otherwise probTargetEmp silently goes undefined and Save becomes a
+  // no-op with no error shown.
+  useEffect(() => {
+    setProbEmpId((prev) =>
+      scopedEmployees.some((e) => e.id === prev) ? prev : scopedEmployees[0]?.id
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser.id, currentUser.department, currentUser.role]);
+
+  const probTargetEmp = scopedEmployees.find((e) => e.id === probEmpId);
 
   // Criteria total: 10 items x 1-5 x weight 2 = max 100. Result = criteria(80%) + attendance(20%)
   const criteriaTotalScore = PROBATION_CRITERIA.reduce((sum, c) => sum + scores[c.key], 0) * 2;
@@ -154,6 +171,19 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
         </div>
       </div>
 
+      {!canEvaluate ? (
+        <div
+          className="glass-card"
+          style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}
+        >
+          <Lock size={28} />
+          <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>เฉพาะหัวหน้างานเท่านั้นที่ประเมินทดลองงานได้</div>
+          <div style={{ fontSize: '0.85rem' }}>
+            บัญชีของคุณ ({currentUser.name}) มีสิทธิ์ระดับ "{currentUser.role}" — การประเมิน F-HR-009 สงวนไว้สำหรับหัวหน้างาน
+            (Supervisor) เท่านั้น ตามเงื่อนไข "ผู้บังคับบัญชาเป็นผู้ประเมิน"
+          </div>
+        </div>
+      ) : (
       <div className="glass-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -167,12 +197,32 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
           <div className="form-group">
             <label className="form-label">เลือกพนักงานทดลองงาน</label>
             <select className="form-control" value={probEmpId} onChange={(e) => setProbEmpId(e.target.value)}>
-              {employees.map((e) => (
+              {scopedEmployees.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.empCode} - {e.name} ({e.status})
                 </option>
               ))}
             </select>
+            {currentUser.role === 'ADMIN' ? (
+              <div
+                style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                <Globe2 size={12} /> สิทธิ์ Admin — มองเห็นพนักงานทุกแผนก ({scopedEmployees.length} คน)
+              </div>
+            ) : (
+              <div
+                style={{
+                  fontSize: '0.78rem',
+                  color: scopedEmployees.length === 0 ? 'var(--danger, #dc2626)' : 'var(--text-muted)',
+                  marginTop: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <Lock size={12} /> แสดงเฉพาะพนักงานแผนก "{currentUser.department}" ({scopedEmployees.length} คน)
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -375,6 +425,7 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
           </div>
         )}
       </div>
+      )}
     </div>
   );
 };

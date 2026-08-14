@@ -1153,5 +1153,348 @@
     "category": "Managerial Competency",
     "skillName": "การควบคุมปริมาณงาน/ผลงานที่ดีในภาวะปกติ",
     "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การบรหารจัดการการผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดการความเสี่ยงและโอกาส",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจและการปฏิบัติ หยุด เรียก รอ",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "กิจกรรม CCCF",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ระบบคุณภาพ/นโยบายด้านความปลอดภัย และสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ความรู้เรื่อง 5 ส.",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดการผลิตภัณฑ์ต้องสงสัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดเก็บวัตถุดิบ",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "Cuctomer Specific Requirement ( CSR )",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การปฏบัติงานที่ห้องเคมี/การชั่งเคมี/การใช้เครื่อง Auto wate",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 8\" Mix01",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 16\" Mix02",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องผสมยาง Kneader mix 04\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 18\" Mix03",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Batch off Mix05\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องตัดยางเส้น Micro Cutter Cut07\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "หัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องชั่ง Digital",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การบรหารจัดการการผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดการความเสี่ยงและโอกาส",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจและการปฏิบัติ หยุด เรียก รอ",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "กิจกรรม CCCF",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ระบบคุณภาพ/นโยบายด้านความปลอดภัย และสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "ความรู้เรื่อง 5 ส.",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดการผลิตภัณฑ์ต้องสงสัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "การจัดเก็บวัตถุดิบ",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Functional Competency",
+    "skillName": "Cuctomer Specific Requirement ( CSR )",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การปฏบัติงานที่ห้องเคมี/การชั่งเคมี/การใช้เครื่อง Auto wate",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 8\" Mix01",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 16\" Mix02",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องผสมยาง Kneader mix 04\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 18\" Mix03",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Batch off Mix05\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องตัดยางเส้น Micro Cutter Cut07\"",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "ผู้ช่วยหัวหน้าหน่วย",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องชั่ง Digital",
+    "targetLevel": 100
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจและการปฏิบัติ หยุด เรียก รอ",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "กิจกรรม CCCF",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "ระบบคุณภาพ/นโยบายด้านความปลอดภัย และสิ่งแวดล้อม",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "ความรู้เรื่อง 5 ส.",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "การจัดการผลิตภัณฑ์ต้องสงสัย",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "การจัดเก็บวัตถุดิบ",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Functional Competency",
+    "skillName": "Cuctomer Specific Requirement ( CSR )",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การปฏบัติงานที่ห้องเคมี/การชั่งเคมี/การใช้เครื่อง Auto wate",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 8\" Mix01",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 16\" Mix02",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องผสมยาง Kneader mix 04\"",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Two roll Mill 18\" Mix03",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่อง Batch off Mix05\"",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องตัดยางเส้น Micro Cutter Cut07\"",
+    "targetLevel": 75
+  },
+  {
+    "department": "MIX",
+    "position": "พนักงานทั่วไป",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องชั่ง Digital",
+    "targetLevel": 75
   }
 ]

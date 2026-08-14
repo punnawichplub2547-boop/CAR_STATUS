@@ -43,6 +43,26 @@ export function setCellInSheetXml(xml: string, cellRef: string, textVal: string 
   return xml;
 }
 
+// Some templates (e.g. F-HR-004A's 3 one-per-form choices) draw their
+// checkboxes as empty "Rectangle" shapes in the sheet's drawing XML rather
+// than as cell content — there's no cell to write a ☑/☐ character into, and
+// doing so anyway just draws a second, unrelated checkbox glyph next to the
+// real (still empty) one. This fills the matching rectangle shape solid
+// black instead, so exactly one box ends up looking checked. Matched by the
+// shape's anchor position: col/row are 0-indexed drawing-XML coordinates,
+// i.e. one column left of and on the same row as the label cell it marks.
+export function fillCheckboxInDrawingXml(drawingXml: string, colIdx: number, rowIdx: number): string {
+  const anchorPattern = /<xdr:twoCellAnchor(?:\s+[^>]*)?>.*?<\/xdr:twoCellAnchor>/gs;
+  return drawingXml.replace(anchorPattern, (anchor) => {
+    if (!anchor.includes('name="Rectangle')) return anchor;
+    const fromMatch = /<xdr:from><xdr:col>(\d+)<\/xdr:col>[^<]*<xdr:colOff>\d+<\/xdr:colOff><xdr:row>(\d+)<\/xdr:row>/.exec(anchor);
+    if (!fromMatch) return anchor;
+    if (Number(fromMatch[1]) !== colIdx || Number(fromMatch[2]) !== rowIdx) return anchor;
+    if (anchor.includes('<a:solidFill>')) return anchor; // already filled — don't double-inject
+    return anchor.replace('</a:prstGeom>', '</a:prstGeom><a:solidFill><a:srgbClr val="000000"/></a:solidFill>');
+  });
+}
+
 export function clearCellInSheetXml(xml: string, cellRef: string): string {
   const pattern = new RegExp(`<c r="${cellRef}"(?:\\s+[^/>]*)?>.*?</c>|<c r="${cellRef}"(?:\\s+[^/>]*)?/>`, 's');
   const match = pattern.exec(xml);
@@ -84,6 +104,45 @@ function addCircleOneCellAnchor(drawingXml: string, colIdx: number, rowIdx: numb
     </xdr:blipFill>
     <xdr:spPr>
       <a:xfrm><a:off x="0" y="0"/><a:ext cx="310274" cy="310274"/></a:xfrm>
+      <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+    </xdr:spPr>
+  </xdr:pic>
+  <xdr:clientData/>
+</xdr:oneCellAnchor>`;
+
+  return drawingXml.replace('</xdr:wsDr>', `${anchorXml}</xdr:wsDr>`);
+}
+
+// Generic version of addCircleOneCellAnchor for exporters that reuse a
+// template's own already-embedded images (referenced by their existing
+// rId) rather than a purpose-built rIdMap of freshly-added ones — e.g.
+// F-HR-004A's legend icons, which the exported score column overlays
+// reuse as-is. Same anchorCounter, so ids stay unique across every
+// exporter's calls within one generated file.
+export function addImageOneCellAnchor(
+  drawingXml: string,
+  colIdx: number,
+  rowIdx: number,
+  rId: string,
+  size: { cx: number; cy: number; colOff?: number; rowOff?: number }
+): string {
+  anchorCounter++;
+  const colOff = size.colOff ?? 0;
+  const rowOff = size.rowOff ?? 0;
+  const anchorXml = `<xdr:oneCellAnchor>
+  <xdr:from><xdr:col>${colIdx}</xdr:col><xdr:colOff>${colOff}</xdr:colOff><xdr:row>${rowIdx}</xdr:row><xdr:rowOff>${rowOff}</xdr:rowOff></xdr:from>
+  <xdr:ext cx="${size.cx}" cy="${size.cy}"/>
+  <xdr:pic>
+    <xdr:nvPicPr>
+      <xdr:cNvPr id="${anchorCounter}" name="Icon_${anchorCounter}"/>
+      <xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr>
+    </xdr:nvPicPr>
+    <xdr:blipFill>
+      <a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="${rId}"/>
+      <a:stretch><a:fillRect/></a:stretch>
+    </xdr:blipFill>
+    <xdr:spPr>
+      <a:xfrm><a:off x="0" y="0"/><a:ext cx="${size.cx}" cy="${size.cy}"/></a:xfrm>
       <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
     </xdr:spPr>
   </xdr:pic>
