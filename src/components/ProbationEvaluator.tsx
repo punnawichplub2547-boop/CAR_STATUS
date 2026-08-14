@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Award, CheckCircle2, UserCheck, RotateCcw } from 'lucide-react';
+import { Award, CheckCircle2, UserCheck, RotateCcw, FileSpreadsheet } from 'lucide-react';
 import type { Employee, ProbationEvaluation, ProbationCriteriaScores, ProbationPeriod, ProbationOutcome } from '../types';
 import type { EmployeePayload } from '../utils/api';
+import { exportFHR009 } from '../utils/fhr009Exporter';
 
 interface ProbationEvaluatorProps {
   employees: Employee[];
@@ -46,6 +47,8 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
     activityParticipation: 4,
   });
   const [attendancePercentage, setAttendancePercentage] = useState(95);
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<string | null>(null);
 
   const probTargetEmp = employees.find((e) => e.id === probEmpId);
 
@@ -91,6 +94,35 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
     onAddProbationEval(newEval);
     setSavedEval(newEval);
     alert(`บันทึกผลประเมินทดลองงานเรียบร้อย! ผลคะแนนสุทธิ ${resultScore}% เกรด ${grade}`);
+  };
+
+  const handleExportProbation = async () => {
+    if (!probTargetEmp) return;
+    setExporting(true);
+    setExportMessage(null);
+    try {
+      await exportFHR009({
+        employeeName: probTargetEmp.name,
+        empCode: probTargetEmp.empCode,
+        position: probTargetEmp.position,
+        department: probTargetEmp.department,
+        section: probTargetEmp.section,
+        startingDate: probTargetEmp.startingDate,
+        evalDate: savedEval?.evalDate ?? new Date().toISOString().split('T')[0],
+        period,
+        scores,
+        criteriaTotalScore,
+        criteriaPercentage,
+        attendancePercentage,
+        resultScore,
+        grade: getProbationGrade(resultScore),
+      });
+      setExportMessage('Export สำเร็จ');
+    } catch (err) {
+      setExportMessage(err instanceof Error ? `Export ไม่สำเร็จ: ${err.message}` : 'Export ไม่สำเร็จ');
+    } finally {
+      setExporting(false);
+    }
   };
 
   const handleConfirmPermanent = () => {
@@ -295,7 +327,11 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24 }}>
+          {exportMessage && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{exportMessage}</span>}
+          <button className="btn btn-secondary" onClick={handleExportProbation} disabled={!probTargetEmp || exporting}>
+            <FileSpreadsheet size={16} /> {exporting ? 'กำลัง Export...' : 'Export F-HR-009'}
+          </button>
           <button className="btn btn-success" onClick={handleSaveProbation}>
             <CheckCircle2 size={18} /> บันทึกผลการประเมินทดลองงาน F-HR-009
           </button>

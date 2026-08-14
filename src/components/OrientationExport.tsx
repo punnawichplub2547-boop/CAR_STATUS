@@ -64,8 +64,24 @@ export const OrientationExport: React.FC = () => {
     setLoadError(null);
     try {
       const employees = await fetchPendingOrientationEmployees();
+      // Preserve the user's existing checkbox choices across a reload (this
+      // runs after every edit/delete, and on manual refresh, not just on
+      // mount) — only a genuinely new employee that wasn't in the previous
+      // list defaults to selected. Re-selecting everyone here used to
+      // silently undo any deliberate deselection the moment an unrelated
+      // row was edited or deleted.
+      const previouslyKnownCodes = new Set(pending.map((e) => e.empCode));
+      setSelectedCodes((prevSelected) => {
+        const next = new Set<string>();
+        employees.forEach((e) => {
+          const isNewlySeen = !previouslyKnownCodes.has(e.empCode);
+          if (isNewlySeen || prevSelected.has(e.empCode)) {
+            next.add(e.empCode);
+          }
+        });
+        return next;
+      });
       setPending(employees);
-      setSelectedCodes(new Set(employees.map((e) => e.empCode)));
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'โหลดรายชื่อพนักงานใหม่ไม่สำเร็จ');
     } finally {
@@ -75,6 +91,7 @@ export const OrientationExport: React.FC = () => {
 
   useEffect(() => {
     loadPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleSelected = (empCode: string) => {

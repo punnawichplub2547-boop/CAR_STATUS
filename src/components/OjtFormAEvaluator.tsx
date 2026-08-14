@@ -83,9 +83,7 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
   // selected (matched by department + exact position, same logic as
   // SkillMatrixView) so the instructor doesn't have to type every topic by
   // hand. Falls back to one blank row if this employee/position has no
-  // standards on file yet. Also reused right after a successful save (see
-  // handleSaveOjt) so the form repopulates the standard topics instead of
-  // collapsing to a single blank row, which read as "the content vanished".
+  // standards on file yet.
   const buildContentRowsForEmployee = (emp: typeof targetEmp): ContentRowDraft[] => {
     if (!emp) return [createEmptyContentRow()];
     const matched = standards.filter((s) => s.department === emp.department && s.position === emp.position);
@@ -185,7 +183,15 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
 
     onAddOjtSession(newSession, newContentItems, [newParticipant]);
     alert('บันทึกผลการประเมิน OJT เรียบร้อยแล้ว!');
-    setContentRows(buildContentRowsForEmployee(targetEmp));
+    // Deliberately not resetting contentRows here (same convention as
+    // ProbationEvaluator's save handler): Export reads straight from
+    // contentRows, so wiping or re-defaulting it after Save would make an
+    // Export run right after Save produce different values than what was
+    // just saved — either a blank table (the original bug) or, if
+    // repopulated from standards, everyone's score/remark reset to the
+    // default 75%/blank instead of what was actually entered and saved.
+    // The form only resets when the employee selection changes (see the
+    // useEffect above).
   };
 
   const canExportOjtA = !!targetEmp && contentRows.some((r) => r.description.trim()) && !exporting;
@@ -227,6 +233,11 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
     }
   };
 
+  // Flowchart condition (F-HR-004 Form A): "ผู้บังคับบัญชาเป็นผู้ประเมิน" —
+  // only a supervisor evaluates their own team; ADMIN keeps the same
+  // superuser bypass it already gets for department scoping above.
+  const canEvaluate = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR';
+
   return (
     <div className="evaluations-page content-container">
       <div className="page-header">
@@ -241,6 +252,19 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
         </div>
       </div>
 
+      {!canEvaluate ? (
+        <div
+          className="glass-card"
+          style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}
+        >
+          <Lock size={28} />
+          <div style={{ fontWeight: 600, color: 'var(--text-main)' }}>เฉพาะหัวหน้างานเท่านั้นที่ประเมิน OJT ได้</div>
+          <div style={{ fontSize: '0.85rem' }}>
+            บัญชีของคุณ ({currentUser.name}) มีสิทธิ์ระดับ "{currentUser.role}" — การประเมิน F-HR-004 Form A สงวนไว้สำหรับหัวหน้างาน
+            (Supervisor) เท่านั้น ตามเงื่อนไข "ผู้บังคับบัญชาเป็นผู้ประเมิน"
+          </div>
+        </div>
+      ) : (
       <div className="glass-card" style={{ padding: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
@@ -520,6 +544,7 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
           </button>
         </div>
       </div>
+      )}
     </div>
   );
 };

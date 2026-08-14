@@ -4,10 +4,11 @@ import type { Employee, OjtSession, OjtContentItem, OjtParticipant, OjtChangeRea
 
 interface OjtFormBEvaluatorProps {
   employees: Employee[];
+  currentUser: Employee;
   onAddOjtSession: (session: OjtSession, contentItems: OjtContentItem[], participants: OjtParticipant[]) => void;
 }
 
-export const OjtFormBEvaluator: React.FC<OjtFormBEvaluatorProps> = ({ employees, onAddOjtSession }) => {
+export const OjtFormBEvaluator: React.FC<OjtFormBEvaluatorProps> = ({ employees, currentUser, onAddOjtSession }) => {
   const [selectedEmpId, setSelectedEmpId] = useState(employees[2]?.id || employees[0]?.id);
   const [changeReasonCategory, setChangeReasonCategory] = useState<OjtChangeReasonCategory>('METHOD');
   const [courseContent, setCourseContent] = useState('การควบคุมเครื่องฉีดอัดยาง และการตบแต่ง Part ชิ้นงานยางรถยนต์');
@@ -28,8 +29,8 @@ export const OjtFormBEvaluator: React.FC<OjtFormBEvaluatorProps> = ({ employees,
       evaluationMethod: 'PRACTICAL',
       hasAttachment: false,
       changeReasonCategory,
-      assessorName: 'นาย มานพ ตั้งมั่น',
-      managerName: 'นางสาว สมหญิง ใจดี',
+      assessorName: currentUser.name,
+      managerName: currentUser.supervisorName || currentUser.name,
     };
 
     const newContentItem: OjtContentItem = {

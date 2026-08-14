@@ -699,7 +699,7 @@ export function App() {
           )}
 
           {activeTab === 'ojt_b' && (
-            <OjtFormBEvaluator employees={employees} onAddOjtSession={handleAddOjtSession} />
+            <OjtFormBEvaluator employees={employees} currentUser={currentUser} onAddOjtSession={handleAddOjtSession} />
           )}
 
           {activeTab === 'ojt_history' && (
