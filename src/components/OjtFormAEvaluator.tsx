@@ -83,23 +83,25 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
   // selected (matched by department + exact position, same logic as
   // SkillMatrixView) so the instructor doesn't have to type every topic by
   // hand. Falls back to one blank row if this employee/position has no
-  // standards on file yet.
-  useEffect(() => {
-    if (!targetEmp) return;
-    const matched = standards.filter(
-      (s) => s.department === targetEmp.department && s.position === targetEmp.position
-    );
+  // standards on file yet. Also reused right after a successful save (see
+  // handleSaveOjt) so the form repopulates the standard topics instead of
+  // collapsing to a single blank row, which read as "the content vanished".
+  const buildContentRowsForEmployee = (emp: typeof targetEmp): ContentRowDraft[] => {
+    if (!emp) return [createEmptyContentRow()];
+    const matched = standards.filter((s) => s.department === emp.department && s.position === emp.position);
     // Cap at the real form's fixed 25-row band (rows 13-37) so the on-screen
     // table, the "เพิ่มแถว (n/25)" counter, and what gets saved/exported all
     // agree — otherwise a role with >25 F-HR-005 standards (e.g. หัวหน้าแผนก)
     // would show more rows than the physical form has, and Save would
     // persist all of them uncapped even though Export silently truncates.
     const capped = matched.slice(0, FHR004A_ROW_CAPACITY);
-    setContentRows(
-      capped.length > 0
-        ? capped.map((s) => ({ ...createEmptyContentRow(), description: s.skillName, targetLevel: s.targetLevel }))
-        : [createEmptyContentRow()]
-    );
+    return capped.length > 0
+      ? capped.map((s) => ({ ...createEmptyContentRow(), description: s.skillName, targetLevel: s.targetLevel }))
+      : [createEmptyContentRow()];
+  };
+
+  useEffect(() => {
+    setContentRows(buildContentRowsForEmployee(targetEmp));
     setExportMessage(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetEmp?.id]);
@@ -183,7 +185,7 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
 
     onAddOjtSession(newSession, newContentItems, [newParticipant]);
     alert('บันทึกผลการประเมิน OJT เรียบร้อยแล้ว!');
-    setContentRows([createEmptyContentRow()]);
+    setContentRows(buildContentRowsForEmployee(targetEmp));
   };
 
   const canExportOjtA = !!targetEmp && contentRows.some((r) => r.description.trim()) && !exporting;

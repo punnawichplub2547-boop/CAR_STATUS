@@ -5,6 +5,7 @@ import { employeesRouter } from './routes/employees.js';
 import { examResultsRouter } from './routes/examResults.js';
 import { ojtRouter } from './routes/ojt.js';
 import { probationRouter } from './routes/probation.js';
+import { skillEvaluationsRouter } from './routes/skillEvaluations.js';
 import { skillStandardsRouter } from './routes/skillStandards.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use('/api', employeesRouter);
 app.use('/api', examResultsRouter);
 app.use('/api', ojtRouter);
 app.use('/api', probationRouter);
+app.use('/api', skillEvaluationsRouter);
 app.use('/api', skillStandardsRouter);
 
 const port = Number(process.env.PORT ?? 4000);

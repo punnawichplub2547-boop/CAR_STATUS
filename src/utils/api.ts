@@ -355,3 +355,122 @@ export async function deleteBackendSkillStandard(id: number): Promise<void> {
     throw new Error(body.error || `ลบมาตรฐานทักษะไม่สำเร็จ (HTTP ${res.status})`);
   }
 }
+
+export interface BackendSkillEvaluation {
+  id: number;
+  employeeId: number | null;
+  employeeName: string;
+  department: string;
+  position: string;
+  skillName: string;
+  category: string;
+  targetLevel: number;
+  resultLevel: number;
+  cycle: string;
+  attemptNumber: number;
+  evaluatedAt: string;
+  assessorName: string;
+  remark: string | null;
+}
+
+export interface SkillEvaluationPayload {
+  employeeId: number;
+  employeeName: string;
+  department: string;
+  position: string;
+  skillName: string;
+  category: string;
+  targetLevel: number;
+  resultLevel: number;
+  cycle: string;
+  attemptNumber: number;
+  evaluatedAt: string; // YYYY-MM-DD
+  assessorName: string;
+  remark?: string;
+}
+
+// F-HR-014 scores are DB-backed — POST always upserts by the natural key
+// (employeeId + skillName + cycle + attemptNumber), so the same call is
+// used whether this is the first score or a correction to an existing one.
+export async function fetchBackendSkillEvaluations(employeeId?: number): Promise<BackendSkillEvaluation[]> {
+  const url = employeeId
+    ? `${API_BASE_URL}/api/skill-evaluations?employeeId=${employeeId}`
+    : `${API_BASE_URL}/api/skill-evaluations`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`โหลดผลประเมินทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function saveBackendSkillEvaluation(payload: SkillEvaluationPayload): Promise<BackendSkillEvaluation> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-evaluations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `บันทึกผลประเมินทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export interface BackendSkillEvaluationRound {
+  id: number;
+  employeeId: number | null;
+  cycle: string;
+  attemptNumber: number;
+  actionPeriodFrom: string | null;
+  actionPeriodTo: string | null;
+  assessorName: string;
+  assessorSignature: string | null;
+  deptManagerName: string | null;
+  deptManagerSignature: string | null;
+  hrDeptName: string | null;
+  hrDeptSignature: string | null;
+  signedAt: string | null;
+}
+
+export interface SkillEvaluationRoundPayload {
+  employeeId: number;
+  cycle: string;
+  attemptNumber: number;
+  actionPeriodFrom?: string;
+  actionPeriodTo?: string;
+  assessorName: string;
+  assessorSignature?: string;
+  deptManagerName?: string;
+  deptManagerSignature?: string;
+  hrDeptName?: string;
+  hrDeptSignature?: string;
+  signedAt?: string;
+}
+
+// Same upsert-by-natural-key pattern as skill evaluations above, keyed on
+// employeeId + cycle + attemptNumber.
+export async function fetchBackendSkillEvaluationRounds(employeeId?: number): Promise<BackendSkillEvaluationRound[]> {
+  const url = employeeId
+    ? `${API_BASE_URL}/api/skill-evaluation-rounds?employeeId=${employeeId}`
+    : `${API_BASE_URL}/api/skill-evaluation-rounds`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`โหลดรอบการประเมินทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function saveBackendSkillEvaluationRound(
+  payload: SkillEvaluationRoundPayload
+): Promise<BackendSkillEvaluationRound> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-evaluation-rounds`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `บันทึกรอบการประเมินทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}

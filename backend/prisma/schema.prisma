@@ -8,9 +8,9 @@ datasource db {
 }
 
 // Phase 1: Employee + orientation training (F-HR-002) + exam results synced
-// from the Google Form. Phase 2 (in progress): OJT (F-HR-004) + Probation
-// (F-HR-009) evaluations. Certificate / SkillEvaluation / Org Chart tables
-// from the full design doc get added table-by-table in later phases.
+// from the Google Form. Phase 2: OJT (F-HR-004) + Probation (F-HR-009)
+// evaluations + Skill Matrix (F-HR-014). Certificate / Org Chart tables from
+// the full design doc get added table-by-table in later phases.
 
 model Employee {
   id                Int      @id @default(autoincrement())
@@ -35,6 +35,8 @@ model Employee {
   trainingAttendances  TrainingAttendance[]
   ojtParticipants      OjtParticipant[]
   probationEvaluations ProbationEvaluation[]
+  skillEvaluations     SkillEvaluation[]
+  skillEvaluationRounds SkillEvaluationRound[]
 
   @@map("employees")
 }
@@ -216,4 +218,60 @@ model ProbationEvaluation {
 
   @@index([empCode])
   @@map("probation_evaluations")
+}
+
+// F-HR-014: one score per employee+skill+cycle+attempt, scored against the
+// F-HR-005 target for that skill. employeeId is optional (SetNull on
+// delete, like ProbationEvaluation) so score history survives an employee
+// record being removed — employeeName/department/position/skillName/
+// category/targetLevel are snapshotted at evaluation time for that reason.
+model SkillEvaluation {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int?
+  employee       Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  employeeName   String
+  department     String
+  position       String
+  skillName      String
+  category       String
+  targetLevel    Int // 0 | 25 | 50 | 75 | 100
+  resultLevel    Int // 0 | 25 | 50 | 75 | 100
+  cycle          String // e.g. "2026-07"
+  attemptNumber  Int // 1 | 2
+  evaluatedAt    DateTime
+  assessorName   String
+  remark         String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([employeeId, skillName, cycle, attemptNumber])
+  @@index([employeeId, cycle])
+  @@map("skill_evaluations")
+}
+
+// F-HR-014: one sign-off round per employee+cycle+attempt — Action Period +
+// the 3-tier sign-off (Assessor / Dept. Manager / HR Dept.) apply once to
+// every skill scored within that round. Same SetNull-on-delete rationale as
+// SkillEvaluation above (no snapshot fields here since this row is just the
+// sign-off wrapper, not a scored result).
+model SkillEvaluationRound {
+  id                    Int       @id @default(autoincrement())
+  employeeId            Int?
+  employee              Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  cycle                 String
+  attemptNumber         Int // 1 | 2
+  actionPeriodFrom      DateTime?
+  actionPeriodTo        DateTime?
+  assessorName          String
+  assessorSignature     String?   @db.LongText // data URL (PNG) of the hand-drawn signature
+  deptManagerName       String?
+  deptManagerSignature  String?   @db.LongText
+  hrDeptName            String?
+  hrDeptSignature       String?   @db.LongText
+  signedAt              DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([employeeId, cycle, attemptNumber])
+  @@map("skill_evaluation_rounds")
 }

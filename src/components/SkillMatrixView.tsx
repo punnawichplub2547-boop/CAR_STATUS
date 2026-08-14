@@ -14,6 +14,7 @@ import {
   Trash2,
   UserCheck,
   PlusCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip, Legend } from 'recharts';
 import type {
@@ -36,6 +37,7 @@ interface SkillMatrixViewProps {
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
   onAddEmployee?: (payload: EmployeePayload) => void;
+  error?: string | null;
 }
 
 const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
@@ -57,6 +59,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   onUpdateEvaluation,
   onSaveRound,
   onAddEmployee,
+  error,
 }) => {
   const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
   const [selectedCycle, setSelectedCycle] = useState<EvaluationCycle>('2026-07');
@@ -207,6 +210,15 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           </button>
         </div>
       </div>
+
+      {error && (
+        <div
+          className="glass-card"
+          style={{ padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger, #dc2626)' }}
+        >
+          <AlertTriangle size={18} /> ไม่สามารถโหลดผลประเมินทักษะจากระบบได้: {error}
+        </div>
+      )}
 
       {/* Filters Bar */}
       <div className="glass-card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -709,8 +721,12 @@ const RoundPanel: React.FC<{
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
 }> = ({ attempt, emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound }) => {
+  // Looked up by natural key, not by id — the id is a client-generated
+  // placeholder until the backend responds with the real DB-assigned one.
   const roundId = `${emp.id}_${cycle}_${attempt}`;
-  const existingRound = evaluationRounds.find((r) => r.id === roundId);
+  const existingRound = evaluationRounds.find(
+    (r) => r.employeeId === emp.id && r.cycle === cycle && r.attemptNumber === attempt
+  );
 
   const [actionFrom, setActionFrom] = useState(existingRound?.actionPeriodFrom ?? '');
   const [actionTo, setActionTo] = useState(existingRound?.actionPeriodTo ?? '');
@@ -775,7 +791,7 @@ const RoundPanel: React.FC<{
 
   const handleSaveRound = () => {
     onSaveRound({
-      id: roundId,
+      id: existingRound?.id ?? roundId,
       employeeId: emp.id,
       cycle,
       attemptNumber: attempt,

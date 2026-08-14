@@ -30,23 +30,27 @@ import {
   createBackendSkillStandard,
   updateBackendSkillStandard,
   deleteBackendSkillStandard,
+  fetchBackendSkillEvaluations,
+  saveBackendSkillEvaluation,
+  fetchBackendSkillEvaluationRounds,
+  saveBackendSkillEvaluationRound,
   type EmployeePayload,
   type BackendEmployee,
   type BackendOjtSession,
   type BackendProbationEvaluation,
+  type BackendSkillEvaluation,
+  type BackendSkillEvaluationRound,
   type SkillStandardPayload,
 } from './utils/api';
 
 import {
-  INITIAL_SKILL_EVALUATIONS,
-  INITIAL_SKILL_EVALUATION_ROUNDS,
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
   INITIAL_NOTIFICATIONS,
   INITIAL_ORG_CHART_NODES,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode, SkillStandard, SkillLevel, EmploymentStatus, Role, OjtFormType, OjtEvaluationMethod, OjtPurposeType, OjtChangeReasonCategory, ProbationPeriod, ProbationGrade, ProbationOutcome } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode, SkillStandard, SkillLevel, EmploymentStatus, Role, OjtFormType, OjtEvaluationMethod, OjtPurposeType, OjtChangeReasonCategory, ProbationPeriod, ProbationGrade, ProbationOutcome, EvaluationCycle, EvaluationAttempt } from './types';
 
 const DEFAULT_AVATAR_URL =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
@@ -157,6 +161,49 @@ function mapBackendProbationEvaluation(row: BackendProbationEvaluation): Probati
   };
 }
 
+// roundId isn't stored server-side (SkillEvaluationRound is looked up by
+// employeeId+cycle+attemptNumber, not by this string) — it's reconstructed
+// here purely because SkillMatrixView's existing UI groups scores by it.
+function mapBackendSkillEvaluation(row: BackendSkillEvaluation): SkillEvaluation {
+  const employeeId = row.employeeId != null ? String(row.employeeId) : '';
+  return {
+    id: String(row.id),
+    roundId: `${employeeId}_${row.cycle}_${row.attemptNumber}`,
+    employeeId,
+    employeeName: row.employeeName,
+    position: row.position,
+    department: row.department,
+    skillName: row.skillName,
+    category: row.category,
+    targetLevel: row.targetLevel as SkillLevel,
+    resultLevel: row.resultLevel as SkillLevel,
+    cycle: row.cycle as EvaluationCycle,
+    attemptNumber: row.attemptNumber as EvaluationAttempt,
+    evaluatedAt: row.evaluatedAt.slice(0, 10),
+    assessorName: row.assessorName,
+    remark: row.remark ?? undefined,
+  };
+}
+
+function mapBackendSkillEvaluationRound(row: BackendSkillEvaluationRound): SkillEvaluationRound {
+  const employeeId = row.employeeId != null ? String(row.employeeId) : '';
+  return {
+    id: String(row.id),
+    employeeId,
+    cycle: row.cycle as EvaluationCycle,
+    attemptNumber: row.attemptNumber as EvaluationAttempt,
+    actionPeriodFrom: row.actionPeriodFrom?.slice(0, 10) ?? '',
+    actionPeriodTo: row.actionPeriodTo?.slice(0, 10) ?? '',
+    assessorName: row.assessorName,
+    assessorSignature: row.assessorSignature ?? undefined,
+    deptManagerName: row.deptManagerName ?? '',
+    deptManagerSignature: row.deptManagerSignature ?? undefined,
+    hrDeptName: row.hrDeptName ?? '',
+    hrDeptSignature: row.hrDeptSignature ?? undefined,
+    signedAt: row.signedAt?.slice(0, 10) ?? undefined,
+  };
+}
+
 function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     try {
@@ -200,8 +247,9 @@ export function App() {
   // App Master States with Persistence
   const [skillStandards, setSkillStandards] = useState<SkillStandard[]>([]);
   const [skillStandardsError, setSkillStandardsError] = useState<string | null>(null);
-  const [skillEvaluations, setSkillEvaluations] = usePersistentState<SkillEvaluation[]>('skillEvaluations', INITIAL_SKILL_EVALUATIONS);
-  const [skillEvaluationRounds, setSkillEvaluationRounds] = usePersistentState<SkillEvaluationRound[]>('skillEvaluationRounds', INITIAL_SKILL_EVALUATION_ROUNDS);
+  const [skillEvaluations, setSkillEvaluations] = useState<SkillEvaluation[]>([]);
+  const [skillEvaluationRounds, setSkillEvaluationRounds] = useState<SkillEvaluationRound[]>([]);
+  const [skillEvaluationsError, setSkillEvaluationsError] = useState<string | null>(null);
   const [ojtSessions, setOjtSessions] = useState<OjtSession[]>([]);
   const [ojtContentItems, setOjtContentItems] = useState<OjtContentItem[]>([]);
   const [ojtParticipants, setOjtParticipants] = useState<OjtParticipant[]>([]);
@@ -285,6 +333,17 @@ export function App() {
       .catch((err) => setProbationError(err instanceof Error ? err.message : 'unknown error'));
   }, []);
 
+  // F-HR-014 skill evaluations + sign-off rounds — same DB-backed pattern
+  // as above.
+  useEffect(() => {
+    fetchBackendSkillEvaluations()
+      .then((rows) => setSkillEvaluations(rows.map(mapBackendSkillEvaluation)))
+      .catch((err) => setSkillEvaluationsError(err instanceof Error ? err.message : 'unknown error'));
+    fetchBackendSkillEvaluationRounds()
+      .then((rows) => setSkillEvaluationRounds(rows.map(mapBackendSkillEvaluationRound)))
+      .catch((err) => setSkillEvaluationsError(err instanceof Error ? err.message : 'unknown error'));
+  }, []);
+
   const handleAddSkillStandard = (payload: SkillStandardPayload) => {
     createBackendSkillStandard(payload)
       .then((row) =>
@@ -309,18 +368,17 @@ export function App() {
       .catch((err) => window.alert(`ลบมาตรฐานทักษะไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
   };
 
-  // Reset Demo Data — employees, OJT sessions, skill standards, and
-  // probation evaluations are all DB-backed now, so this only resets the
-  // still-localStorage-first evaluation/history collections, which carry
-  // employeeId references that go stale whenever the employee roster
-  // changes (ids are now real DB ids, not client-generated ones).
+  // Reset Demo Data — employees, OJT sessions, skill standards, skill
+  // evaluations, and probation evaluations are all DB-backed now, so this
+  // only resets the still-localStorage-first collections (certificates,
+  // courses, notifications, org chart layout).
   const handleResetDemoData = () => {
     if (
       window.confirm(
-        'คุณต้องการรีเซ็ตข้อมูลตัวอย่าง (ผลประเมินทักษะ, ใบรับรอง) กลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?\n\nข้อมูลพนักงาน, ประวัติ OJT และประวัติทดลองงานจะไม่ถูกรีเซ็ต (อยู่ในฐานข้อมูลกลางแล้ว)'
+        'คุณต้องการรีเซ็ตข้อมูลตัวอย่าง (ใบรับรอง, ผังองค์กร) กลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?\n\nข้อมูลพนักงาน, ประวัติ OJT, ประวัติทดลองงาน และผลประเมินทักษะจะไม่ถูกรีเซ็ต (อยู่ในฐานข้อมูลกลางแล้ว)'
       )
     ) {
-      const keys = ['skillEvaluations', 'skillEvaluationRounds', 'certificates', 'courses', 'notifications', 'orgChartNodes', 'currentUserEmpCode'];
+      const keys = ['certificates', 'courses', 'notifications', 'orgChartNodes', 'currentUserEmpCode'];
       keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
       window.location.reload();
     }
@@ -466,11 +524,51 @@ export function App() {
     setCertificates(certificates.filter((c) => c.id !== certId));
   };
 
+  // F-HR-014 scores are DB-backed — optimistic local update first (same
+  // pattern as handleAddProbationEval) so the score popover closes
+  // instantly, then reconcile with the real DB-assigned id once the
+  // backend responds. Reconciled by natural key (employeeId+skillName+
+  // cycle+attemptNumber), not by id, since the optimistic entry's id is
+  // still the client-generated temp one.
   const handleUpdateEvaluation = (updated: SkillEvaluation) => {
     const exists = skillEvaluations.some((e) => e.id === updated.id);
     setSkillEvaluations(
       exists ? skillEvaluations.map((e) => (e.id === updated.id ? updated : e)) : [updated, ...skillEvaluations]
     );
+
+    saveBackendSkillEvaluation({
+      employeeId: Number(updated.employeeId),
+      employeeName: updated.employeeName,
+      department: updated.department,
+      position: updated.position,
+      skillName: updated.skillName,
+      category: updated.category,
+      targetLevel: updated.targetLevel,
+      resultLevel: updated.resultLevel,
+      cycle: updated.cycle,
+      attemptNumber: updated.attemptNumber,
+      evaluatedAt: updated.evaluatedAt,
+      assessorName: updated.assessorName,
+      remark: updated.remark,
+    })
+      .then((row) => {
+        const real = mapBackendSkillEvaluation(row);
+        setSkillEvaluations((prev) => [
+          real,
+          ...prev.filter(
+            (e) =>
+              !(
+                e.employeeId === real.employeeId &&
+                e.skillName === real.skillName &&
+                e.cycle === real.cycle &&
+                e.attemptNumber === real.attemptNumber
+              )
+          ),
+        ]);
+      })
+      .catch((err) =>
+        window.alert(`บันทึกผลประเมินทักษะเข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`)
+      );
   };
 
   const handleSaveEvaluationRound = (round: SkillEvaluationRound) => {
@@ -478,6 +576,33 @@ export function App() {
     setSkillEvaluationRounds(
       exists ? skillEvaluationRounds.map((r) => (r.id === round.id ? round : r)) : [round, ...skillEvaluationRounds]
     );
+
+    saveBackendSkillEvaluationRound({
+      employeeId: Number(round.employeeId),
+      cycle: round.cycle,
+      attemptNumber: round.attemptNumber,
+      actionPeriodFrom: round.actionPeriodFrom || undefined,
+      actionPeriodTo: round.actionPeriodTo || undefined,
+      assessorName: round.assessorName,
+      assessorSignature: round.assessorSignature,
+      deptManagerName: round.deptManagerName,
+      deptManagerSignature: round.deptManagerSignature,
+      hrDeptName: round.hrDeptName,
+      hrDeptSignature: round.hrDeptSignature,
+      signedAt: round.signedAt,
+    })
+      .then((row) => {
+        const real = mapBackendSkillEvaluationRound(row);
+        setSkillEvaluationRounds((prev) => [
+          real,
+          ...prev.filter(
+            (r) => !(r.employeeId === real.employeeId && r.cycle === real.cycle && r.attemptNumber === real.attemptNumber)
+          ),
+        ]);
+      })
+      .catch((err) =>
+        window.alert(`บันทึกรอบการประเมินทักษะเข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`)
+      );
   };
 
   const handleMarkNotifRead = (id: string) => {
@@ -618,6 +743,7 @@ export function App() {
               onUpdateEvaluation={handleUpdateEvaluation}
               onSaveRound={handleSaveEvaluationRound}
               onAddEmployee={handleAddEmployee}
+              error={skillEvaluationsError}
             />
           )}
 
