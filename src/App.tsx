@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
 import { TestLoginModal } from './components/TestLoginModal';
 import { LoginView } from './components/LoginView';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Only one tab is on screen at a time, so each page is loaded on demand. This
 // keeps recharts (Dashboard / Skill Matrix), xlsx (Audit / Exam) and jszip
@@ -242,88 +243,90 @@ export function App() {
         />
 
         <main className="main-content">
-          <Suspense fallback={<PageLoading />}>
-          {activeTab === 'dashboard' && (
-            <Dashboard
-              employees={employees}
-              certificates={certificates}
-              onNavigate={setActiveTab}
-            />
-          )}
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoading />}>
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                employees={employees}
+                certificates={certificates}
+                onNavigate={setActiveTab}
+              />
+            )}
 
-          {activeTab === 'employees' && (
-            <EmployeeManagement
-              employees={employees}
-              onAddEmployee={handleAddEmployee}
-              onEditEmployee={handleEditEmployee}
-              orgChartNodes={orgChartNodes}
-              onChangeOrgChartNodes={setOrgChartNodes}
-            />
-          )}
+            {activeTab === 'employees' && (
+              <EmployeeManagement
+                employees={employees}
+                onAddEmployee={handleAddEmployee}
+                onEditEmployee={handleEditEmployee}
+                orgChartNodes={orgChartNodes}
+                onChangeOrgChartNodes={setOrgChartNodes}
+              />
+            )}
 
-          {activeTab === 'training' && (
-            <TrainingManagement
-              onNavigateToExam={(batchId) => {
-                if (batchId) {
-                  localStorage.setItem('hrskill_active_batch_id', batchId);
-                }
-                setActiveTab('exam');
-              }}
-            />
-          )}
+            {activeTab === 'training' && (
+              <TrainingManagement
+                onNavigateToExam={(batchId) => {
+                  if (batchId) {
+                    localStorage.setItem('hrskill_active_batch_id', batchId);
+                  }
+                  setActiveTab('exam');
+                }}
+              />
+            )}
 
-          {activeTab === 'evaluations' && (
-            <OjtProbationEvaluator
-              employees={employees}
-              ojtSessions={ojtSessions}
-              ojtContentItems={ojtContentItems}
-              ojtParticipants={ojtParticipants}
-              probationEvaluations={probationEvaluations}
-              onAddOjtSession={handleAddOjtSession}
-              onAddProbationEval={handleAddProbationEval}
-            />
-          )}
+            {activeTab === 'evaluations' && (
+              <OjtProbationEvaluator
+                employees={employees}
+                ojtSessions={ojtSessions}
+                ojtContentItems={ojtContentItems}
+                ojtParticipants={ojtParticipants}
+                probationEvaluations={probationEvaluations}
+                onAddOjtSession={handleAddOjtSession}
+                onAddProbationEval={handleAddProbationEval}
+              />
+            )}
 
-          {activeTab === 'skill_matrix' && (
-            <SkillMatrixView
-              employees={employees}
-              standards={skillStandards}
-              evaluations={skillEvaluations}
-              evaluationRounds={skillEvaluationRounds}
-              onUpdateEvaluation={handleUpdateEvaluation}
-              onSaveRound={handleSaveEvaluationRound}
-              onAddEmployee={handleAddEmployee}
-            />
-          )}
+            {activeTab === 'skill_matrix' && (
+              <SkillMatrixView
+                employees={employees}
+                standards={skillStandards}
+                evaluations={skillEvaluations}
+                evaluationRounds={skillEvaluationRounds}
+                onUpdateEvaluation={handleUpdateEvaluation}
+                onSaveRound={handleSaveEvaluationRound}
+                onAddEmployee={handleAddEmployee}
+              />
+            )}
 
-          {activeTab === 'certificates' && (
-            <CertificateVault
-              certificates={certificates}
-              employees={employees}
-              onAddCertificate={handleAddCertificate}
-              onEditCertificate={handleEditCertificate}
-              onDeleteCertificate={handleDeleteCertificate}
-            />
-          )}
+            {activeTab === 'certificates' && (
+              <CertificateVault
+                certificates={certificates}
+                employees={employees}
+                onAddCertificate={handleAddCertificate}
+                onEditCertificate={handleEditCertificate}
+                onDeleteCertificate={handleDeleteCertificate}
+              />
+            )}
 
-          {activeTab === 'exam' && (
-            <ExamEngine
-              currentUser={currentUser}
-              employees={employees}
-            />
-          )}
+            {activeTab === 'exam' && (
+              <ExamEngine
+                currentUser={currentUser}
+                employees={employees}
+              />
+            )}
 
-          {activeTab === 'audit' && (
-            <AuditReportExporter
-              employees={employees}
-              skillEvaluations={skillEvaluations}
-              ojtSessions={ojtSessions}
-              ojtParticipants={ojtParticipants}
-              certificates={certificates}
-              courses={courses}
-            />
-          )}
-          </Suspense>
+            {activeTab === 'audit' && (
+              <AuditReportExporter
+                employees={employees}
+                skillEvaluations={skillEvaluations}
+                ojtSessions={ojtSessions}
+                ojtParticipants={ojtParticipants}
+                certificates={certificates}
+                courses={courses}
+              />
+            )}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

@@ -28,12 +28,13 @@ import {
   Legend,
 } from 'recharts';
 import type { Employee, Certificate } from '../types';
+import type { NavTab } from './Sidebar';
 import { computeCertificateStatus } from '../utils/certificateStatus';
 
 interface DashboardProps {
   employees: Employee[];
   certificates: Certificate[];
-  onNavigate: (tab: any) => void;
+  onNavigate: (tab: NavTab) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({

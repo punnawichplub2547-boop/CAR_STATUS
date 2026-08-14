@@ -116,8 +116,8 @@ export async function saveBlobFile(buffer: ArrayBuffer | Uint8Array, fileName: s
       await writable.write(blob);
       await writable.close();
       return;
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       console.warn('showSaveFilePicker fallback:', err);
     }
   }
@@ -452,18 +452,19 @@ export async function exportExactFHR014Template({
   };
 }
 
-// Accepts either a SheetJS workbook (what AuditReportExporter builds) or an
-// ExcelJS-style one. Anything else is a programming error and must not fail
-// silently — a download button that quietly does nothing is worse than a throw.
-export async function downloadExcelWorkbook(workbook: any, fileName: string): Promise<void> {
-  if (workbook && workbook.xlsx && typeof workbook.xlsx.writeBuffer === 'function') {
-    const buf = await workbook.xlsx.writeBuffer();
+export async function downloadExcelWorkbook(
+  workbook: XLSX.WorkBook | { xlsx?: { writeBuffer?: () => Promise<ArrayBuffer> } } | unknown,
+  fileName: string
+): Promise<void> {
+  const wb = workbook as { xlsx?: { writeBuffer?: () => Promise<ArrayBuffer> } } & XLSX.WorkBook;
+  if (wb && wb.xlsx && typeof wb.xlsx.writeBuffer === 'function') {
+    const buf = await wb.xlsx.writeBuffer();
     await saveBlobFile(buf, fileName);
     return;
   }
 
-  if (workbook && Array.isArray(workbook.SheetNames) && workbook.Sheets) {
-    const buf = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
+  if (wb && Array.isArray(wb.SheetNames) && wb.Sheets) {
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' }) as ArrayBuffer;
     await saveBlobFile(buf, fileName);
     return;
   }

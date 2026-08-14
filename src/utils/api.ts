@@ -1,3 +1,5 @@
+import type { Employee } from '../types';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 export interface ExamCategoryStatus {
@@ -84,10 +86,10 @@ export async function syncLocalStorageEmployeesToBackend(): Promise<void> {
   try {
     const saved = localStorage.getItem('hrskill_employees');
     if (!saved) return;
-    const empList: any[] = JSON.parse(saved);
+    const empList: Partial<Employee>[] = JSON.parse(saved);
 
     for (const emp of empList) {
-      if (!emp.empCode || !emp.name) continue;
+      if (!emp.empCode || !emp.name || !emp.department || !emp.position) continue;
       await createBackendEmployee({
         empCode: emp.empCode,
         name: emp.name,

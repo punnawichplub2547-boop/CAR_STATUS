@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FileSpreadsheet, RefreshCw, AlertCircle, CheckSquare, Square, Pencil, Trash2, X, BookOpen, Layers, ExternalLink } from 'lucide-react';
+import { FileSpreadsheet, RefreshCw, AlertCircle, CheckSquare, Square, Pencil, Trash2, X, BookOpen, Layers, ExternalLink, QrCode } from 'lucide-react';
 import {
   fetchPendingOrientationEmployees,
   updateBackendEmployee,
@@ -14,37 +14,11 @@ import {
   loadOrientationBatchesFromLocalStorage,
   deleteOrientationBatch,
 } from '../services/orientationBatchService';
-import type { OrientationBatch } from '../types';
+import type { OrientationBatch, Employee } from '../types';
+import { DEFAULT_SAFETY_FORM_URL, DEFAULT_ORIENTATION_FORM_URL } from '../services/googleFormSync';
+import { ExamQrModal } from './exam/ExamQrModal';
 
-const COURSE_OPTIONS: { value: OrientationCourseCategory; label: string }[] = [
-  { value: 'REGULATION', label: 'กฎระเบียบข้อบังคับในการทำงาน' },
-  { value: 'SAFETY', label: 'ความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน' },
-];
-
-export const DEFAULT_COURSE_TOPICS: Record<OrientationCourseCategory, { courseName: string; topics: string[] }> = {
-  REGULATION: {
-    courseName: 'กฎระเบียบข้อบังคับในการทำงาน',
-    topics: [
-      '1. ประวัติความเป็นมาของบริษัทเบื้องต้น/กฎระเบียบข้อบังคับในการทำงาน',
-      '2. ค่านิยมองค์กร',
-      '3. จรรยาบรรณทางธุรกิจ',
-      '4. มาตรฐานที่ใช้ในการผลิตและมาตรฐานที่เกี่ยวข้อง',
-      '5. ข้อกำหนดและจิตสำนึกด้านคุณภาพ',
-      '6. ความรู้เรื่อง 5 ส.',
-    ],
-  },
-  SAFETY: {
-    courseName: 'ความปลอดภัย อาชีวอนามัย และสภาพแวดล้อมในการทำงาน',
-    topics: [
-      '1. ข้อกำหนดและจิตสำนึกด้านสิ่งแวดล้อม',
-      '2. การอนุรักษ์พลังงานและการจัดการด้านสิ่งแวดล้อม',
-      '3. ความรู้เกี่ยวกับความปลอดภัยในการทำงาน',
-      '4. กฎหมายความปลอดภัยอาชีวอนามัยและสภาพแวดล้อมในการทำงาน',
-      '5. คู่มือว่าด้วยความปลอดภัยอาชีวอนามัยและสภาพแวดล้อมในการทำงาน',
-      '6. การจัดการสารต้องห้ามในผลิตภัณฑ์',
-    ],
-  },
-};
+import { COURSE_OPTIONS, DEFAULT_COURSE_TOPICS } from '../constants/orientationConstants';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
@@ -83,6 +57,7 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
     DEFAULT_COURSE_TOPICS.REGULATION.topics.join('\n')
   );
   const [savedBatches, setSavedBatches] = useState<OrientationBatch[]>([]);
+  const [viewingBatchQr, setViewingBatchQr] = useState<OrientationBatch | null>(null);
 
   const [pending, setPending] = useState<PendingOrientationEmployee[]>([]);
   const [selectedCodes, setSelectedCodes] = useState<Set<string>>(new Set());
@@ -117,7 +92,7 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
 
     try {
       const savedEmp = localStorage.getItem('hrskill_employees');
-      const empList: any[] = savedEmp ? JSON.parse(savedEmp) : [];
+      const empList: Employee[] = savedEmp ? JSON.parse(savedEmp) : [];
       const localPending: PendingOrientationEmployee[] = empList
         .filter((e) => !e.orientationPassed)
         .map((e, idx) => ({
@@ -624,6 +599,27 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
                     <button
                       type="button"
                       className="btn btn-xs btn-primary"
+                      onClick={() => setViewingBatchQr(batch)}
+                      style={{
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: '0.82rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'linear-gradient(135deg, #10b981, #059669)',
+                        border: 'none',
+                        color: '#fff',
+                        fontWeight: 600,
+                      }}
+                      title="เปิด QR Code สำหรับผู้เข้าอบรมรอบนี้สแกนเข้าทำแบบทดสอบ"
+                    >
+                      <QrCode size={14} /> แสดง QR Code สอบ
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-secondary"
                       onClick={() => {
                         localStorage.setItem('hrskill_active_batch_id', batch.id);
                         if (onNavigateToExam) {
@@ -636,7 +632,7 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
                       style={{ borderRadius: 8, padding: '6px 12px', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                       title="ดึงรายชื่อพนักงานในรอบการอบรมนี้ไปคัดกรองและสอบในหน้าระบบสอบ (Exam Engine)"
                     >
-                      <ExternalLink size={14} /> 🔗 ดึงรายชื่อไปหน้าสอบ ({batch.empCodes.length} คน)
+                      <ExternalLink size={14} /> 🔗 ไปหน้าสอบ ({batch.empCodes.length} คน)
                     </button>
 
                     <button
@@ -676,6 +672,19 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
           </div>
         )}
       </div>
+
+      {/* QR Code Modal for Batch */}
+      {viewingBatchQr && (
+        <ExamQrModal
+          isOpen={Boolean(viewingBatchQr)}
+          onClose={() => setViewingBatchQr(null)}
+          title={`แบบทดสอบ: ${viewingBatchQr.batchName}`}
+          subtitle={`ผู้เข้าอบรมรอบนี้ (${viewingBatchQr.empCodes.length} คน) สามารถสแกนเพื่อเข้าทำแบบทดสอบได้ทันที`}
+          url={viewingBatchQr.category === 'SAFETY' ? DEFAULT_SAFETY_FORM_URL : DEFAULT_ORIENTATION_FORM_URL}
+          passCriteriaText={viewingBatchQr.category === 'SAFETY' ? 'เกณฑ์ผ่าน: ผิดไม่เกิน 2 ข้อ (≥ 12/14 ข้อ)' : 'เกณฑ์ผ่าน: 80% ขึ้นไป (≥ 24/30 ข้อ)'}
+          isSafety={viewingBatchQr.category === 'SAFETY'}
+        />
+      )}
     </div>
   );
 };

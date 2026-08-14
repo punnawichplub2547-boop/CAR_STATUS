@@ -463,7 +463,7 @@ export async function parseExcelOrCsvFile(file: File): Promise<{
   const workbook = XLSX.read(data, { type: 'array' });
   const firstSheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[firstSheetName];
-  const jsonRows: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+  const jsonRows: (string | number | boolean | null | undefined)[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
   if (!jsonRows || jsonRows.length < 2) {
     throw new Error('ไฟล์ที่นำเข้าไม่มีข้อมูลคำตอบ');

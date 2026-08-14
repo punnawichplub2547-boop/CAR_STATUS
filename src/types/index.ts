@@ -32,6 +32,7 @@ export interface Employee {
   role: Role;
   supervisorId?: string;
   supervisorName?: string;
+  orientationPassed?: boolean;
 }
 
 // The actual position tags used in F-HR-038 (the real CAR org chart) —
