@@ -93,6 +93,27 @@ npm run build
 npm run lint
 ```
 
+### 6. Sync หลัง Pull โค้ดของเพื่อนร่วมทีม (Syncing After a Pull)
+เวลามีใครเพิ่ม dependency ใหม่ หรือแก้ Prisma schema (`backend/prisma/schema.prisma`) แล้ว push ขึ้นมา ให้รันตามลำดับนี้ทุกครั้งหลัง `git pull` — ข้ามข้อ 3 (migrate) ไม่ได้ เพราะ `prisma:seed` จะ error ทันทีถ้าตารางในฐานข้อมูลยังไม่ถูกสร้าง:
+
+```bash
+# 1. ดึงโค้ดล่าสุด
+git pull
+
+# 2. ติดตั้ง dependency ทั้ง frontend และ backend
+npm install
+cd backend && npm install && cd ..
+
+# 3. รัน migration ที่ค้างอยู่ (ต้องมี MySQL รันอยู่ก่อน เช่น docker compose up -d car-status-mysql)
+cd backend
+npx prisma migrate deploy
+
+# 4. seed ข้อมูล mock พนักงาน + มาตรฐานทักษะ (F-HR-005) ชุดล่าสุด
+npm run prisma:seed
+```
+
+> หมายเหตุ: ไฟล์ `backend/.env` และ `.env.local` ไม่ได้ถูก commit ขึ้น git (เก็บค่าเฉพาะเครื่อง เช่น พอร์ต/DATABASE_URL) — ให้ copy จาก `backend/.env.example` / `.env.example` แล้วปรับค่าตามเครื่องตัวเองก่อนรันขั้นตอนด้านบน
+
 ---
 
 ## 📂 โครงสร้างไดเรกทอรี (Directory Structure)
