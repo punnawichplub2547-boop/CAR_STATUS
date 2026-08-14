@@ -1,10 +1,11 @@
 // Full TypeScript Interfaces for CAR HR Skill Matrix Platform
 
-export type Role = 'ADMIN' | 'SUPERVISOR' | 'EMPLOYEE';
+export type Role = 'ADMIN' | 'HR' | 'SUPERVISOR' | 'EMPLOYEE';
 export type EmploymentStatus = 'PROBATION' | 'PERMANENT' | 'RESIGNED';
 export type SkillLevel = 0 | 25 | 50 | 75 | 100;
 export type ProbationGrade = 'A+' | 'A' | 'B' | 'C' | 'D';
 export type ProbationPeriod = '30_DAYS' | '90_DAYS' | '119_DAYS';
+export type ProbationOutcome = 'OJT_REPEAT' | 'RECONSIDER';
 export type OjtFormType = 'A_NEW_HIRE' | 'B_CHANGE';
 export type OjtPurposeType = 'NEW_HIRE' | 'TRANSFER';
 export type OjtChangeReasonCategory =
@@ -118,27 +119,26 @@ export interface OjtSession {
   formType: OjtFormType;
   department: string;
   position: string;
-  courseName: string;
-  instructor: string;
-  location: string;
-  trainingDateFrom: string;
-  trainingDateTo: string;
-  timeRange: string;
   evaluationMethod: OjtEvaluationMethod;
   hasAttachment: boolean;
   purposeType?: OjtPurposeType; // Form A only
   changeReasonCategory?: OjtChangeReasonCategory; // Form B only
   assessorName: string;
   managerName: string;
+  createdAt?: string;
 }
 
-// Each content/topic line within a session (Form A: up to 25 lines)
+// Each content/topic line within a session (Form A: up to 25 lines). Date
+// and time are per-line, not per-session — the real F-HR-004 form trains
+// one topic at a time, possibly on different days.
 export interface OjtContentItem {
   id: string;
   sessionId: string;
   sequence: number;
   description: string;
-  instructorSignedDate?: string;
+  trainingDate?: string;
+  timeFrom?: string;
+  timeTo?: string;
   resultPercent?: SkillLevel; // Form A scores per content line
   remark?: string;
 }
@@ -188,8 +188,10 @@ export interface ProbationEvaluation {
   resultScore: number; // criteriaPercentage * 0.8 + attendancePercentage * 0.2
   grade: ProbationGrade;
   isPassed: boolean;
+  outcome?: ProbationOutcome; // set when isPassed is false — ไม่ผ่าน -> OJT ซ้ำ / พิจารณา
   comments: string;
   assessorName: string;
+  createdAt?: string;
 }
 
 export interface Certificate {

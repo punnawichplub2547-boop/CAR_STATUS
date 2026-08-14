@@ -54,11 +54,19 @@ employeesRouter.get('/employees/pending-orientation', async (_req, res) => {
 });
 
 employeesRouter.post('/employees', async (req, res) => {
-  const { empCode, name, email, department, section, position, startingDate, status } = req.body;
+  const { empCode, name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
 
   if (!empCode || !name || !department || !position || !startingDate) {
     res.status(400).json({ error: 'empCode, name, department, position, startingDate are required' });
     return;
+  }
+
+  if (supervisorId != null) {
+    const supervisorExists = await prisma.employee.findUnique({ where: { id: Number(supervisorId) }, select: { id: true } });
+    if (!supervisorExists) {
+      res.status(400).json({ error: 'Invalid supervisorId: no such employee' });
+      return;
+    }
   }
 
   const employee = await prisma.employee.create({
@@ -71,6 +79,9 @@ employeesRouter.post('/employees', async (req, res) => {
       position,
       startingDate: new Date(startingDate),
       status: status ?? 'PROBATION',
+      role: role ?? 'EMPLOYEE',
+      avatar: avatar ?? null,
+      supervisorId: supervisorId != null ? Number(supervisorId) : null,
     },
   });
 
@@ -84,10 +95,22 @@ employeesRouter.put('/employees/:id', async (req, res) => {
     return;
   }
 
-  const { empCode, name, email, department, section, position, startingDate, status } = req.body;
+  const { empCode, name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
   if (!empCode || !name || !department || !position || !startingDate) {
     res.status(400).json({ error: 'empCode, name, department, position, startingDate are required' });
     return;
+  }
+
+  if (supervisorId != null) {
+    if (Number(supervisorId) === id) {
+      res.status(400).json({ error: 'Employee cannot be their own supervisor' });
+      return;
+    }
+    const supervisorExists = await prisma.employee.findUnique({ where: { id: Number(supervisorId) }, select: { id: true } });
+    if (!supervisorExists) {
+      res.status(400).json({ error: 'Invalid supervisorId: no such employee' });
+      return;
+    }
   }
 
   try {
@@ -102,6 +125,12 @@ employeesRouter.put('/employees/:id', async (req, res) => {
         position,
         startingDate: new Date(startingDate),
         status,
+        // Leave role/avatar/supervisorId untouched when omitted (undefined) —
+        // OrientationExport.tsx only ever sends the 8 core fields and must
+        // not clobber these back to defaults on its narrower edit form.
+        role,
+        avatar,
+        supervisorId: supervisorId != null ? Number(supervisorId) : supervisorId,
       },
     });
     res.json(employee);

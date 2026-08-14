@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Search, UserCheck, Shield, ChevronDown, CheckCircle2, AlertTriangle, Sun, Moon, LogIn, RotateCcw } from 'lucide-react';
 import type { Employee, NotificationItem } from '../types';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
 
 interface NavbarProps {
   currentUser: Employee;
@@ -181,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="user-info">
               <span className="user-name">{currentUser.name}</span>
               <span className="user-role-badge">
-                <Shield size={12} /> {currentUser.role} ({currentUser.department})
+                <Shield size={12} /> {ROLE_LABELS[currentUser.role]} ({currentUser.department})
               </span>
             </div>
             <ChevronDown size={16} />
@@ -190,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {showUserMenu && (
             <div className="user-dropdown">
               <div className="dropdown-title">สลับผู้ใช้งาน (Switch Role Demo)</div>
-              {allUsers.map((u) => (
+              {allUsers.filter((u) => LOGINABLE_ROLES.includes(u.role)).map((u) => (
                 <div
                   key={u.id}
                   className={`user-option ${u.id === currentUser.id ? 'active' : ''}`}
@@ -203,7 +204,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="opt-info">
                     <span className="opt-name">{u.name}</span>
                     <span className="opt-role">
-                      {u.role} - {u.position}
+                      {ROLE_LABELS[u.role]} - {u.position}
                     </span>
                   </div>
                   {u.id === currentUser.id && <UserCheck size={16} className="text-blue" />}

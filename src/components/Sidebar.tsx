@@ -4,6 +4,7 @@ import {
   Users,
   GraduationCap,
   ClipboardCheck,
+  ListChecks,
   Target,
   Award,
   FileCheck2,
@@ -15,13 +16,20 @@ import {
   CheckCircle2,
   X,
   Info,
+  History,
+  ClipboardList,
 } from 'lucide-react';
 
 export type NavTab =
   | 'dashboard'
   | 'employees'
   | 'training'
-  | 'evaluations'
+  | 'ojt_a'
+  | 'ojt_b'
+  | 'ojt_history'
+  | 'probation'
+  | 'probation_history'
+  | 'skill_standards'
   | 'skill_matrix'
   | 'certificates'
   | 'exam'
@@ -71,11 +79,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: null,
     },
     {
-      id: 'evaluations',
-      label: 'ประเมิน OJT & ทดลองงาน',
+      id: 'ojt_a',
+      label: 'F-HR-004A: OJT พนักงานใหม่',
       icon: ClipboardCheck,
+      badge: null,
+    },
+    {
+      id: 'ojt_b',
+      label: 'F-HR-004B: OJT เปลี่ยนงาน',
+      icon: FileText,
+      badge: null,
+    },
+    {
+      id: 'ojt_history',
+      label: 'ประวัติการอบรม OJT (F-HR-004)',
+      icon: History,
+      badge: null,
+    },
+    {
+      id: 'probation',
+      label: 'F-HR-009: ประเมินทดลองงาน',
+      icon: Award,
       badge: probationCount > 0 ? `${probationCount} งาน` : null,
       badgeColor: 'badge-amber',
+    },
+    {
+      id: 'probation_history',
+      label: 'ประวัติการประเมินทดลองงาน (F-HR-009)',
+      icon: ClipboardList,
+      badge: null,
+    },
+    {
+      id: 'skill_standards',
+      label: 'มาตรฐานทักษะ (F-HR-005)',
+      icon: ListChecks,
+      badge: null,
     },
     {
       id: 'skill_matrix',

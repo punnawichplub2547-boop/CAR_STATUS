@@ -6,7 +6,9 @@ export const ojtRouter = Router();
 interface ContentItemPayload {
   sequence: number;
   description: string;
-  instructorSignedDate?: string;
+  trainingDate?: string;
+  timeFrom?: string;
+  timeTo?: string;
   resultPercent?: number;
   remark?: string;
 }
@@ -25,12 +27,6 @@ interface CreateOjtSessionPayload {
   formType: string;
   department: string;
   position: string;
-  courseName: string;
-  instructor: string;
-  location: string;
-  trainingDateFrom: string;
-  trainingDateTo: string;
-  timeRange: string;
   evaluationMethod: string;
   hasAttachment?: boolean;
   purposeType?: string;
@@ -52,12 +48,6 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
     !body.formType ||
     !body.department ||
     !body.position ||
-    !body.courseName ||
-    !body.instructor ||
-    !body.location ||
-    !body.trainingDateFrom ||
-    !body.trainingDateTo ||
-    !body.timeRange ||
     !body.evaluationMethod ||
     !body.assessorName ||
     !body.managerName ||
@@ -79,12 +69,6 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
       formType: body.formType,
       department: body.department,
       position: body.position,
-      courseName: body.courseName,
-      instructor: body.instructor,
-      location: body.location,
-      trainingDateFrom: new Date(body.trainingDateFrom),
-      trainingDateTo: new Date(body.trainingDateTo),
-      timeRange: body.timeRange,
       evaluationMethod: body.evaluationMethod,
       hasAttachment: body.hasAttachment ?? false,
       purposeType: body.purposeType,
@@ -95,7 +79,9 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
         create: body.contentItems.map((c) => ({
           sequence: c.sequence,
           description: c.description,
-          instructorSignedDate: c.instructorSignedDate ? new Date(c.instructorSignedDate) : undefined,
+          trainingDate: c.trainingDate ? new Date(c.trainingDate) : undefined,
+          timeFrom: c.timeFrom,
+          timeTo: c.timeTo,
           resultPercent: c.resultPercent,
           remark: c.remark,
         })),

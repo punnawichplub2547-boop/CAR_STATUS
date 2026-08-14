@@ -27,6 +27,7 @@ interface CreateProbationEvaluationPayload {
   resultScore: number;
   grade: string;
   isPassed: boolean;
+  outcome?: string;
   comments?: string;
   assessorName: string;
 }
@@ -95,6 +96,7 @@ probationRouter.post('/probation-evaluations', async (req, res) => {
       resultScore: body.resultScore,
       grade: body.grade,
       isPassed: body.isPassed,
+      outcome: body.outcome,
       comments: body.comments,
       assessorName: body.assessorName,
     },

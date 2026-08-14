@@ -1,0 +1,1157 @@
+[
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การจัดการความเสี่ยงและโอกาส",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "CCCF",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "หยุดเรียกรอ/Ho-Ren-So/5W1H/7Wastes",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ระบบคุณภาพ/นโยบายด้านความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การอัดขึ้นรูปยางด้วยเครื่อง COMPRESSION",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การอัดขึ้นรูปยางด้วยเครื่อง INJECTION MOLDING",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การดูแลรักษาสภาพเครื่องจักรก่อน-หลังการผลิต",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ระบบ / ความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การทำ 5 ส.",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ความเข้าใจ/การปฏิบัติงานด้านความปลอดภัย",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อบังคับของบริษัทฯ",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อกำหนดระบบ ISO9001 / IATF16949",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อกำหนดระบบ ISO14001",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การประสานงานและการแก้ไขปัญหา",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "CSR",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การจัดการผลิตภัณฑ์ต้องสงสัย",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "พนักงานทั่วไป",
+    "category": "อัดขึ้นรูป",
+    "skillName": "วิธีการลงบันทึกในใบรายงานทุกชั่วโมง",
+    "targetLevel": 50
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การจัดการความเสี่ยงและโอกาส",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "CCCF",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "หยุดเรียกรอ/Ho-Ren-So/5W1H/7Wastes",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ระบบคุณภาพ/นโยบายด้านความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การอัดขึ้นรูปยางด้วยเครื่อง COMPRESSION",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การอัดขึ้นรูปยางด้วยเครื่อง INJECTION MOLDING",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การดูแลรักษาสภาพเครื่องจักรก่อน-หลังการผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ระบบ / ความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การทำ 5 ส.",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "ความเข้าใจ/การปฏิบัติงานด้านความปลอดภัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อบังคับของบริษัทฯ",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อกำหนดระบบ ISO9001 / IATF16949",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การปฏิบัติตามข้อกำหนดระบบ ISO14001",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การประสานงานและการแก้ไขปัญหา",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "CSR",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การจัดการผลิตภัณฑ์ต้องสงสัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "วิธีการลงบันทึกในใบรายงานทุกชั่วโมง",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "อัดขึ้นรูป",
+    "skillName": "การบริหารการจัดการผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การจัดการความเสี่ยงและโอกาส",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "หยุด-เรียก-รอ / Ho-Ren-So / 5 W1h / 7 Wastes",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "CCCF",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "ระบบคุณภาพนโยบายด้วยความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การอัดขึ้นรูปยางด้วยเครื่อง COMPRESSSION",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การอัดรูปยางด้วยเครื่อง Injection Molding",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การทำความสะอาดด้วยเครื่องยิงพ่นทราย",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การจัดการของเสียในกระบวนการผลิตแผนก Forming",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การเปลี่ยนแปลงแม่พิมพ์และการเคลื่อนย้ายแม่พิมพ์",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การเบกวัตถุดิบเพื่อนำไปผลิตที่ Forming Process",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "ขั้นตอนการลงบันทึกรายงาน (Production Daily Report)",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การติดตั้งแม่พิมพ์",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "มาตรฐานการจัดการในกระบวนการผลิตในกรณีฉุกเฉิน",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การล้างหัวฉีดเครื่อง Injection DESMA 250,400 T",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "ขั้นตอนการปฏิบัติเพื่อแก้ไขของเสียในกระบวนการ",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การดูแลรักษาสภาพเครื่องจักร ก่อน - หลัง การผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "ระบบความปลอดภัยและสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "FMG-A",
+    "position": "หัวหน้าแผนก",
+    "category": "Set up mold",
+    "skillName": "การบริหารการจัดการการผลิต",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การคิดริเริ่ม/การปรับปรุงประสิทธิภาพการทำงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การประสานงานและการแก้ไขปัญหา",
+    "targetLevel": 75
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การติดต่อประสานงานภายในและนอกองค์กร",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การร่วมมือและประสานงานกับหน่วยงานอื่น",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การประสานงานกับลูกค้าหรือ Supplier",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การจัดทำเอกสารการตรวจรับชิ้นส่วนและการจัดเก็บ",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การจัดทำเอกสารต่าง ๆ ที่ทางลูกค้าร้องขอ",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "คุณภาพของงานที่ทำการพิจารณาถึงการไม่เกิดปัญหาคุณภาพของงาน",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การตรวจและทดสอบผลิตภัณฑ์ระหว่างกระบวนการและขั้นตอนสุดท้าย",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "คุณภาพของงานที่ทำพิจารณาถึงการไม่เกิดปัญหาด้านคุณภาพ รวมถึงไม่เกิดปัญหาร้องเรียนจากลูกค้า",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "ปฎิบัติมาตรฐานการตรวจสอบชิ้นงานโดยทั่วไป",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การปฏิบัติงานตามระเบียบและข้อกำหนดของบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "นโยบายคุณภาพและวัตถุประสงค์คุณภาพ",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "การประหยัดพลังงานภายในองค์กร",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจในกิจกรรมต่าง ๆ 5ส",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Functional Competency",
+    "skillName": "CSR",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "ทักษะในการตอบปัญหาของลูกค้า",
+    "targetLevel": 75
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การลงบันทึกข้อมูลการตรวจวัดและเอกสารอื่น ๆ",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้ และบำรุงรักษาเครื่องมือ/อุปกรณ์ของบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "ปฎิบัติตามมาตรฐานการตรวจวัด Dimension &Appearance ชิ้นงาน",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การตรวจวัดชิ้นงาน New Mold & Current Part",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องมือวัดละเอียด CNC Video Measuring",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องมือวัดละเอียด Profile Projector",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดค่า Insulation Resistance Tester",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดค่าความหนา Dial Thickness",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดค่า Inside Diameter (Pin Gauge)",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดขนาด Digital Caliper",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดขนาด Taper Gauge",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องวัดอุณหภมิ Digital Thermometer & Probe",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "การใช้เครื่องชั่ง Electronic Balance",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "วิธีการใช้เครื่องมือวัด Thickness Gauge",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Skill",
+    "skillName": "วิธีการอ่านค่าสเกลเครื่องมือวัด Thickness Gauge",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Managerial Competency",
+    "skillName": "การควบคุมผลิตภัณฑ์ที่ไม่เป็นไปตามข้อกำหนดการออก NCR และการติดตามผล",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Managerial Competency",
+    "skillName": "การวิเคราะห์ระบบการวัด",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Managerial Competency",
+    "skillName": "การควบคุมผลิตภัณฑ์ทีไม่เป็นไปตามข้อกำหนด",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Managerial Competency",
+    "skillName": "การเข้าใจในระบบบริหารสิ่งแวดล้อม ISO14001",
+    "targetLevel": 100
+  },
+  {
+    "department": "QA/QC",
+    "position": "QC Inspector",
+    "category": "Managerial Competency",
+    "skillName": "การเข้าใจในระบบบริหารคุณภาพ ISO9001 / IATF16949",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "ข้อกำหนดระบบ ISO9001/IATF 16949",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "ข้อกำหนดระบบ ISO 14001",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "นโยบายและเป้าหมายบริษัท , นโยบายคุณภาพ , นโยบายสิ่งแวดล้อม , KPI และการรายงานผล",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายแรงงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายด้านสวัสดิการ",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "กฎระเบียบของบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "ขั้นตอนการติดต่อประสานงานกับหน่วยงานภายนอก",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "ความปลอดภัยในการทำงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายที่เกี่ยวข้องกับความปลอดภัย",
+    "targetLevel": 50
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านคุณภาพ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านความปลอดภัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "พรบ.พัฒนาฝีมือแรงงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "การจัดการขยะ",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "การปฐมนิเทศ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "การสำรวจและจัดทำแผนฝึกอบรม",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "การฝึกอบรมภายใน-ภายนอก และการบันทึกประวัติ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "วิธีการสรรหาและคัดเลือก",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "หลักการและวิธีการในการคำนวณเงินเดือน , ภาษี , ประกันสังคม , กองทุนสำรองเลี้ยงชีพ",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Functional Competency",
+    "skillName": "ขั้นตอนการติดต่อหน่วยงานภายใน",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Skill",
+    "skillName": "การใช้งานเครื่องบันทึกลายนิ้วมือ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (สรรหาและฝึกอบรม)",
+    "category": "Managerial Competency",
+    "skillName": "การวางแผนและจัดสรรอัตรากำลัง",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "ข้อกำหนดระบบ IATF 16949",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "ข้อกำหนดระบบ ISO 14001",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "นโยบายและเป้าหมายบริษัท , นโยบายคุณภาพ , นโยบายสิ่งแวดล้อม , KPI และการรายงานผล",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายแรงงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายด้านสวัสดิการ",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "กฎระเบียบของบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "ขั้นตอนการติดต่อประสานงานกับหน่วยงานภายนอก",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "ความปลอดภัยในการทำงาน",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "กฎหมายที่เกี่ยวข้องกับความปลอดภัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านคุณภาพ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านสิ่งแวดล้อม",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "จิตสำนึกด้านความปลอดภัย",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "การจัดการขยะ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "การปฐมนิเทศ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "การฝึกอบรมภายใน-ภายนอก และการบันทึกประวัติ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA",
+    "position": "เจ้าหน้าที่ (จป.อาวุโส)",
+    "category": "Functional Competency",
+    "skillName": "ขั้นตอนการติดต่อหน่วยงานภายใน",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การซ่อมบำรุงรักษา Hardware",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การซ่อมบำรุงรักษา Software, โปรแกรมคอมพิวเตอร์",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การดูแลอุปกรณ์และระบบการทำงาน Hardware ภายในบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การดูแลระบบสำรองข้อมูลภายในบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การดูแลระบบเครื่อง Finger Scan",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การดูแลระบบ CCTV",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การตรวจสอบระบบการทำงานสารสนเทศ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การติดต่อประสานงาน, การเจรจาต่อรอง",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การจัดทำเอกสารขออนุมัติ และรายงานระบบสารสนเทศ",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "นโยบายบริษัทและข้อบังคับเกี่ยวกับการทำงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "ระบบการจัดการสิ่งแวดล้อม ISO 14001",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "ความปลอดภัยในการทำงาน และกิจกรรม 5 ส",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Functional Competency",
+    "skillName": "การจัดการขยะอิเล็คทรอนิกส์",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Skill",
+    "skillName": "การใช้งานคอมพิวเตอร์และโปรแกรมสำนักงาน",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Skill",
+    "skillName": "การดูแลจัดการโปรแกรม ERP",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Skill",
+    "skillName": "นโยบายการใช้งานระบบคอมพิวเตอร์และการเชื่อมต่ออินเตอร์เน็ต",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "ความเข้าใจในระเบียบปฏิบัติการควบคุมและบำรุงรักษาระบบสารสนเทศ",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "การดูแลควบคุมโปรแกรม Software ที่ใช้งานภายในบริษัท",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "การควบคุมระบบความปลอดภัยของระบบคอมพิวเตอร์ภายในบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "การดูแลควบคุมระบบ Network ภายในบริษัท",
+    "targetLevel": 100
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "ระบบบริหารงานคุณภาพ ISO9001/IATF 16949",
+    "targetLevel": 75
+  },
+  {
+    "department": "HR&GA IT",
+    "position": "เจ้าหน้าที่ (IT SUPPORT)",
+    "category": "Managerial Competency",
+    "skillName": "การดูแลควบคุมสื่อสารสนเทศของบริษัท เช่น Website, Company Profile",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "เวลาในการปฏิบัติงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "การประหยัดพลังาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "การทำ 5ส./กิจกรรมเสริม",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "ISO9001&IATF16949 Requirement",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "Internal Auditor ISO9001&IATF16949",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "ISO14001 Requirement",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "Internal Auditor ISO14001",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจการปฏิบัติงานของ PD Administration",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "ความเข้าใจ/การปฏิบัติงานด้านความปลอดภัย",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "การปฏิบัติตามข้อบังคับบริษัท",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Functional Competency",
+    "skillName": "CSR",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Skill",
+    "skillName": "การใช้/ดูแล/รักษาเครื่องมือสำนักงาน",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Skill",
+    "skillName": "มีความรู้ความเข้าใจและปฏิบัติงานระบบ ERP ได้",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Managerial Competency",
+    "skillName": "การควบคุมคุณภาพงาน/ความเรียบร้อย",
+    "targetLevel": 75
+  },
+  {
+    "department": "PD",
+    "position": "ธุรการ",
+    "category": "Managerial Competency",
+    "skillName": "การควบคุมปริมาณงาน/ผลงานที่ดีในภาวะปกติ",
+    "targetLevel": 75
+  }
+]

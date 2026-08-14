@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, LogIn, X, Shield, UserCheck } from 'lucide-react';
 import type { Employee } from '../types';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
 
 interface TestLoginModalProps {
   isOpen: boolean;
@@ -30,7 +31,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
       (u) => u.email.toLowerCase() === email.toLowerCase() || u.empCode === email
     ) || allUsers[0];
 
-    setLoginAlert(`เข้าสู่ระบบสำเร็จในชื่อ: ${matchedUser.name} (${matchedUser.role})`);
+    setLoginAlert(`เข้าสู่ระบบสำเร็จในชื่อ: ${matchedUser.name} (${ROLE_LABELS[matchedUser.role]})`);
     setTimeout(() => {
       onLoginSuccess(matchedUser);
       onClose();
@@ -41,7 +42,7 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
   const handleQuickDemoLogin = (user: Employee) => {
     setEmail(user.email);
     setPassword('••••••••');
-    setLoginAlert(`เข้าสู่ระบบสำเร็จ: ${user.name} (${user.role})`);
+    setLoginAlert(`เข้าสู่ระบบสำเร็จ: ${user.name} (${ROLE_LABELS[user.role]})`);
     setTimeout(() => {
       onLoginSuccess(user);
       onClose();
@@ -156,9 +157,10 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
             <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
           </div>
           <div className="demo-user-list">
-            {allUsers.slice(0, 3).map((u) => {
-              const roleClass = u.role === 'ADMIN' ? 'role-admin' : u.role === 'SUPERVISOR' ? 'role-supervisor' : 'role-operator';
-              const roleLabel = u.role === 'ADMIN' ? 'ADMIN (ผู้ดูแล)' : u.role === 'SUPERVISOR' ? 'SUPERVISOR (หัวหน้า)' : 'OPERATOR (พนักงาน)';
+            {allUsers.filter((u) => LOGINABLE_ROLES.includes(u.role)).map((u) => {
+              const roleClass =
+                u.role === 'ADMIN' ? 'role-admin' : u.role === 'HR' ? 'role-hr' : u.role === 'SUPERVISOR' ? 'role-supervisor' : 'role-operator';
+              const roleLabel = ROLE_LABELS[u.role];
 
               return (
                 <button

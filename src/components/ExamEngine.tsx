@@ -65,7 +65,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   const [isSyncing, setIsSyncing] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
 
-  const isHR = currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR';
+  const isHR = currentUser.role === 'ADMIN' || currentUser.role === 'HR' || currentUser.role === 'SUPERVISOR';
 
   // Pre-Test Lock Status Map
   const [preTestLockMap, setPreTestLockMap] = useState<PreTestLockMap>(() =>
@@ -407,7 +407,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             {isSyncing ? 'กำลังซิงค์ข้อมูล...' : 'ซิงค์ผลสอบล่าสุด'}
           </button>
 
-          {(currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR') && (
+          {(currentUser.role === 'ADMIN' || currentUser.role === 'HR' || currentUser.role === 'SUPERVISOR') && (
             <button
               className="btn btn-ghost"
               onClick={() => setShowConfigModal(true)}
@@ -695,7 +695,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
       </div>
 
       {/* SECTION 2: Admin & Supervisor Directory (ตารางผลสอบพนักงานทั้งหมด) */}
-      {(currentUser.role === 'ADMIN' || currentUser.role === 'SUPERVISOR') && (
+      {(currentUser.role === 'ADMIN' || currentUser.role === 'HR' || currentUser.role === 'SUPERVISOR') && (
         <div className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
             <div>

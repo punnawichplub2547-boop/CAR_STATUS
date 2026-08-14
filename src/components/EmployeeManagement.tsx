@@ -1,12 +1,15 @@
 import React, { useRef, useState } from 'react';
-import { Users, Search, Filter, UserPlus, Network, Pencil, Camera } from 'lucide-react';
+import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle } from 'lucide-react';
 import type { Employee, OrgChartNode } from '../types';
+import type { EmployeePayload } from '../utils/api';
 import { OrgChartBuilder } from './OrgChartBuilder';
 
 interface EmployeeManagementProps {
   employees: Employee[];
-  onAddEmployee: (newEmp: Employee) => void;
-  onEditEmployee: (updatedEmp: Employee) => void;
+  onAddEmployee: (payload: EmployeePayload) => void;
+  onEditEmployee: (id: string, payload: EmployeePayload) => void;
+  onDeleteEmployee: (id: string) => void;
+  employeesError: string | null;
   orgChartNodes: OrgChartNode[];
   onChangeOrgChartNodes: (nodes: OrgChartNode[]) => void;
 }
@@ -29,6 +32,8 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   employees,
   onAddEmployee,
   onEditEmployee,
+  onDeleteEmployee,
+  employeesError,
   orgChartNodes,
   onChangeOrgChartNodes,
 }) => {
@@ -61,11 +66,32 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm) return;
-    const supervisor = employees.find((s) => s.id === editForm.supervisorId);
-    const updated: Employee = { ...editForm, supervisorName: supervisor?.name };
-    onEditEmployee(updated);
-    setViewingEmployee(updated);
-    setEditForm(null);
+    onEditEmployee(editForm.id, {
+      empCode: editForm.empCode,
+      name: editForm.name,
+      email: editForm.email,
+      department: editForm.department,
+      section: editForm.section,
+      position: editForm.position,
+      startingDate: editForm.startingDate,
+      status: editForm.status,
+      role: editForm.role,
+      avatar: editForm.avatar,
+      supervisorId: editForm.supervisorId ? Number(editForm.supervisorId) : null,
+    });
+    closeProfileModal();
+  };
+
+  const handleDelete = () => {
+    if (!viewingEmployee) return;
+    if (
+      !window.confirm(
+        `ลบพนักงาน "${viewingEmployee.name}" (${viewingEmployee.empCode}) ออกจากระบบ?\n\nประวัติการประเมินทักษะ, OJT, ทดลองงาน และผลสอบทั้งหมดของคนนี้จะถูกลบไปด้วย — ทำแล้วกู้คืนไม่ได้`
+      )
+    )
+      return;
+    onDeleteEmployee(viewingEmployee.id);
+    closeProfileModal();
   };
 
   // Add Employee Form State
@@ -106,9 +132,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !empCode) return;
-    const supervisor = employees.find((s) => s.id === supervisorId);
-    const newEmp: Employee = {
-      id: `emp-${Date.now()}`,
+    onAddEmployee({
       empCode,
       name,
       email: email || `${empCode}@example.com`,
@@ -117,12 +141,10 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
       position,
       startingDate: new Date().toISOString().split('T')[0],
       status,
-      avatar,
       role,
-      supervisorId: supervisorId || undefined,
-      supervisorName: supervisor?.name,
-    };
-    onAddEmployee(newEmp);
+      avatar,
+      supervisorId: supervisorId ? Number(supervisorId) : null,
+    });
     setShowAddModal(false);
     // reset
     setEmpCode('');
@@ -166,6 +188,15 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
           </button>
         </div>
       </div>
+
+      {employeesError && (
+        <div
+          className="glass-card"
+          style={{ padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger, #dc2626)' }}
+        >
+          <AlertTriangle size={18} /> ไม่สามารถโหลดข้อมูลพนักงานจากระบบได้: {employeesError}
+        </div>
+      )}
 
       {viewMode === 'list' ? (
         <>
@@ -384,7 +415,8 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                       onChange={(e) => setRole(e.target.value as Employee['role'])}
                     >
                       <option value="EMPLOYEE">EMPLOYEE</option>
-                      <option value="SUPERVISOR">SUPERVISOR</option>
+                      <option value="SUPERVISOR">SUPERVISOR (หัวหน้าแผนกอาวุโส)</option>
+                      <option value="HR">HR</option>
                       <option value="ADMIN">ADMIN</option>
                     </select>
                   </div>
@@ -536,7 +568,8 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                         onChange={(e) => setEditForm({ ...editForm, role: e.target.value as Employee['role'] })}
                       >
                         <option value="EMPLOYEE">EMPLOYEE</option>
-                        <option value="SUPERVISOR">SUPERVISOR</option>
+                        <option value="SUPERVISOR">SUPERVISOR (หัวหน้าแผนกอาวุโส)</option>
+                        <option value="HR">HR</option>
                         <option value="ADMIN">ADMIN</option>
                       </select>
                     </div>
@@ -598,6 +631,9 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                   </div>
                 </div>
                 <div className="modal-footer">
+                  <button type="button" className="btn btn-danger" onClick={handleDelete}>
+                    <Trash2 size={16} /> ลบพนักงาน
+                  </button>
                   <button
                     type="button"
                     className="btn btn-secondary"

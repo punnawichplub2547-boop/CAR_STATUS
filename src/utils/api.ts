@@ -31,7 +31,25 @@ export async function fetchPendingOrientationEmployees(): Promise<PendingOrienta
   return res.json();
 }
 
-export interface CreateBackendEmployeePayload {
+export interface BackendEmployee {
+  id: number;
+  empCode: string;
+  name: string;
+  email: string | null;
+  department: string;
+  section: string | null;
+  position: string;
+  startingDate: string;
+  status: string;
+  orientationPassed: boolean;
+  role: string;
+  avatar: string | null;
+  supervisorId: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployeePayload {
   empCode: string;
   name: string;
   email?: string;
@@ -40,13 +58,22 @@ export interface CreateBackendEmployeePayload {
   position: string;
   startingDate: string; // YYYY-MM-DD
   status?: string;
+  role?: string;
+  avatar?: string;
+  supervisorId?: number | null;
 }
 
-// Mirrors a newly-added employee into the backend so they show up in
-// /api/employees/pending-orientation (F-HR-002 name list) and can be matched
-// against Google Form exam submissions by empCode. The app's own employee
-// list (localStorage) stays the source of truth for everything else.
-export async function createBackendEmployee(payload: CreateBackendEmployeePayload): Promise<void> {
+export async function fetchBackendEmployees(): Promise<BackendEmployee[]> {
+  const res = await fetch(`${API_BASE_URL}/api/employees`);
+  if (!res.ok) {
+    throw new Error(`โหลดรายชื่อพนักงานไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+// Employee is DB-backed (like SkillStandard) — this is the sole source of
+// truth, not a best-effort mirror of local state.
+export async function createBackendEmployee(payload: EmployeePayload): Promise<BackendEmployee> {
   const res = await fetch(`${API_BASE_URL}/api/employees`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -54,11 +81,12 @@ export async function createBackendEmployee(payload: CreateBackendEmployeePayloa
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `บันทึกพนักงานเข้าระบบ backend ไม่สำเร็จ (HTTP ${res.status})`);
+    throw new Error(body.error || `เพิ่มพนักงานไม่สำเร็จ (HTTP ${res.status})`);
   }
+  return res.json();
 }
 
-export async function updateBackendEmployee(id: number, payload: CreateBackendEmployeePayload): Promise<void> {
+export async function updateBackendEmployee(id: number, payload: EmployeePayload): Promise<BackendEmployee> {
   const res = await fetch(`${API_BASE_URL}/api/employees/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -68,6 +96,7 @@ export async function updateBackendEmployee(id: number, payload: CreateBackendEm
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `แก้ไขพนักงานไม่สำเร็จ (HTTP ${res.status})`);
   }
+  return res.json();
 }
 
 export async function deleteBackendEmployee(id: number): Promise<void> {
@@ -82,12 +111,6 @@ export interface CreateOjtSessionPayload {
   formType: string;
   department: string;
   position: string;
-  courseName: string;
-  instructor: string;
-  location: string;
-  trainingDateFrom: string;
-  trainingDateTo: string;
-  timeRange: string;
   evaluationMethod: string;
   hasAttachment?: boolean;
   purposeType?: string;
@@ -97,7 +120,9 @@ export interface CreateOjtSessionPayload {
   contentItems: {
     sequence: number;
     description: string;
-    instructorSignedDate?: string;
+    trainingDate?: string;
+    timeFrom?: string;
+    timeTo?: string;
     resultPercent?: number;
     remark?: string;
   }[];
@@ -112,10 +137,61 @@ export interface CreateOjtSessionPayload {
   }[];
 }
 
-// Mirrors a newly-saved OJT session (F-HR-004) into the backend — same
-// best-effort pattern as createBackendEmployee. The app's own OJT state
-// (localStorage) stays the source of truth.
-export async function createBackendOjtSession(payload: CreateOjtSessionPayload): Promise<void> {
+export interface BackendOjtContentItem {
+  id: number;
+  sessionId: number;
+  sequence: number;
+  description: string;
+  trainingDate: string | null;
+  timeFrom: string | null;
+  timeTo: string | null;
+  resultPercent: number | null;
+  remark: string | null;
+}
+
+export interface BackendOjtParticipant {
+  id: number;
+  sessionId: number;
+  empCode: string;
+  employeeId: number | null;
+  employeeName: string;
+  preScore: number | null;
+  postScore: number | null;
+  instructorScorePercent: number;
+  isPassed: boolean;
+  remarks: string | null;
+}
+
+export interface BackendOjtSession {
+  id: number;
+  formType: string;
+  department: string;
+  position: string;
+  evaluationMethod: string;
+  hasAttachment: boolean;
+  purposeType: string | null;
+  changeReasonCategory: string | null;
+  assessorName: string;
+  managerName: string;
+  createdAt: string;
+  contentItems: BackendOjtContentItem[];
+  participants: BackendOjtParticipant[];
+}
+
+// F-HR-004 OJT sessions are DB-backed — GET /ojt-sessions already returns
+// each session with its content items and participants nested.
+export async function fetchBackendOjtSessions(empCode?: string): Promise<BackendOjtSession[]> {
+  const url = empCode
+    ? `${API_BASE_URL}/api/ojt-sessions?empCode=${encodeURIComponent(empCode)}`
+    : `${API_BASE_URL}/api/ojt-sessions`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`โหลดประวัติการอบรม OJT ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createBackendOjtSession(payload: CreateOjtSessionPayload): Promise<BackendOjtSession> {
   const res = await fetch(`${API_BASE_URL}/api/ojt-sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -125,6 +201,7 @@ export async function createBackendOjtSession(payload: CreateOjtSessionPayload):
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `บันทึกผล OJT เข้าระบบ backend ไม่สำเร็จ (HTTP ${res.status})`);
   }
+  return res.json();
 }
 
 export interface CreateProbationEvaluationPayload {
@@ -151,13 +228,57 @@ export interface CreateProbationEvaluationPayload {
   resultScore: number;
   grade: string;
   isPassed: boolean;
+  outcome?: string;
   comments?: string;
   assessorName: string;
 }
 
-// Mirrors a newly-saved probation evaluation (F-HR-009) into the backend —
-// same best-effort pattern as createBackendEmployee.
-export async function createBackendProbationEvaluation(payload: CreateProbationEvaluationPayload): Promise<void> {
+export interface BackendProbationEvaluation {
+  id: number;
+  empCode: string;
+  employeeId: number | null;
+  employeeName: string;
+  department: string;
+  position: string;
+  period: string;
+  startingDate: string;
+  evalDate: string;
+  knowledge: number;
+  diligence: number;
+  responsibility: number;
+  teamwork: number;
+  attitude: number;
+  regulationCompliance: number;
+  problemSolving: number;
+  learningAbility: number;
+  ppeUse: number;
+  activityParticipation: number;
+  criteriaTotalScore: number;
+  criteriaPercentage: number;
+  attendancePercentage: number;
+  resultScore: number;
+  grade: string;
+  isPassed: boolean;
+  outcome: string | null;
+  comments: string | null;
+  assessorName: string;
+  createdAt: string;
+}
+
+// F-HR-009 probation evaluations are DB-backed — GET /probation-evaluations
+// already exists (optional ?empCode= filter, flat rows, no nested children).
+export async function fetchBackendProbationEvaluations(empCode?: string): Promise<BackendProbationEvaluation[]> {
+  const url = empCode
+    ? `${API_BASE_URL}/api/probation-evaluations?empCode=${encodeURIComponent(empCode)}`
+    : `${API_BASE_URL}/api/probation-evaluations`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`โหลดประวัติการประเมินทดลองงานไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createBackendProbationEvaluation(payload: CreateProbationEvaluationPayload): Promise<BackendProbationEvaluation> {
   const res = await fetch(`${API_BASE_URL}/api/probation-evaluations`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -166,5 +287,71 @@ export async function createBackendProbationEvaluation(payload: CreateProbationE
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `บันทึกผลประเมินทดลองงานเข้าระบบ backend ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export interface BackendSkillStandard {
+  id: number;
+  department: string;
+  position: string;
+  category: string;
+  skillName: string;
+  targetLevel: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SkillStandardPayload {
+  department: string;
+  position: string;
+  category: string;
+  skillName: string;
+  targetLevel: number;
+}
+
+// F-HR-005 skill standards are DB-backed (unlike Employee/OJT/Probation,
+// which are localStorage-first with a best-effort backend mirror) — this is
+// the sole source of truth, so App.tsx fetches on mount and every CRUD op
+// round-trips through here before local state updates.
+export async function fetchBackendSkillStandards(): Promise<BackendSkillStandard[]> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-standards`);
+  if (!res.ok) {
+    throw new Error(`โหลดมาตรฐานทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createBackendSkillStandard(payload: SkillStandardPayload): Promise<BackendSkillStandard> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-standards`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `เพิ่มมาตรฐานทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateBackendSkillStandard(id: number, payload: SkillStandardPayload): Promise<BackendSkillStandard> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-standards/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `แก้ไขมาตรฐานทักษะไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteBackendSkillStandard(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/skill-standards/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `ลบมาตรฐานทักษะไม่สำเร็จ (HTTP ${res.status})`);
   }
 }

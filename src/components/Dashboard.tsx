@@ -345,7 +345,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div
               className="glass-card glass-card-interactive"
               style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-              onClick={() => onNavigate('evaluations')}
+              onClick={() => onNavigate('probation')}
             >
               <div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
@@ -412,7 +412,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button
               className="btn btn-secondary"
               style={{ padding: 16, justifyContent: 'flex-start', textAlign: 'left', height: '100%' }}
-              onClick={() => onNavigate('evaluations')}
+              onClick={() => onNavigate('ojt_a')}
             >
               <FileCheck2 size={24} className="text-blue" />
               <div>

@@ -5,31 +5,157 @@ import type { NavTab } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { TrainingManagement } from './components/TrainingManagement';
-import { OjtProbationEvaluator } from './components/OjtProbationEvaluator';
+import { OjtFormAEvaluator } from './components/OjtFormAEvaluator';
+import { OjtFormBEvaluator } from './components/OjtFormBEvaluator';
+import { ProbationEvaluator } from './components/ProbationEvaluator';
 import { SkillMatrixView } from './components/SkillMatrixView';
 import { CertificateVault } from './components/CertificateVault';
 import { ExamEngine } from './components/ExamEngine';
 import { AuditReportExporter } from './components/AuditReportExporter';
 import { TestLoginModal } from './components/TestLoginModal';
 import { computeCertificateStatus } from './utils/certificateStatus';
-import { createBackendEmployee, createBackendOjtSession, createBackendProbationEvaluation } from './utils/api';
+import { SkillStandardManagement } from './components/SkillStandardManagement';
+import { OjtHistoryView } from './components/OjtHistoryView';
+import { ProbationHistoryView } from './components/ProbationHistoryView';
+import {
+  fetchBackendEmployees,
+  createBackendEmployee,
+  updateBackendEmployee,
+  deleteBackendEmployee,
+  fetchBackendOjtSessions,
+  createBackendOjtSession,
+  fetchBackendProbationEvaluations,
+  createBackendProbationEvaluation,
+  fetchBackendSkillStandards,
+  createBackendSkillStandard,
+  updateBackendSkillStandard,
+  deleteBackendSkillStandard,
+  type EmployeePayload,
+  type BackendEmployee,
+  type BackendOjtSession,
+  type BackendProbationEvaluation,
+  type SkillStandardPayload,
+} from './utils/api';
 
 import {
-  INITIAL_EMPLOYEES,
-  INITIAL_SKILL_STANDARDS,
   INITIAL_SKILL_EVALUATIONS,
   INITIAL_SKILL_EVALUATION_ROUNDS,
-  INITIAL_OJT_SESSIONS,
-  INITIAL_OJT_CONTENT_ITEMS,
-  INITIAL_OJT_PARTICIPANTS,
-  INITIAL_PROBATION_EVALUATIONS,
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
   INITIAL_NOTIFICATIONS,
   INITIAL_ORG_CHART_NODES,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode, SkillStandard, SkillLevel, EmploymentStatus, Role, OjtFormType, OjtEvaluationMethod, OjtPurposeType, OjtChangeReasonCategory, ProbationPeriod, ProbationGrade, ProbationOutcome } from './types';
+
+const DEFAULT_AVATAR_URL =
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
+
+function mapBackendEmployee(row: BackendEmployee, existingEmployees: Employee[]): Employee {
+  const supervisorIdStr = row.supervisorId != null ? String(row.supervisorId) : undefined;
+  return {
+    id: String(row.id),
+    empCode: row.empCode,
+    name: row.name,
+    email: row.email ?? '',
+    department: row.department,
+    section: row.section ?? '',
+    position: row.position,
+    startingDate: row.startingDate.slice(0, 10),
+    status: row.status as EmploymentStatus,
+    avatar: row.avatar ?? DEFAULT_AVATAR_URL,
+    role: row.role as Role,
+    supervisorId: supervisorIdStr,
+    supervisorName: supervisorIdStr ? existingEmployees.find((e) => e.id === supervisorIdStr)?.name : undefined,
+  };
+}
+
+// Flattens a nested BackendOjtSession (session + contentItems + participants)
+// into the three parallel flat arrays the rest of the app already expects
+// (AuditReportExporter etc. do a plain client-side join by sessionId).
+function flattenBackendOjtSession(row: BackendOjtSession): {
+  session: OjtSession;
+  contentItems: OjtContentItem[];
+  participants: OjtParticipant[];
+} {
+  const sessionId = String(row.id);
+  return {
+    session: {
+      id: sessionId,
+      formType: row.formType as OjtFormType,
+      department: row.department,
+      position: row.position,
+      evaluationMethod: row.evaluationMethod as OjtEvaluationMethod,
+      hasAttachment: row.hasAttachment,
+      purposeType: row.purposeType != null ? (row.purposeType as OjtPurposeType) : undefined,
+      changeReasonCategory: row.changeReasonCategory != null ? (row.changeReasonCategory as OjtChangeReasonCategory) : undefined,
+      assessorName: row.assessorName,
+      managerName: row.managerName,
+      createdAt: row.createdAt,
+    },
+    contentItems: row.contentItems.map((c) => ({
+      id: String(c.id),
+      sessionId,
+      sequence: c.sequence,
+      description: c.description,
+      trainingDate: c.trainingDate ?? undefined,
+      timeFrom: c.timeFrom ?? undefined,
+      timeTo: c.timeTo ?? undefined,
+      resultPercent: c.resultPercent != null ? (c.resultPercent as SkillLevel) : undefined,
+      remark: c.remark ?? undefined,
+    })),
+    participants: row.participants.map((p) => ({
+      id: String(p.id),
+      sessionId,
+      employeeId: p.employeeId != null ? String(p.employeeId) : '',
+      employeeName: p.employeeName,
+      empCode: p.empCode,
+      preScore: p.preScore ?? undefined,
+      postScore: p.postScore ?? undefined,
+      instructorScorePercent: p.instructorScorePercent as SkillLevel,
+      isPassed: p.isPassed,
+      remarks: p.remarks ?? undefined,
+    })),
+  };
+}
+
+// Re-nests the backend's 10 flat score columns back into the frontend's
+// `scores` object shape.
+function mapBackendProbationEvaluation(row: BackendProbationEvaluation): ProbationEvaluation {
+  return {
+    id: String(row.id),
+    employeeId: row.employeeId != null ? String(row.employeeId) : '',
+    employeeName: row.employeeName,
+    empCode: row.empCode,
+    department: row.department,
+    position: row.position,
+    period: row.period as ProbationPeriod,
+    startingDate: row.startingDate.slice(0, 10),
+    evalDate: row.evalDate.slice(0, 10),
+    scores: {
+      knowledge: row.knowledge,
+      diligence: row.diligence,
+      responsibility: row.responsibility,
+      teamwork: row.teamwork,
+      attitude: row.attitude,
+      regulationCompliance: row.regulationCompliance,
+      problemSolving: row.problemSolving,
+      learningAbility: row.learningAbility,
+      ppeUse: row.ppeUse,
+      activityParticipation: row.activityParticipation,
+    },
+    criteriaTotalScore: row.criteriaTotalScore,
+    criteriaPercentage: row.criteriaPercentage,
+    attendancePercentage: row.attendancePercentage,
+    resultScore: row.resultScore,
+    grade: row.grade as ProbationGrade,
+    isPassed: row.isPassed,
+    outcome: row.outcome != null ? (row.outcome as ProbationOutcome) : undefined,
+    comments: row.comments ?? '',
+    assessorName: row.assessorName,
+    createdAt: row.createdAt,
+  };
+}
 
 function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
@@ -53,59 +179,177 @@ function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch
 }
 
 export function App() {
-  const [currentUser, setCurrentUser] = usePersistentState<Employee>('currentUser', INITIAL_EMPLOYEES[0]);
+  // Employee/currentUser are DB-backed (like skillStandards below) — fetched
+  // on mount, no localStorage seed. Only the logged-in empCode is persisted
+  // (a tiny string, not a stale full Employee snapshot) so "who was logged
+  // in" survives a reload without re-showing the login modal.
+  const [currentUser, setCurrentUser] = useState<Employee | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [showTestLoginModal, setShowTestLoginModal] = useState(false);
 
+  const persistCurrentUserEmpCode = (empCode: string) => {
+    try {
+      localStorage.setItem('hrskill_currentUserEmpCode', JSON.stringify(empCode));
+    } catch (e) {
+      console.error('Failed to save hrskill_currentUserEmpCode', e);
+    }
+  };
+
   // App Master States with Persistence
-  const [employees, setEmployees] = usePersistentState<Employee[]>('employees', INITIAL_EMPLOYEES);
-  const [skillStandards] = useState(INITIAL_SKILL_STANDARDS);
+  const [skillStandards, setSkillStandards] = useState<SkillStandard[]>([]);
+  const [skillStandardsError, setSkillStandardsError] = useState<string | null>(null);
   const [skillEvaluations, setSkillEvaluations] = usePersistentState<SkillEvaluation[]>('skillEvaluations', INITIAL_SKILL_EVALUATIONS);
   const [skillEvaluationRounds, setSkillEvaluationRounds] = usePersistentState<SkillEvaluationRound[]>('skillEvaluationRounds', INITIAL_SKILL_EVALUATION_ROUNDS);
-  const [ojtSessions, setOjtSessions] = usePersistentState<OjtSession[]>('ojtSessions', INITIAL_OJT_SESSIONS);
-  const [ojtContentItems, setOjtContentItems] = usePersistentState<OjtContentItem[]>('ojtContentItems', INITIAL_OJT_CONTENT_ITEMS);
-  const [ojtParticipants, setOjtParticipants] = usePersistentState<OjtParticipant[]>('ojtParticipants', INITIAL_OJT_PARTICIPANTS);
-  const [probationEvaluations, setProbationEvaluations] = usePersistentState<ProbationEvaluation[]>('probationEvaluations', INITIAL_PROBATION_EVALUATIONS);
+  const [ojtSessions, setOjtSessions] = useState<OjtSession[]>([]);
+  const [ojtContentItems, setOjtContentItems] = useState<OjtContentItem[]>([]);
+  const [ojtParticipants, setOjtParticipants] = useState<OjtParticipant[]>([]);
+  const [ojtHistoryError, setOjtHistoryError] = useState<string | null>(null);
+  const [probationEvaluations, setProbationEvaluations] = useState<ProbationEvaluation[]>([]);
+  const [probationError, setProbationError] = useState<string | null>(null);
   const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', INITIAL_CERTIFICATES);
   const [courses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
   const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
   const [orgChartNodes, setOrgChartNodes] = usePersistentState<OrgChartNode[]>('orgChartNodes', INITIAL_ORG_CHART_NODES);
 
-  // Reset Demo Data
+  // F-HR-005 skill standards are DB-backed (unlike the localStorage-first
+  // state above) — fetch once on mount. No fallback to stale mock data on
+  // failure: an empty list + visible error banner is more honest than
+  // silently showing hardcoded standards that no longer match the DB.
+  useEffect(() => {
+    fetchBackendSkillStandards()
+      .then((rows) =>
+        setSkillStandards(
+          rows.map((r) => ({
+            id: String(r.id),
+            department: r.department,
+            position: r.position,
+            category: r.category,
+            skillName: r.skillName,
+            targetLevel: r.targetLevel as SkillLevel,
+          }))
+        )
+      )
+      .catch((err) => setSkillStandardsError(err instanceof Error ? err.message : 'unknown error'));
+  }, []);
+
+  // Employee roster — same DB-backed pattern as skillStandards above. No
+  // fallback to mock data on failure: a visible error banner beats silently
+  // showing employees that don't exist in the DB (their ids wouldn't resolve
+  // against any real backend write anyway).
+  useEffect(() => {
+    fetchBackendEmployees()
+      .then((rows) => {
+        const basicList = rows.map((r) => mapBackendEmployee(r, []));
+        const mapped = basicList.map((e) => ({
+          ...e,
+          supervisorName: e.supervisorId ? basicList.find((x) => x.id === e.supervisorId)?.name : undefined,
+        }));
+        setEmployees(mapped);
+
+        let savedEmpCode: string | null = null;
+        try {
+          const raw = localStorage.getItem('hrskill_currentUserEmpCode');
+          savedEmpCode = raw ? JSON.parse(raw) : null;
+        } catch {
+          savedEmpCode = null;
+        }
+        const reconciled =
+          (savedEmpCode && mapped.find((e) => e.empCode === savedEmpCode)) ||
+          mapped.find((e) => e.role === 'ADMIN') ||
+          mapped[0] ||
+          null;
+        setCurrentUser(reconciled);
+      })
+      .catch((err) => setEmployeesError(err instanceof Error ? err.message : 'unknown error'));
+  }, []);
+
+  // F-HR-004 OJT sessions — same DB-backed pattern as skillStandards/
+  // employees above. No fallback to mock data on failure.
+  useEffect(() => {
+    fetchBackendOjtSessions()
+      .then((rows) => {
+        const flattened = rows.map(flattenBackendOjtSession);
+        setOjtSessions(flattened.map((f) => f.session));
+        setOjtContentItems(flattened.flatMap((f) => f.contentItems));
+        setOjtParticipants(flattened.flatMap((f) => f.participants));
+      })
+      .catch((err) => setOjtHistoryError(err instanceof Error ? err.message : 'unknown error'));
+  }, []);
+
+  // F-HR-009 probation evaluations — same DB-backed pattern as above.
+  useEffect(() => {
+    fetchBackendProbationEvaluations()
+      .then((rows) => setProbationEvaluations(rows.map(mapBackendProbationEvaluation)))
+      .catch((err) => setProbationError(err instanceof Error ? err.message : 'unknown error'));
+  }, []);
+
+  const handleAddSkillStandard = (payload: SkillStandardPayload) => {
+    createBackendSkillStandard(payload)
+      .then((row) =>
+        setSkillStandards((prev) => [...prev, { id: String(row.id), ...payload, targetLevel: payload.targetLevel as SkillLevel }])
+      )
+      .catch((err) => window.alert(`เพิ่มมาตรฐานทักษะไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
+  };
+
+  const handleEditSkillStandard = (id: string, payload: SkillStandardPayload) => {
+    updateBackendSkillStandard(Number(id), payload)
+      .then(() =>
+        setSkillStandards((prev) =>
+          prev.map((s) => (s.id === id ? { id, ...payload, targetLevel: payload.targetLevel as SkillLevel } : s))
+        )
+      )
+      .catch((err) => window.alert(`แก้ไขมาตรฐานทักษะไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
+  };
+
+  const handleDeleteSkillStandard = (id: string) => {
+    deleteBackendSkillStandard(Number(id))
+      .then(() => setSkillStandards((prev) => prev.filter((s) => s.id !== id)))
+      .catch((err) => window.alert(`ลบมาตรฐานทักษะไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
+  };
+
+  // Reset Demo Data — employees, OJT sessions, skill standards, and
+  // probation evaluations are all DB-backed now, so this only resets the
+  // still-localStorage-first evaluation/history collections, which carry
+  // employeeId references that go stale whenever the employee roster
+  // changes (ids are now real DB ids, not client-generated ones).
   const handleResetDemoData = () => {
-    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลตัวอย่างกลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?')) {
-      const keys = ['currentUser', 'employees', 'skillEvaluations', 'skillEvaluationRounds', 'ojtSessions', 'ojtContentItems', 'ojtParticipants', 'probationEvaluations', 'certificates', 'courses', 'notifications', 'orgChartNodes'];
+    if (
+      window.confirm(
+        'คุณต้องการรีเซ็ตข้อมูลตัวอย่าง (ผลประเมินทักษะ, ใบรับรอง) กลับเป็นค่าเริ่มต้นทั้งหมดหรือไม่?\n\nข้อมูลพนักงาน, ประวัติ OJT และประวัติทดลองงานจะไม่ถูกรีเซ็ต (อยู่ในฐานข้อมูลกลางแล้ว)'
+      )
+    ) {
+      const keys = ['skillEvaluations', 'skillEvaluationRounds', 'certificates', 'courses', 'notifications', 'orgChartNodes', 'currentUserEmpCode'];
       keys.forEach((k) => localStorage.removeItem(`hrskill_${k}`));
       window.location.reload();
     }
   };
 
-  // Handlers
-  const handleAddEmployee = (newEmp: Employee) => {
-    setEmployees([newEmp, ...employees]);
-    // Mirror into the backend so the new hire shows up on the F-HR-002
-    // orientation export page and can be matched against Google Form exam
-    // submissions by empCode. Local state above is already updated either
-    // way — a backend sync failure (e.g. duplicate empCode) shouldn't block
-    // HR from continuing to use the rest of the app.
-    createBackendEmployee({
-      empCode: newEmp.empCode,
-      name: newEmp.name,
-      email: newEmp.email,
-      department: newEmp.department,
-      section: newEmp.section,
-      position: newEmp.position,
-      startingDate: newEmp.startingDate,
-      status: newEmp.status,
-    }).catch((err) => {
-      window.alert(
-        `เพิ่มพนักงาน "${newEmp.name}" ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ F-HR-002 ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}\n\nพนักงานคนนี้จะไม่ขึ้นในหน้า F-HR-002 จนกว่าจะซิงก์สำเร็จ`
-      );
-    });
+  // Handlers — Employee is DB-backed (like SkillStandard): the backend
+  // response is the source of truth, not a local optimistic snapshot.
+  const handleAddEmployee = (payload: EmployeePayload) => {
+    createBackendEmployee(payload)
+      .then((row) => setEmployees((prev) => [mapBackendEmployee(row, prev), ...prev]))
+      .catch((err) => window.alert(`เพิ่มพนักงานไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
   };
 
-  const handleEditEmployee = (updatedEmp: Employee) => {
-    setEmployees(employees.map((e) => (e.id === updatedEmp.id ? updatedEmp : e)));
+  const handleEditEmployee = (id: string, payload: EmployeePayload) => {
+    updateBackendEmployee(Number(id), payload)
+      .then((row) => {
+        setEmployees((prev) => {
+          const updated = mapBackendEmployee(row, prev);
+          return prev.map((e) => (e.id === id ? updated : e));
+        });
+        setCurrentUser((prev) => (prev?.id === id ? mapBackendEmployee(row, employees) : prev));
+      })
+      .catch((err) => window.alert(`แก้ไขพนักงานไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
+  };
+
+  const handleDeleteEmployee = (id: string) => {
+    deleteBackendEmployee(Number(id))
+      .then(() => setEmployees((prev) => prev.filter((e) => e.id !== id)))
+      .catch((err) => window.alert(`ลบพนักงานไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`));
   };
 
   const handleAddOjtSession = (
@@ -113,21 +357,19 @@ export function App() {
     contentItems: OjtContentItem[],
     participants: OjtParticipant[]
   ) => {
-    setOjtSessions([session, ...ojtSessions]);
-    setOjtContentItems([...contentItems, ...ojtContentItems]);
-    setOjtParticipants([...participants, ...ojtParticipants]);
-    // Mirror into the backend (F-HR-004) — same best-effort pattern as
-    // handleAddEmployee. Local state above is already updated either way.
+    // Optimistic local update first so the form's instant "saved!" feedback
+    // doesn't wait on the network — then reconcile with the real DB-assigned
+    // ids once the backend responds (same end state as handleAddEmployee/
+    // handleAddSkillStandard, just deferred to keep the form's existing UX).
+    const tempSessionId = session.id;
+    setOjtSessions((prev) => [session, ...prev]);
+    setOjtContentItems((prev) => [...contentItems, ...prev]);
+    setOjtParticipants((prev) => [...participants, ...prev]);
+
     createBackendOjtSession({
       formType: session.formType,
       department: session.department,
       position: session.position,
-      courseName: session.courseName,
-      instructor: session.instructor,
-      location: session.location,
-      trainingDateFrom: session.trainingDateFrom,
-      trainingDateTo: session.trainingDateTo,
-      timeRange: session.timeRange,
       evaluationMethod: session.evaluationMethod,
       hasAttachment: session.hasAttachment,
       purposeType: session.purposeType,
@@ -137,7 +379,9 @@ export function App() {
       contentItems: contentItems.map((c) => ({
         sequence: c.sequence,
         description: c.description,
-        instructorSignedDate: c.instructorSignedDate,
+        trainingDate: c.trainingDate,
+        timeFrom: c.timeFrom,
+        timeTo: c.timeTo,
         resultPercent: c.resultPercent,
         remark: c.remark,
       })),
@@ -150,17 +394,27 @@ export function App() {
         isPassed: p.isPassed,
         remarks: p.remarks,
       })),
-    }).catch((err) => {
-      window.alert(
-        `บันทึกผล OJT ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
-      );
-    });
+    })
+      .then((row) => {
+        const flattened = flattenBackendOjtSession(row);
+        setOjtSessions((prev) => [flattened.session, ...prev.filter((s) => s.id !== tempSessionId)]);
+        setOjtContentItems((prev) => [...flattened.contentItems, ...prev.filter((c) => c.sessionId !== tempSessionId)]);
+        setOjtParticipants((prev) => [...flattened.participants, ...prev.filter((p) => p.sessionId !== tempSessionId)]);
+      })
+      .catch((err) => {
+        window.alert(
+          `บันทึกผล OJT ในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
+        );
+      });
   };
 
   const handleAddProbationEval = (evalRec: ProbationEvaluation) => {
-    setProbationEvaluations([evalRec, ...probationEvaluations]);
-    // Mirror into the backend (F-HR-009) — same best-effort pattern as
-    // handleAddEmployee.
+    // Optimistic local update first so the form's instant pass/fail alert
+    // doesn't wait on the network — then reconcile with the real DB-assigned
+    // id once the backend responds (same pattern as handleAddOjtSession).
+    const tempId = evalRec.id;
+    setProbationEvaluations((prev) => [evalRec, ...prev]);
+
     createBackendProbationEvaluation({
       empCode: evalRec.empCode,
       employeeName: evalRec.employeeName,
@@ -185,13 +439,19 @@ export function App() {
       resultScore: evalRec.resultScore,
       grade: evalRec.grade,
       isPassed: evalRec.isPassed,
+      outcome: evalRec.outcome,
       comments: evalRec.comments,
       assessorName: evalRec.assessorName,
-    }).catch((err) => {
-      window.alert(
-        `บันทึกผลประเมินทดลองงานในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
-      );
-    });
+    })
+      .then((row) => {
+        const real = mapBackendProbationEvaluation(row);
+        setProbationEvaluations((prev) => [real, ...prev.filter((e) => e.id !== tempId)]);
+      })
+      .catch((err) => {
+        window.alert(
+          `บันทึกผลประเมินทดลองงานในระบบหลักสำเร็จ แต่ซิงก์เข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`
+        );
+      });
   };
 
   const handleAddCertificate = (cert: Certificate) => {
@@ -232,13 +492,40 @@ export function App() {
   }).length;
   const probationCount = employees.filter((e) => e.status === 'PROBATION').length;
 
+  const handleSwitchUser = (user: Employee) => {
+    setCurrentUser(user);
+    persistCurrentUserEmpCode(user.empCode);
+  };
+
+  // Navbar/ExamEngine/OjtFormAEvaluator etc. all assume currentUser is a
+  // real Employee — show a lightweight loading state until the mount-time
+  // fetch resolves (or a hard error if it failed).
+  if (!currentUser) {
+    if (employeesError) {
+      return (
+        <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+          <div className="glass-card" style={{ padding: 24, maxWidth: 480, textAlign: 'center' }}>
+            ไม่สามารถโหลดข้อมูลพนักงานจากระบบได้: {employeesError}
+            <br />
+            ตรวจสอบว่า backend รันอยู่ (docker compose up -d car-status-mysql car-status-backend) แล้วลองรีเฟรชหน้านี้
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        กำลังโหลดข้อมูลพนักงาน...
+      </div>
+    );
+  }
+
   return (
     <div className="app-layout">
       {/* Top Navbar */}
       <Navbar
         currentUser={currentUser}
         allUsers={employees}
-        onSwitchUser={setCurrentUser}
+        onSwitchUser={handleSwitchUser}
         notifications={notifications}
         onMarkNotificationRead={handleMarkNotifRead}
         onOpenLoginTest={() => setShowTestLoginModal(true)}
@@ -268,6 +555,8 @@ export function App() {
               employees={employees}
               onAddEmployee={handleAddEmployee}
               onEditEmployee={handleEditEmployee}
+              onDeleteEmployee={handleDeleteEmployee}
+              employeesError={employeesError}
               orgChartNodes={orgChartNodes}
               onChangeOrgChartNodes={setOrgChartNodes}
             />
@@ -275,15 +564,48 @@ export function App() {
 
           {activeTab === 'training' && <TrainingManagement />}
 
-          {activeTab === 'evaluations' && (
-            <OjtProbationEvaluator
+          {activeTab === 'ojt_a' && (
+            <OjtFormAEvaluator
               employees={employees}
-              ojtSessions={ojtSessions}
-              ojtContentItems={ojtContentItems}
-              ojtParticipants={ojtParticipants}
-              probationEvaluations={probationEvaluations}
+              standards={skillStandards}
+              currentUser={currentUser}
               onAddOjtSession={handleAddOjtSession}
+            />
+          )}
+
+          {activeTab === 'ojt_b' && (
+            <OjtFormBEvaluator employees={employees} onAddOjtSession={handleAddOjtSession} />
+          )}
+
+          {activeTab === 'ojt_history' && (
+            <OjtHistoryView
+              sessions={ojtSessions}
+              contentItems={ojtContentItems}
+              participants={ojtParticipants}
+              error={ojtHistoryError}
+            />
+          )}
+
+          {activeTab === 'probation' && (
+            <ProbationEvaluator
+              employees={employees}
+              currentUser={currentUser}
               onAddProbationEval={handleAddProbationEval}
+              onEditEmployee={handleEditEmployee}
+            />
+          )}
+
+          {activeTab === 'probation_history' && (
+            <ProbationHistoryView evaluations={probationEvaluations} error={probationError} />
+          )}
+
+          {activeTab === 'skill_standards' && (
+            <SkillStandardManagement
+              standards={skillStandards}
+              onAddSkillStandard={handleAddSkillStandard}
+              onEditSkillStandard={handleEditSkillStandard}
+              onDeleteSkillStandard={handleDeleteSkillStandard}
+              error={skillStandardsError}
             />
           )}
 
@@ -321,6 +643,7 @@ export function App() {
               employees={employees}
               skillEvaluations={skillEvaluations}
               ojtSessions={ojtSessions}
+              ojtContentItems={ojtContentItems}
               ojtParticipants={ojtParticipants}
               certificates={certificates}
               courses={courses}
@@ -333,9 +656,7 @@ export function App() {
       <TestLoginModal
         isOpen={showTestLoginModal}
         onClose={() => setShowTestLoginModal(false)}
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-        }}
+        onLoginSuccess={handleSwitchUser}
         allUsers={employees}
       />
     </div>

@@ -25,6 +25,7 @@ import type {
   EvaluationAttempt,
   EvaluationCycle,
 } from '../types';
+import type { EmployeePayload } from '../utils/api';
 import { exportExactFHR014Template } from '../utils/excelTemplateExporter';
 
 interface SkillMatrixViewProps {
@@ -34,7 +35,7 @@ interface SkillMatrixViewProps {
   evaluationRounds: SkillEvaluationRound[];
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
-  onAddEmployee?: (newEmp: Employee) => void;
+  onAddEmployee?: (payload: EmployeePayload) => void;
 }
 
 const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
@@ -79,7 +80,14 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   const extraEmployees = employees.filter((e) => extraEmpIds.includes(e.id) && e.department !== selectedDept);
   const displayedEmployees = [...deptEmployees, ...extraEmployees];
 
-  const deptStandards = standards.filter((s) => s.department === selectedDept);
+  // Standards are matched per-employee (department + exact position), not
+  // just department — the real F-HR-005 targets vary by position within a
+  // department (e.g. หัวหน้าแผนก vs พนักงานทั่วไป have different targets for
+  // the same skill). Matched by the employee's own department, not
+  // selectedDept, so cross-department employees pulled into this view still
+  // get their own real standards rather than whatever tab is open.
+  const getEmployeeStandards = (emp: Employee) =>
+    standards.filter((s) => s.department === emp.department && s.position === emp.position);
 
   // Reset extra employees when department changes
   const handleDeptChange = (dept: string) => {
@@ -103,26 +111,25 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
     e.preventDefault();
     if (!newEmpCode.trim() || !newEmpName.trim()) return;
 
-    const newEmp: Employee = {
-      id: `emp-${Date.now()}`,
-      empCode: newEmpCode.trim(),
-      name: newEmpName.trim(),
-      email: `${newEmpCode.toLowerCase().trim()}@car.co.th`,
-      department: newEmpDept || selectedDept,
-      section: '-',
-      position: newEmpPosition.trim() || 'พนักงานทั่วไป (ยางรถยนต์)',
-      startingDate: new Date().toISOString().split('T')[0],
-      status: 'PERMANENT',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
-      role: 'EMPLOYEE',
-    };
-
     if (onAddEmployee) {
-      onAddEmployee(newEmp);
+      onAddEmployee({
+        empCode: newEmpCode.trim(),
+        name: newEmpName.trim(),
+        email: `${newEmpCode.toLowerCase().trim()}@car.co.th`,
+        department: newEmpDept || selectedDept,
+        section: '-',
+        position: newEmpPosition.trim() || 'พนักงานทั่วไป (ยางรถยนต์)',
+        startingDate: new Date().toISOString().split('T')[0],
+        status: 'PERMANENT',
+        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
+        role: 'EMPLOYEE',
+      });
     }
-    if (!extraEmpIds.includes(newEmp.id) && newEmp.department !== selectedDept) {
-      setExtraEmpIds((prev) => [...prev, newEmp.id]);
-    }
+    // Note: the newly created employee isn't auto-added to extraEmpIds here
+    // (their real id is only known once the backend responds) — they'll
+    // show up in this view normally once employees[] refetches/updates if
+    // their department matches selectedDept, or can be pulled in via the
+    // regular "search & add" flow otherwise.
 
     // Reset form state & close modal
     setNewEmpCode('');
@@ -159,7 +166,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   };
 
   const getEmployeeRadarData = (emp: Employee) =>
-    deptStandards.map((std) => ({
+    getEmployeeStandards(emp).map((std) => ({
       skill: std.skillName,
       Target: std.targetLevel,
       Actual: getLatestResult(emp.id, std.skillName),
@@ -246,7 +253,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
         <EmployeeEvalCard
           key={emp.id}
           emp={emp}
-          standards={deptStandards}
+          standards={getEmployeeStandards(emp)}
           cycle={selectedCycle}
           evaluations={evaluations}
           evaluationRounds={evaluationRounds}
@@ -797,6 +804,13 @@ const RoundPanel: React.FC<{
           <input type="date" className="form-control" value={actionTo} onChange={(e) => setActionTo(e.target.value)} />
         </div>
       </div>
+
+      {standards.length === 0 && (
+        <div style={{ padding: '16px 20px 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          ยังไม่มีมาตรฐานทักษะ (F-HR-005) สำหรับตำแหน่ง "{emp.position}" ในแผนก "{emp.department}" —
+          เพิ่มข้อมูลใน INITIAL_SKILL_STANDARDS ก่อนจึงจะประเมินตำแหน่งนี้ได้
+        </div>
+      )}
 
       <div className="table-responsive" style={{ padding: '16px 20px 0' }}>
         <table className="custom-table" style={{ width: '100%' }}>

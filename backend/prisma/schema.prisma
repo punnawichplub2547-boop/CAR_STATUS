@@ -23,6 +23,11 @@ model Employee {
   startingDate      DateTime
   status            String   @default("PROBATION")
   orientationPassed Boolean  @default(false)
+  role              String   @default("EMPLOYEE") // "ADMIN" | "HR" | "SUPERVISOR" | "EMPLOYEE"
+  avatar            String?  @db.LongText // FileReader data URL — unbounded size, must not be bare VARCHAR(191)
+  supervisorId      Int?
+  supervisor        Employee?  @relation("EmployeeSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
+  reports           Employee[] @relation("EmployeeSupervisor")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
@@ -32,6 +37,26 @@ model Employee {
   probationEvaluations ProbationEvaluation[]
 
   @@map("employees")
+}
+
+// F-HR-005: required skill topics + target competency level per
+// department+position. Manually maintained by HR/Admin via the Skill
+// Standard management page — feeds SkillMatrixView (F-HR-014) and
+// OjtFormAEvaluator (F-HR-004 Form A) on the frontend, matched by
+// department+position for a given employee.
+model SkillStandard {
+  id          Int      @id @default(autoincrement())
+  department  String
+  position    String
+  category    String
+  skillName   String
+  targetLevel Int // 0 | 25 | 50 | 75 | 100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([department, position, category, skillName])
+  @@index([department, position])
+  @@map("skill_standards")
 }
 
 // The 2 fixed F-HR-002 orientation courses. Seeded once; category is what
@@ -100,12 +125,6 @@ model OjtSession {
   formType             String // "A_NEW_HIRE" | "B_CHANGE"
   department           String
   position             String
-  courseName           String
-  instructor           String
-  location             String
-  trainingDateFrom     DateTime
-  trainingDateTo       DateTime
-  timeRange            String
   evaluationMethod     String // "PRE_POST_TEST" | "PRACTICAL" | "Q_AND_A"
   hasAttachment        Boolean  @default(false)
   purposeType          String? // "NEW_HIRE" | "TRANSFER" — Form A only
@@ -122,16 +141,19 @@ model OjtSession {
 
 // A content/topic line within a session (Form A: up to 25 lines). Owned by
 // its session — meaningless without it, so cascades like TrainingAttendance
-// does off Employee.
+// does off Employee. Date/time are per-line, matching the real F-HR-004
+// form (one topic may be trained on a different day/time than another).
 model OjtContentItem {
-  id                   Int        @id @default(autoincrement())
-  sessionId            Int
-  session              OjtSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sequence             Int
-  description          String
-  instructorSignedDate DateTime?
-  resultPercent        Int? // 0 | 25 | 50 | 75 | 100
-  remark               String?
+  id           Int        @id @default(autoincrement())
+  sessionId    Int
+  session      OjtSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sequence     Int
+  description  String
+  trainingDate DateTime?
+  timeFrom     String?
+  timeTo       String?
+  resultPercent Int? // 0 | 25 | 50 | 75 | 100
+  remark       String?
 
   @@unique([sessionId, sequence])
   @@map("ojt_content_items")
@@ -187,6 +209,7 @@ model ProbationEvaluation {
   resultScore           Float
   grade                 String // "A+" | "A" | "B" | "C" | "D"
   isPassed              Boolean
+  outcome               String? // "OJT_REPEAT" | "RECONSIDER" — set when isPassed is false
   comments              String?   @db.Text
   assessorName          String
   createdAt             DateTime  @default(now())

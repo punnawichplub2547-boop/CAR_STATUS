@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Printer, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee, SkillEvaluation, OjtSession, OjtParticipant, Certificate, TrainingCourse } from '../types';
+import type { Employee, SkillEvaluation, OjtSession, OjtContentItem, OjtParticipant, Certificate, TrainingCourse } from '../types';
 import { computeCertificateStatus } from '../utils/certificateStatus';
 import { downloadExcelWorkbook, formatSkillLevelWithIcon } from '../utils/excelTemplateExporter';
 
@@ -9,6 +9,7 @@ interface AuditReportExporterProps {
   employees: Employee[];
   skillEvaluations: SkillEvaluation[];
   ojtSessions: OjtSession[];
+  ojtContentItems: OjtContentItem[];
   ojtParticipants: OjtParticipant[];
   certificates: Certificate[];
   courses: TrainingCourse[];
@@ -18,6 +19,7 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   employees,
   skillEvaluations,
   ojtSessions,
+  ojtContentItems,
   ojtParticipants,
   certificates,
 }) => {
@@ -28,7 +30,16 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   const empOjt = ojtParticipants
     .filter((p) => p.employeeId === selectedEmpId)
     .map((participant) => ({ participant, session: ojtSessions.find((s) => s.id === participant.sessionId) }))
-    .filter((row): row is { participant: OjtParticipant; session: OjtSession } => !!row.session);
+    .filter((row): row is { participant: OjtParticipant; session: OjtSession } => !!row.session)
+    .map((row) => {
+      const lines = ojtContentItems.filter((c) => c.sessionId === row.session.id);
+      const dates = lines.map((c) => c.trainingDate).filter((d): d is string => !!d).sort();
+      return {
+        ...row,
+        courseLabel: lines.length > 0 ? lines.map((l) => l.description).join(', ') : '-',
+        trainingDate: dates.length > 0 ? dates[dates.length - 1] : '-',
+      };
+    });
 
   // Dedupe to the latest attempt per employee+skill+cycle — a skill that was
   // re-evaluated (failed attempt 1, passed attempt 2) must show only once,
@@ -221,11 +232,11 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
                       </td>
                     </tr>
                   ) : (
-                    empOjt.map(({ participant, session }) => (
+                    empOjt.map(({ participant, session, courseLabel, trainingDate }) => (
                       <tr key={participant.id}>
-                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.courseName}</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.instructor}</td>
-                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.trainingDateTo}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{courseLabel}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{session.assessorName}</td>
+                        <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{trainingDate}</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{participant.instructorScorePercent}%</td>
                         <td style={{ border: '1px solid #cbd5e1', padding: 8, color: participant.isPassed ? '#166534' : '#991b1b', fontWeight: 700 }}>
                           {participant.isPassed ? 'PASSED (ผ่านเกณฑ์)' : 'FAILED'}
