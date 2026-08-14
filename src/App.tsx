@@ -1,18 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
-import { Dashboard } from './components/Dashboard';
-import { EmployeeManagement } from './components/EmployeeManagement';
-import { TrainingManagement } from './components/TrainingManagement';
-import { OjtFormAEvaluator } from './components/OjtFormAEvaluator';
-import { OjtFormBEvaluator } from './components/OjtFormBEvaluator';
-import { ProbationEvaluator } from './components/ProbationEvaluator';
-import { SkillMatrixView } from './components/SkillMatrixView';
-import { CertificateVault } from './components/CertificateVault';
-import { ExamEngine } from './components/ExamEngine';
-import { AuditReportExporter } from './components/AuditReportExporter';
 import { TestLoginModal } from './components/TestLoginModal';
+import { LoginView } from './components/LoginView';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+// Only one tab is on screen at a time, so each page is loaded on demand. This
+// keeps recharts (Dashboard / Skill Matrix), xlsx (Audit / Exam) and jszip
+// (Skill Matrix / Training) out of the first download — HR opening the app no
+// longer waits for the Excel machinery of tabs they may never visit.
+const Dashboard = lazy(() => import('./components/Dashboard').then((m) => ({ default: m.Dashboard })));
+const EmployeeManagement = lazy(() =>
+  import('./components/EmployeeManagement').then((m) => ({ default: m.EmployeeManagement }))
+);
+const TrainingManagement = lazy(() =>
+  import('./components/TrainingManagement').then((m) => ({ default: m.TrainingManagement }))
+);
+const OjtFormAEvaluator = lazy(() => import('./components/OjtFormAEvaluator').then((m) => ({ default: m.OjtFormAEvaluator })));
+const OjtFormBEvaluator = lazy(() => import('./components/OjtFormBEvaluator').then((m) => ({ default: m.OjtFormBEvaluator })));
+const ProbationEvaluator = lazy(() => import('./components/ProbationEvaluator').then((m) => ({ default: m.ProbationEvaluator })));
+const SkillMatrixView = lazy(() => import('./components/SkillMatrixView').then((m) => ({ default: m.SkillMatrixView })));
+const CertificateVault = lazy(() => import('./components/CertificateVault').then((m) => ({ default: m.CertificateVault })));
+const ExamEngine = lazy(() => import('./components/ExamEngine').then((m) => ({ default: m.ExamEngine })));
+const AuditReportExporter = lazy(() =>
+  import('./components/AuditReportExporter').then((m) => ({ default: m.AuditReportExporter }))
+);
+
+function PageLoading() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        minHeight: 320,
+        color: 'var(--text-muted)',
+      }}
+    >
+      <Loader2 size={28} className="spin" />
+      <span style={{ fontSize: '0.9rem' }}>กำลังโหลดหน้า...</span>
+    </div>
+  );
+}
 import { computeCertificateStatus } from './utils/certificateStatus';
 import { SkillStandardManagement } from './components/SkillStandardManagement';
 import { OjtHistoryView } from './components/OjtHistoryView';
@@ -227,12 +260,13 @@ function usePersistentState<T>(key: string, initialValue: T): [T, React.Dispatch
 
 export function App() {
   // Employee/currentUser are DB-backed (like skillStandards below) — fetched
-  // on mount, no localStorage seed. Only the logged-in empCode is persisted
-  // (a tiny string, not a stale full Employee snapshot) so "who was logged
-  // in" survives a reload without re-showing the login modal.
+  // on mount, no localStorage seed for the object itself. Only the logged-in
+  // empCode is persisted (a tiny string, not a stale full Employee snapshot)
+  // so "who was logged in" survives a reload without re-showing LoginView.
   const [currentUser, setCurrentUser] = useState<Employee | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = usePersistentState<boolean>('is_logged_in', true);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [showTestLoginModal, setShowTestLoginModal] = useState(false);
 
@@ -622,6 +656,23 @@ export function App() {
     persistCurrentUserEmpCode(user.empCode);
   };
 
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <LoginView
+        employees={employees}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          persistCurrentUserEmpCode(user.empCode);
+          setIsLoggedIn(true);
+        }}
+      />
+    );
+  }
+
   // Navbar/ExamEngine/OjtFormAEvaluator etc. all assume currentUser is a
   // real Employee — show a lightweight loading state until the mount-time
   // fetch resolves (or a hard error if it failed).
@@ -655,6 +706,7 @@ export function App() {
         onMarkNotificationRead={handleMarkNotifRead}
         onOpenLoginTest={() => setShowTestLoginModal(true)}
         onResetDemoData={handleResetDemoData}
+        onLogout={handleLogout}
       />
 
       {/* Main Body with Sidebar & Content Area */}
@@ -664,117 +716,131 @@ export function App() {
           onTabChange={setActiveTab}
           expiringCertsCount={expiringCertsCount}
           probationCount={probationCount}
+          currentUserRole={currentUser.role}
         />
 
         <main className="main-content">
-          {activeTab === 'dashboard' && (
-            <Dashboard
-              employees={employees}
-              certificates={certificates}
-              onNavigate={setActiveTab}
-            />
-          )}
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoading />}>
+            {activeTab === 'dashboard' && (
+              <Dashboard
+                employees={employees}
+                certificates={certificates}
+                onNavigate={setActiveTab}
+              />
+            )}
 
-          {activeTab === 'employees' && (
-            <EmployeeManagement
-              employees={employees}
-              onAddEmployee={handleAddEmployee}
-              onEditEmployee={handleEditEmployee}
-              onDeleteEmployee={handleDeleteEmployee}
-              employeesError={employeesError}
-              orgChartNodes={orgChartNodes}
-              onChangeOrgChartNodes={setOrgChartNodes}
-            />
-          )}
+            {activeTab === 'employees' && (
+              <EmployeeManagement
+                employees={employees}
+                onAddEmployee={handleAddEmployee}
+                onEditEmployee={handleEditEmployee}
+                onDeleteEmployee={handleDeleteEmployee}
+                employeesError={employeesError}
+                orgChartNodes={orgChartNodes}
+                onChangeOrgChartNodes={setOrgChartNodes}
+              />
+            )}
 
-          {activeTab === 'training' && <TrainingManagement />}
+            {activeTab === 'training' && (
+              <TrainingManagement
+                onNavigateToExam={(batchId) => {
+                  if (batchId) {
+                    localStorage.setItem('hrskill_active_batch_id', batchId);
+                  }
+                  setActiveTab('exam');
+                }}
+              />
+            )}
 
-          {activeTab === 'ojt_a' && (
-            <OjtFormAEvaluator
-              employees={employees}
-              standards={skillStandards}
-              currentUser={currentUser}
-              onAddOjtSession={handleAddOjtSession}
-            />
-          )}
+            {activeTab === 'ojt_a' && (
+              <OjtFormAEvaluator
+                employees={employees}
+                standards={skillStandards}
+                currentUser={currentUser}
+                onAddOjtSession={handleAddOjtSession}
+              />
+            )}
 
-          {activeTab === 'ojt_b' && (
-            <OjtFormBEvaluator employees={employees} currentUser={currentUser} onAddOjtSession={handleAddOjtSession} />
-          )}
+            {activeTab === 'ojt_b' && (
+              <OjtFormBEvaluator employees={employees} currentUser={currentUser} onAddOjtSession={handleAddOjtSession} />
+            )}
 
-          {activeTab === 'ojt_history' && (
-            <OjtHistoryView
-              sessions={ojtSessions}
-              contentItems={ojtContentItems}
-              participants={ojtParticipants}
-              error={ojtHistoryError}
-            />
-          )}
+            {activeTab === 'ojt_history' && (
+              <OjtHistoryView
+                sessions={ojtSessions}
+                contentItems={ojtContentItems}
+                participants={ojtParticipants}
+                error={ojtHistoryError}
+              />
+            )}
 
-          {activeTab === 'probation' && (
-            <ProbationEvaluator
-              employees={employees}
-              currentUser={currentUser}
-              onAddProbationEval={handleAddProbationEval}
-              onEditEmployee={handleEditEmployee}
-            />
-          )}
+            {activeTab === 'probation' && (
+              <ProbationEvaluator
+                employees={employees}
+                currentUser={currentUser}
+                onAddProbationEval={handleAddProbationEval}
+                onEditEmployee={handleEditEmployee}
+              />
+            )}
 
-          {activeTab === 'probation_history' && (
-            <ProbationHistoryView evaluations={probationEvaluations} error={probationError} />
-          )}
+            {activeTab === 'probation_history' && (
+              <ProbationHistoryView evaluations={probationEvaluations} error={probationError} />
+            )}
 
-          {activeTab === 'skill_standards' && (
-            <SkillStandardManagement
-              standards={skillStandards}
-              onAddSkillStandard={handleAddSkillStandard}
-              onEditSkillStandard={handleEditSkillStandard}
-              onDeleteSkillStandard={handleDeleteSkillStandard}
-              error={skillStandardsError}
-            />
-          )}
+            {activeTab === 'skill_standards' && (
+              <SkillStandardManagement
+                standards={skillStandards}
+                onAddSkillStandard={handleAddSkillStandard}
+                onEditSkillStandard={handleEditSkillStandard}
+                onDeleteSkillStandard={handleDeleteSkillStandard}
+                error={skillStandardsError}
+              />
+            )}
 
-          {activeTab === 'skill_matrix' && (
-            <SkillMatrixView
-              employees={employees}
-              standards={skillStandards}
-              evaluations={skillEvaluations}
-              evaluationRounds={skillEvaluationRounds}
-              onUpdateEvaluation={handleUpdateEvaluation}
-              onSaveRound={handleSaveEvaluationRound}
-              onAddEmployee={handleAddEmployee}
-              error={skillEvaluationsError}
-            />
-          )}
+            {activeTab === 'skill_matrix' && (
+              <SkillMatrixView
+                employees={employees}
+                standards={skillStandards}
+                evaluations={skillEvaluations}
+                evaluationRounds={skillEvaluationRounds}
+                onUpdateEvaluation={handleUpdateEvaluation}
+                onSaveRound={handleSaveEvaluationRound}
+                onAddEmployee={handleAddEmployee}
+                error={skillEvaluationsError}
+              />
+            )}
 
-          {activeTab === 'certificates' && (
-            <CertificateVault
-              certificates={certificates}
-              employees={employees}
-              onAddCertificate={handleAddCertificate}
-              onEditCertificate={handleEditCertificate}
-              onDeleteCertificate={handleDeleteCertificate}
-            />
-          )}
+            {activeTab === 'certificates' && (
+              <CertificateVault
+                certificates={certificates}
+                employees={employees}
+                onAddCertificate={handleAddCertificate}
+                onEditCertificate={handleEditCertificate}
+                onDeleteCertificate={handleDeleteCertificate}
+              />
+            )}
 
-          {activeTab === 'exam' && (
-            <ExamEngine
-              currentUser={currentUser}
-              employees={employees}
-            />
-          )}
+            {activeTab === 'exam' && (
+              <ExamEngine
+                currentUser={currentUser}
+                employees={employees}
+              />
+            )}
 
-          {activeTab === 'audit' && (
-            <AuditReportExporter
-              employees={employees}
-              skillEvaluations={skillEvaluations}
-              ojtSessions={ojtSessions}
-              ojtContentItems={ojtContentItems}
-              ojtParticipants={ojtParticipants}
-              certificates={certificates}
-              courses={courses}
-            />
-          )}
+            {activeTab === 'audit' && (
+              <AuditReportExporter
+                employees={employees}
+                skillEvaluations={skillEvaluations}
+                ojtSessions={ojtSessions}
+                ojtContentItems={ojtContentItems}
+                ojtParticipants={ojtParticipants}
+                certificates={certificates}
+                courses={courses}
+              />
+            )}
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
 

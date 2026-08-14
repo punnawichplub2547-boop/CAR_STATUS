@@ -40,6 +40,7 @@ interface SidebarProps {
   onTabChange: (tab: NavTab) => void;
   expiringCertsCount: number;
   probationCount: number;
+  currentUserRole?: 'ADMIN' | 'HR' | 'SUPERVISOR' | 'EMPLOYEE';
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -47,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onTabChange,
   expiringCertsCount,
   probationCount,
+  currentUserRole = 'ADMIN',
 }) => {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('hrskill_sidebarCollapsed') === '1');
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -59,10 +61,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     localStorage.setItem('hrskill_sidebarCollapsed', collapsed ? '1' : '0');
   }, [collapsed]);
 
-  const navItems = [
+  const allNavItems = [
     {
       id: 'dashboard',
-      label: 'Executive Dashboard',
+      label: currentUserRole === 'EMPLOYEE' ? 'ภาพรวมของฉัน (Overview)' : 'Executive Dashboard',
       icon: LayoutDashboard,
       badge: null,
     },
@@ -71,10 +73,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'ข้อมูลพนักงาน & ผังองค์กร',
       icon: Users,
       badge: null,
+      adminOnly: true,
     },
     {
       id: 'training',
-      label: 'บันทึกการอบรม (F-HR-002)',
+      label: currentUserRole === 'EMPLOYEE' ? 'ประวัติการฝึกอบรม' : 'บันทึกการอบรม (F-HR-002)',
       icon: GraduationCap,
       badge: null,
     },
@@ -117,21 +120,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'skill_matrix',
-      label: 'Skill Matrix & Gap (F-HR-014)',
+      label: currentUserRole === 'EMPLOYEE' ? 'ระดับทักษะของฉัน (My Skills)' : 'Skill Matrix & Gap (F-HR-014)',
       icon: Target,
       badge: 'รอบ ก.ค.',
       badgeColor: 'badge-blue',
     },
     {
       id: 'certificates',
-      label: 'คลังใบรับรอง (Certificates)',
+      label: currentUserRole === 'EMPLOYEE' ? 'ใบรับรองของฉัน (My Certs)' : 'คลังใบรับรอง (Certificates)',
       icon: Award,
       badge: expiringCertsCount > 0 ? `${expiringCertsCount} เตือน` : null,
       badgeColor: 'badge-red',
     },
     {
       id: 'exam',
-      label: 'ข้อสอบปฐมนิเทศออนไลน์',
+      label: currentUserRole === 'EMPLOYEE' ? 'แบบทดสอบของฉัน (My Exams)' : 'ข้อสอบปฐมนิเทศออนไลน์',
       icon: FileCheck2,
       badge: 'Google Forms',
       badgeColor: 'badge-purple',
@@ -142,8 +145,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: FileSpreadsheet,
       badge: '1-Click',
       badgeColor: 'badge-green',
+      adminOnly: true,
     },
   ];
+
+  const navItems = allNavItems.filter((item) => {
+    if (currentUserRole === 'EMPLOYEE' && item.adminOnly) return false;
+    return true;
+  });
 
   return (
     <>

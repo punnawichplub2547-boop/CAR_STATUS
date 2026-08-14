@@ -1,18 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-interface SkillStandardSeedRow {
-  department: string;
-  position: string;
-  category: string;
-  skillName: string;
-  targetLevel: number;
-}
 
 async function main() {
   await prisma.trainingCourse.upsert({
@@ -34,24 +22,6 @@ async function main() {
       category: 'SAFETY',
     },
   });
-
-  const skillStandardsSeed: SkillStandardSeedRow[] = JSON.parse(
-    readFileSync(join(__dirname, 'skillStandardsSeed.json'), 'utf-8')
-  );
-  for (const s of skillStandardsSeed) {
-    await prisma.skillStandard.upsert({
-      where: {
-        department_position_category_skillName: {
-          department: s.department,
-          position: s.position,
-          category: s.category,
-          skillName: s.skillName,
-        },
-      },
-      update: {},
-      create: s,
-    });
-  }
 
   const sampleEmployees = [
     { empCode: 'EMP-1001', name: 'นาย สมศักดิ์ ใจดี', department: 'FMG-A', position: 'พนักงานฝ่ายผลิต', startingDate: new Date('2026-05-01') },

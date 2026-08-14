@@ -45,15 +45,28 @@ d:\HrSkill\app\
 ├── src/
 │   ├── types/index.ts            # Central Data Types, Interfaces & Enums
 │   ├── data/mockData.ts          # Sanitized Demo Data & Question Bank
+│   ├── constants/
+│   │   └── orientationConstants.ts # Orientation Course Topics & Options
+│   ├── utils/
+│   │   ├── dateUtils.ts          # Tenure & Date Formatting Helpers
+│   │   ├── api.ts                # Backend API Client & Sync
+│   │   ├── fhr002Exporter.ts     # F-HR-002 OpenXML Template Exporter
+│   │   └── excelTemplateExporter.ts # F-HR-014 OpenXML Exporter & Helpers
 │   ├── components/               # Modular UI Components
+│   │   ├── exam/                 # Exam Sub-components
+│   │   │   ├── ExamConfigModal.tsx   # Google Forms API Config Modal
+│   │   │   ├── ExamDetailDrawer.tsx  # Score Detail & Mistakes (isHR Gate)
+│   │   │   ├── ExamDirectoryTable.tsx # HR Tracker, Batch Filters & Locks
+│   │   │   └── ExamQrModal.tsx       # Instant Mobile QR Code Scanner Modal
 │   │   ├── Dashboard.tsx         # Executive Overview & Recharts Visualizations
 │   │   ├── EmployeeManagement.tsx # Org Chart & Employee Directory
 │   │   ├── SkillMatrixView.tsx   # Skill Matrix & Competency Radar Charts
 │   │   ├── OjtProbationEvaluator.tsx # Forms F-HR-016 (Form A/B) & Probation Evaluation
 │   │   ├── CertificateVault.tsx  # Certification Expiry Tracking
 │   │   ├── TrainingManagement.tsx# Training Calendar & QR/Check-in
-│   │   ├── ExamEngine.tsx        # Online Skill Testing & Automatic Grading
+│   │   ├── ExamEngine.tsx        # Exam Engine Orchestrator & Live Sync
 │   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center
+│   │   ├── ErrorBoundary.tsx     # React Runtime Error Protection & Recovery
 │   │   ├── Navbar.tsx            # Header & Test Login Switcher
 │   │   ├── Sidebar.tsx           # Navigation Menu
 │   │   └── TestLoginModal.tsx    # Role Switcher Modal (Admin/Supervisor/Employee)
@@ -82,7 +95,12 @@ d:\HrSkill\app\
 - Use fictional placeholder names (e.g., "สมชาย ใจดี", "สมศักดิ์ มั่นคง") in `src/data/mockData.ts`.
 
 ### 📊 Excel Export & File Download Best Practices
-- **Native Excel (.xlsx) Export:** Always use SheetJS (`xlsx`) to write native `.xlsx` binary buffers via `XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })`.
+- **Two different jobs, two different tools — do not mix them up:**
+  - Filling an existing company form (`F-HR-002`, `F-HR-014`) → **`JSZip` on the raw OpenXML parts**, see `src/utils/excelTemplateExporter.ts` and `src/utils/fhr002Exporter.ts`. ExcelJS is NOT used and is no longer a dependency.
+  - Building a report from scratch (`AuditReportExporter`) or parsing an imported file → **SheetJS (`xlsx`)**.
+- **Native Excel (.xlsx) Export:** For scratch-built workbooks use SheetJS to write native `.xlsx` binary buffers via `XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })`. Route the buffer through `downloadExcelWorkbook()` / `saveBlobFile()` rather than hand-rolling a Blob.
+- **Never let an export fail silently:** a download helper that receives a shape it does not understand must `throw`, and the caller must surface it. A button that quietly does nothing reads to HR as "the system is broken" with no clue why.
+- **Report anything the form cannot fit:** when a template has a fixed row/column capacity, either split onto extra sheets (F-HR-014) or return a `truncatedCount` for the UI to show (F-HR-002). Never `slice()` overflow away in silence.
 - **Explicit OpenXML MIME Type:** When creating a Blob for browser download, MUST explicitly specify `type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'`. Without this explicit MIME type, Chromium browsers categorize the blob as `application/octet-stream` and strip the filename into a random GUID string (e.g., `2138157d-7c12...`).
 - **Filename Sanitization:** Always sanitize dynamic filename variables (such as department names like `QA/QC` or `HR&GA`) by replacing slashes `/`, spaces, and special symbols with underscores `_` (e.g., `selectedDept.replace(/[^a-zA-Z0-9-_]/g, '_')`). Slashes in filename attributes trigger Chromium path traversal protection, causing the download manager to reject the custom filename.
 

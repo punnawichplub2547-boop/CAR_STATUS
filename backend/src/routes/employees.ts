@@ -69,15 +69,33 @@ employeesRouter.post('/employees', async (req, res) => {
     }
   }
 
-  const employee = await prisma.employee.create({
-    data: {
+  const parsedDate = isNaN(Date.parse(startingDate)) ? new Date() : new Date(startingDate);
+
+  // upsert (not plain create) — syncLocalStorageEmployeesToBackend() posts
+  // whatever's in localStorage on every load, which needs to be safe to
+  // repeat against an empCode that's already been synced.
+  const employee = await prisma.employee.upsert({
+    where: { empCode },
+    update: {
+      name,
+      email,
+      department,
+      section,
+      position,
+      startingDate: parsedDate,
+      status: status ?? 'PROBATION',
+      role: role ?? 'EMPLOYEE',
+      avatar: avatar ?? null,
+      supervisorId: supervisorId != null ? Number(supervisorId) : null,
+    },
+    create: {
       empCode,
       name,
       email,
       department,
       section,
       position,
-      startingDate: new Date(startingDate),
+      startingDate: parsedDate,
       status: status ?? 'PROBATION',
       role: role ?? 'EMPLOYEE',
       avatar: avatar ?? null,

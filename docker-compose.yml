@@ -18,9 +18,8 @@ services:
     environment:
       DATABASE_URL: "mysql://car_user:car_password@car-status-mysql:3306/car_status"
     ports:
-      # host 4001 (not 4000) — 4000 is already bound by a Windows/WSL
-      # networking process on this machine; container listens on 4000 internally
-      - "4001:4000"
+      # host 4002 — container listens on 4000 internally
+      - "4002:4000"
     depends_on:
       car-status-mysql:
         condition: service_healthy
@@ -35,9 +34,8 @@ services:
       MYSQL_PASSWORD: car_password
       MYSQL_ROOT_PASSWORD: change_me_root_password
     ports:
-      # host 3307 (not 3306) since a local mysqld is already using 3306 on
-      # this machine — containers still talk to each other on 3306 internally
-      - "3307:3306"
+      # host 3308 (since 3306 and 3307 are used by local mysqld/other containers)
+      - "3308:3306"
     volumes:
       - car_status_mysql_data:/var/lib/mysql
     healthcheck:

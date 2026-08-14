@@ -33,6 +33,7 @@ export interface Employee {
   role: Role;
   supervisorId?: string;
   supervisorName?: string;
+  orientationPassed?: boolean;
 }
 
 // The actual position tags used in F-HR-038 (the real CAR org chart) —
@@ -296,3 +297,20 @@ export interface NotificationItem {
   read: boolean;
   actionUrl?: string;
 }
+
+export interface OrientationBatch {
+  id: string;
+  batchName: string;
+  category: 'REGULATION' | 'SAFETY';
+  courseName?: string;
+  courseTopics?: string[];
+  trainingDate: string;
+  timeRange: string;
+  morningTime?: string;
+  afternoonTime?: string;
+  instructor: string;
+  location: string;
+  empCodes: string[];
+  createdAt: string;
+}
+

@@ -27,7 +27,11 @@ import type {
   EvaluationCycle,
 } from '../types';
 import type { EmployeePayload } from '../utils/api';
-import { exportExactFHR014Template } from '../utils/excelTemplateExporter';
+import {
+  exportExactFHR014Template,
+  FHR014_EMPLOYEES_PER_SHEET,
+  FHR014_SKILLS_PER_SHEET,
+} from '../utils/excelTemplateExporter';
 
 interface SkillMatrixViewProps {
   employees: Employee[];
@@ -175,15 +179,29 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
       Actual: getLatestResult(emp.id, std.skillName),
     }));
 
-  const handleExportExactTemplate = () => {
-    exportExactFHR014Template({
-      employees,
-      customEmployees: displayedEmployees,
-      standards,
-      evaluations,
-      department: selectedDept,
-      cycle: selectedCycle,
-    });
+  const handleExportExactTemplate = async () => {
+    try {
+      const result = await exportExactFHR014Template({
+        employees,
+        customEmployees: displayedEmployees,
+        standards,
+        evaluations,
+        department: selectedDept,
+        cycle: selectedCycle,
+      });
+
+      // One sheet holds 6 skills × 20 employees. Anything bigger is split, so
+      // tell HR how many sheets to expect instead of letting rows disappear.
+      if (result.sheetNames.length > 1) {
+        alert(
+          `Export สำเร็จ — ${result.employeeCount} คน × ${result.skillCount} ทักษะ ` +
+            `เกินความจุ 1 แผ่น (${FHR014_EMPLOYEES_PER_SHEET} คน × ${FHR014_SKILLS_PER_SHEET} ทักษะ) ` +
+            `จึงแยกเป็น ${result.sheetNames.length} ชีต: ${result.sheetNames.join(', ')}`
+        );
+      }
+    } catch (err) {
+      alert(err instanceof Error ? `Export ไม่สำเร็จ: ${err.message}` : 'Export ไม่สำเร็จ');
+    }
   };
 
   return (

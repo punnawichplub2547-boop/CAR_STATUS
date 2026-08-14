@@ -88,10 +88,10 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
     window.print();
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     const fileName = `ISO_IATF_16949_Skill_Matrix_Audit_${new Date().toISOString().split('T')[0]}.xlsx`;
 
-    const data: any[][] = [];
+    const data: (string | number)[][] = [];
     data.push(["รหัสพนักงาน", "ชื่อ-นามสกุล", "แผนก", "ตำแหน่ง", "ทักษะมาตรฐาน", "ระดับเป้าหมาย (%)", "ระดับประเมินจริง (%)", "สถานะ ISO/IATF"]);
 
     employees.forEach((emp) => {
@@ -110,7 +110,11 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Skill Matrix");
 
-    downloadExcelWorkbook(workbook, fileName);
+    try {
+      await downloadExcelWorkbook(workbook, fileName);
+    } catch (err) {
+      alert(err instanceof Error ? `Export ไม่สำเร็จ: ${err.message}` : 'Export ไม่สำเร็จ');
+    }
   };
 
   return (

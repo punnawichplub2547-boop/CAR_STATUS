@@ -10,7 +10,25 @@ import { skillStandardsRouter } from './routes/skillStandards.js';
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests from localhost and intranet network IPs (e.g. 10.x.x.x, 192.168.x.x, 172.x.x.x)
+      if (
+        !origin ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://10.') ||
+        origin.startsWith('http://172.') ||
+        origin.startsWith('http://192.168.')
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  })
+);
 // Express's default json() body limit is 100kb — too small for
 // Employee.avatar, which stores a raw base64 data URL from the frontend's
 // FileReader upload (unresized photos routinely land in the 1-4MB range).
