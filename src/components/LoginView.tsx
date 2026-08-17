@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, LogIn, Shield, UserCheck, AlertCircle } from 'lucide-react';
 import type { Employee } from '../types';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
 
 interface LoginViewProps {
   onLoginSuccess: (user: Employee) => void;
@@ -178,19 +179,19 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
             <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
           </div>
           <div className="demo-user-list">
-            {employees.slice(0, 3).map((u) => {
+            {(employees.some((u) => LOGINABLE_ROLES.includes(u.role))
+              ? employees.filter((u) => LOGINABLE_ROLES.includes(u.role))
+              : employees.slice(0, 3)
+            ).map((u) => {
               const roleClass =
                 u.role === 'ADMIN'
                   ? 'role-admin'
+                  : u.role === 'HR'
+                  ? 'role-hr'
                   : u.role === 'SUPERVISOR'
                   ? 'role-supervisor'
                   : 'role-operator';
-              const roleLabel =
-                u.role === 'ADMIN'
-                  ? 'ADMIN (ผู้ดูแล)'
-                  : u.role === 'SUPERVISOR'
-                  ? 'SUPERVISOR (หัวหน้า)'
-                  : 'OPERATOR (พนักงาน)';
+              const roleLabel = ROLE_LABELS[u.role] || u.role;
 
               return (
                 <button
