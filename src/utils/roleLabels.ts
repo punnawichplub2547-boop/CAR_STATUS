@@ -9,7 +9,5 @@ export const ROLE_LABELS: Record<Role, string> = {
   EMPLOYEE: 'พนักงาน',
 };
 
-// Roles that actually log into the platform themselves. Rank-and-file
-// EMPLOYEE records exist only as evaluation subjects (OJT/Probation/Skill
-// Matrix) — they never sign in, so they're excluded from role-switcher UIs.
-export const LOGINABLE_ROLES: Role[] = ['ADMIN', 'HR', 'SUPERVISOR'];
+// Roles available in quick demo login/switcher UIs so admins/testers can test all role views.
+export const LOGINABLE_ROLES: Role[] = ['ADMIN', 'HR', 'SUPERVISOR', 'EMPLOYEE'];

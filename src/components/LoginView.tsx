@@ -179,10 +179,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
             <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
           </div>
           <div className="demo-user-list">
-            {(employees.some((u) => LOGINABLE_ROLES.includes(u.role))
-              ? employees.filter((u) => LOGINABLE_ROLES.includes(u.role))
-              : employees.slice(0, 3)
-            ).map((u) => {
+            {LOGINABLE_ROLES.map((r) => employees.find((u) => u.role === r))
+              .filter((u): u is Employee => Boolean(u))
+              .map((u) => {
               const roleClass =
                 u.role === 'ADMIN'
                   ? 'role-admin'
