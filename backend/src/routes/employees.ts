@@ -73,7 +73,10 @@ employeesRouter.post('/employees', async (req, res) => {
 
   // upsert (not plain create) — syncLocalStorageEmployeesToBackend() posts
   // whatever's in localStorage on every load, which needs to be safe to
-  // repeat against an empCode that's already been synced.
+  // repeat against an empCode that's already been synced. The update branch
+  // leaves status/role/avatar/supervisorId untouched when omitted (same
+  // convention as PUT below) — falling back to defaults here would silently
+  // reset an existing employee's role back to EMPLOYEE on every sync.
   const employee = await prisma.employee.upsert({
     where: { empCode },
     update: {
@@ -83,10 +86,10 @@ employeesRouter.post('/employees', async (req, res) => {
       section,
       position,
       startingDate: parsedDate,
-      status: status ?? 'PROBATION',
-      role: role ?? 'EMPLOYEE',
-      avatar: avatar ?? null,
-      supervisorId: supervisorId != null ? Number(supervisorId) : null,
+      status,
+      role,
+      avatar,
+      supervisorId: supervisorId != null ? Number(supervisorId) : supervisorId,
     },
     create: {
       empCode,

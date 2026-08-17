@@ -496,6 +496,13 @@ export async function syncLocalStorageEmployeesToBackend(): Promise<void> {
         position: emp.position,
         startingDate: emp.startingDate || new Date().toISOString().slice(0, 10),
         status: emp.status || 'PROBATION',
+        // Backend upserts on empCode and falls back to role='EMPLOYEE',
+        // avatar/supervisorId=null when these are omitted — leaving them out
+        // here silently reset every existing employee's role back to
+        // EMPLOYEE (and wiped avatar/supervisorId) on every sync.
+        role: emp.role,
+        avatar: emp.avatar,
+        supervisorId: emp.supervisorId != null ? Number(emp.supervisorId) : null,
       }).catch(() => { });
     }
   } catch (e) {
