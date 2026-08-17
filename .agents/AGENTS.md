@@ -1,6 +1,8 @@
 # CAR HR Skill Matrix & Exam System Memory & Project Rules
 
-> ไฟล์นี้คือ "ความจำถาวร" ของ agent สำหรับโปรเจกต์ `D:\HrSkill\app`
+> ไฟล์นี้คือ "ความจำถาวร" ของ agent สำหรับโปรเจกต์ CAR HR Skill Matrix
+> - **Dev Machine Path:** `D:\HrSkill\app`
+> - **Prod Server Path:** `D:\Skill\CAR_STATUS`
 > ทุกข้อในนี้ยืนยันจากโค้ดจริงแล้ว ไม่ใช่การเดา — ถ้าแก้โค้ดจนขัดกับข้อไหน **ต้องมาแก้ไฟล์นี้ด้วย**
 > เอกสารคู่กัน: `app/CLAUDE.md` (มาตรฐานการเขียนโค้ด + ตารางเฉลยข้อสอบเต็ม), `backend/README.md` (endpoint + setup)
 

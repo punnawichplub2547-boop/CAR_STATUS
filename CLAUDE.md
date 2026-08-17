@@ -3,6 +3,8 @@
 ## 1. Project Overview
 **Project:** HR Skill Management Platform (บริษัท คอมพลีท โอโต รับเบอร์ จำกัด)  
 **Description:** Web application for managing automotive factory employee skill matrices, OJT evaluations, probation assessments, training records, certificate vaults, and ISO/IATF 16949 audit reports.
+- **Dev Environment Path:** `D:\HrSkill\app`
+- **Prod Server Path:** `D:\Skill\CAR_STATUS`
 
 ---
 
