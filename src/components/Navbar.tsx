@@ -15,11 +15,13 @@ import {
   Award,
   BookOpen,
   X,
+  Database,
 } from 'lucide-react';
 import type { Employee, Certificate, SkillStandard } from '../types';
 import type { NavTab } from './Sidebar';
 import type { DynamicNotificationItem } from '../utils/notificationGenerator';
 import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
+import { SystemBackupModal } from './SystemBackupModal';
 
 interface NavbarProps {
   currentUser: Employee;
@@ -56,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showBackupModal, setShowBackupModal] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +148,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="navbar">
+    <>
+      <header className="navbar">
       <div className="navbar-brand">
         <div className="logo-badge" title="Complete Auto Rubber Manufacturing">
           <img src="/CARLOGO.png" alt="CAR Logo" className="logo-img" />
@@ -513,7 +517,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: currentUser.role === 'ADMIN' || currentUser.role === 'HR' ? '1fr 1fr 1fr' : '1fr 1fr', gap: 6, marginTop: 8 }}>
                   {onOpenProfile && (
                     <button
                       type="button"
@@ -525,19 +529,19 @@ export const Navbar: React.FC<NavbarProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 5,
-                        padding: '6px 8px',
+                        gap: 4,
+                        padding: '6px 6px',
                         background: 'rgba(59, 130, 246, 0.1)',
                         border: '1px solid rgba(59, 130, 246, 0.25)',
                         borderRadius: 7,
                         color: '#60a5fa',
                         cursor: 'pointer',
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 600,
                       }}
                       title="ข้อมูลส่วนตัว & เปลี่ยนรหัสผ่าน"
                     >
-                      <KeyRound size={13} /> โปรไฟล์
+                      <KeyRound size={12} /> โปรไฟล์
                     </button>
                   )}
                   {onOpenPassport && (
@@ -551,19 +555,45 @@ export const Navbar: React.FC<NavbarProps> = ({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 5,
-                        padding: '6px 8px',
+                        gap: 4,
+                        padding: '6px 6px',
                         background: 'rgba(139, 92, 246, 0.1)',
                         border: '1px solid rgba(139, 92, 246, 0.25)',
                         borderRadius: 7,
                         color: '#a78bfa',
                         cursor: 'pointer',
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 600,
                       }}
                       title="ดูบัตรทักษะความสามารถพนักงาน (Skill Passport)"
                     >
-                      <Award size={13} /> บัตรทักษะ
+                      <Award size={12} /> บัตรทักษะ
+                    </button>
+                  )}
+                  {(currentUser.role === 'ADMIN' || currentUser.role === 'HR') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        setShowBackupModal(true);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 4,
+                        padding: '6px 6px',
+                        background: 'rgba(16, 185, 129, 0.1)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        borderRadius: 7,
+                        color: '#34d399',
+                        cursor: 'pointer',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                      }}
+                      title="สำรองและกู้คืนข้อมูลระบบ (Backup & Restore)"
+                    >
+                      <Database size={12} /> สำรองข้อมูล
                     </button>
                   )}
                 </div>
@@ -634,5 +664,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
     </header>
+
+    {showBackupModal && (
+      <SystemBackupModal
+        currentUser={currentUser}
+        onClose={() => setShowBackupModal(false)}
+      />
+    )}
+  </>
   );
 };

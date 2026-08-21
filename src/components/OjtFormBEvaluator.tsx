@@ -153,10 +153,46 @@ export const OjtFormBEvaluator: React.FC<OjtFormBEvaluatorProps> = ({ employees,
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-          <button className="btn btn-success" onClick={handleSaveOjt}>
-            <CheckCircle2 size={18} /> บันทึกผลการประเมิน OJT (Form B)
-          </button>
+        {/* Sticky Bottom Action Bar */}
+        <div
+          className="glass-card"
+          style={{
+            position: 'sticky',
+            bottom: 16,
+            zIndex: 30,
+            marginTop: 24,
+            padding: '12px 20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.18)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 14,
+            background: 'var(--bg-card)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>ผลประเมินที่เลือก</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: instructorLevel >= 75 ? 'var(--success)' : 'var(--danger)' }}>
+                {instructorLevel}% ({instructorLevel >= 75 ? 'ผ่านเกณฑ์' : 'ยังไม่ผ่านเกณฑ์'})
+              </div>
+            </div>
+            {targetEmp && (
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                พนักงาน: <strong style={{ color: 'var(--text-main)' }}>{targetEmp.name}</strong> ({targetEmp.empCode})
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button className="btn btn-success" onClick={handleSaveOjt}>
+              <CheckCircle2 size={16} /> บันทึกผลการประเมิน OJT (Form B)
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,9 @@
 import React, { useRef, useState } from 'react';
-import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle, Award } from 'lucide-react';
+import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle, Award, FileSpreadsheet } from 'lucide-react';
 import type { Employee, OrgChartNode } from '../types';
 import type { EmployeePayload } from '../utils/api';
 import { OrgChartBuilder } from './OrgChartBuilder';
+import { EmployeeExcelImportModal } from './EmployeeExcelImportModal';
 
 interface EmployeeManagementProps {
   employees: Employee[];
@@ -44,6 +45,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -188,9 +190,15 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
               <Network size={16} /> โครงสร้างองค์กร (Org Chart)
             </button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-            <UserPlus size={18} /> เพิ่มพนักงานใหม่
-          </button>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" onClick={() => setShowImportModal(true)}>
+              <FileSpreadsheet size={16} /> นำเข้าจาก Excel
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <UserPlus size={18} /> เพิ่มพนักงานใหม่
+            </button>
+          </div>
         </div>
       </div>
 
@@ -747,6 +755,19 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Excel Bulk Import Modal */}
+      {showImportModal && (
+        <EmployeeExcelImportModal
+          existingEmployees={employees}
+          onImport={(importedEmps) => {
+            for (const emp of importedEmps) {
+              onAddEmployee(emp);
+            }
+          }}
+          onClose={() => setShowImportModal(false)}
+        />
       )}
     </div>
   );
