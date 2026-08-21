@@ -1,91 +1,102 @@
-# 📋 เอกสารการส่งมอบงาน (Developer Handoff Guide)
-**โครงการ:** HR Skill Management Platform (บริษัท คอมพลีท โอโต รับเบอร์ จำกัด)  
-**วันที่อัปเดตล่าสุด:** 27 กรกฎาคม 2026  
-**สถานะโปรเจค:** สภาพแวดล้อมสมบูรณ์ (Build & Lint 0 Errors) พร้อมส่งมอบเพื่อพัฒนาต่อ/เชื่อมต่อระบบหลังบ้าน (Backend API)
+# 📋 คู่มือการส่งมอบและติดตั้งระบบ (Production & Developer Handoff Guide)
+**โครงการ:** CAR HR Skill Management Platform (บริษัท คอมพลีท โอโต รับเบอร์ จำกัด)  
+**วันที่อัปเดตล่าสุด:** 21 สิงหาคม 2026  
+**สถานะโปรเจกต์:** 🟢 **Full-Stack Production Ready** (Express 4 + Prisma 6 + MySQL 8.4 + React 19 Vite + Nginx Alpine)  
+- **Dev Local Path:** `D:\HrSkill\app`
+- **Prod Server Path:** `D:\Skill\CAR_STATUS` (Server: `10.255.255.173`)
+- **GitHub Repository:** https://github.com/punnawichplub2547-boop/CAR_STATUS
 
 ---
 
-## 1. ข้อมูลภาพรวมและวัตถุประสงค์ (Project Summary)
-ระบบ HR Skill Management Platform ถูกออกแบบมาเพื่อตอบโจทย์กระบวนการทำงานจริงของแผนก HR และผู้บังคับบัญชาในโรงงานผลิตชิ้นส่วนยางยานยนต์ โดยเน้นการรองรับข้อกำหนดมาตรฐานสากล **IATF 16949**, **ISO 9001** และ **ISO 14001**
+## 1. ข้อมูลภาพรวมและระบบมาตรฐานที่รองรับ (Supported Standards)
+ระบบบริหารจัดการทักษะความสามารถพนักงาน (Skill Matrix) และการประเมินผลสำหรับโรงงานผลิตชิ้นส่วนยางยานยนต์ รองรับมาตรฐานสากล **IATF 16949**, **ISO 9001** และ **ISO 14001**:
 
-### เอกสาร/แบบฟอร์มโรงงานที่ถูกแปลงเป็นระบบดิจิทัล:
-- **F-HR-005**: ตารางกำหนดมาตรฐานทักษะพนักงานตามตำแหน่ง (Skill Standard)
-- **F-HR-014**: บันทึกการประเมินทักษะความสามารถพนักงานประจำรอบ 6 เดือน (Skill Matrix)
-- **F-HR-016 (Form A)**: แบบบันทึกการประเมินการฝึกอบรมขณะปฏิบัติงานสำหรับพนักงานใหม่ (New Hire OJT)
-- **F-HR-016 (Form B)**: แบบบันทึกการประเมินการฝึกอบรมกรณีเปลี่ยนงาน/ย้ายตำแหน่ง (4M1E Change OJT)
-- **Probation Evaluation**: แบบประเมินผลการทดลองงาน 30 / 60 / 90 วัน (เกรด A+ ถึง D)
-
----
-
-## 2. สถานะความพร้อมทางเทคนิค (Technical Status)
-
-| รายการตรวจสอบ (Checklist) | ผลการตรวจสอบ | หมายเหตุ |
-| :--- | :---: | :--- |
-| **TypeScript Compilation** | ✅ Pass | รัน `tsc -b` ไม่มี error |
-| **Vite Production Build** | ✅ Pass | รัน `vite build` สร้างไฟล์ dist ได้สมบูรณ์ (1.06s) |
-| **Code Quality / Linter** | ✅ Pass | รัน `oxlint` ผ่าน 0 warnings, 0 errors |
-| **State Persistence** | ✅ Pass | เก็บข้อมูลจำลองลง `localStorage` อัตโนมัติ ปิดเปิดเบราว์เซอร์ข้อมูลไม่หาย |
-| **Responsive UI Design** | ✅ Pass | Glassmorphic theme + Dark mode พร้อมแผนภูมิ Interactive |
+- **F-HR-002**: รายชื่อและประวัติผู้เข้ารับการฝึกอบรม (ปฐมนิเทศกฎระเบียบ & ความปลอดภัย)
+- **F-HR-004 (Form A)**: แบบบันทึกการฝึกอบรมเฉพาะงานพนักงานเข้าใหม่ (New Hire OJT - สูงสุด 25 ทักษะ)
+- **F-HR-004 (Form B)**: แบบบันทึกการฝึกอบรมเฉพาะงานกรณีเปลี่ยนงาน / 4M1E Change
+- **F-HR-005**: มาตรฐานทักษะความสามารถตามตำแหน่ง (Skill Competency Standards)
+- **F-HR-009**: แบบประเมินผลการทดลองงาน 30 / 90 / 119 วัน (เกรด A+ ถึง D คำนวณถ่วงน้ำหนัก 80/20)
+- **F-HR-014**: แบบประเมินทักษะความสามารถพนักงานประจำรอบ 6 เดือน (Multi-sheet OpenXML Exporter พร้อมวงกลม PNG ต้นฉบับ)
+- **Exam Engine**: ข้อสอบปฐมนิเทศออนไลน์ 30 ข้อ (ผ่าน ≥80%) และแบบทดสอบทัศนคติความปลอดภัย 14 ข้อ (ผิดได้ ≤2) ซิงก์ Google Forms อัตโนมัติ
 
 ---
 
-## 3. โครงสร้างไฟล์และไฟล์สำคัญ (Key Files Directory)
+## 2. สถาปัตยกรรมและพอร์ตระบบ (Port Mappings & Networking)
 
 ```text
-d:\HrSkill\
-├── Flow Chart _ทักษะความสามารถของพนักงาน/   # ไฟล์เอกสารกระบวนการและไฟล์ Excel อ้างอิง
-├── HR Skill Management design/             # ไฟล์ UX/UI Design Mockups (HTML/DC format)
-└── app/                                    # โค้ดโปรเจคหลัก (Vite + React + TypeScript)
-    ├── src/
-    │   ├── types/index.ts                  # ⭐ ศูนย์รวม Data Types & Interfaces ทั้งหมด
-    │   ├── data/mockData.ts                # ⭐ ข้อมูลจำลองสำหรับทดสอบระบบ
-    │   ├── components/                     # โมดูล UI แต่ละหน้า
-    │   │   ├── Dashboard.tsx               # หน้าสรุปภาพรวมและสถิติ
-    │   │   ├── EmployeeManagement.tsx      # ทะเบียนพนักงาน + Org Chart
-    │   │   ├── SkillMatrixView.tsx         # ตารางประเมินทักษะ + Radar Chart
-    │   │   ├── OjtProbationEvaluator.tsx   # แบบประเมิน OJT (Form A/B) & ทดลองงาน
-    │   │   ├── CertificateVault.tsx        # ระบบติดตามใบรับรองหมดอายุ
-    │   │   ├── TrainingManagement.tsx      # ระบบจัดการอบรมและเช็คอิน
-    │   │   ├── ExamEngine.tsx              # ระบบทำข้อสอบวัดผลออนไลน์
-    │   │   ├── AuditReportExporter.tsx     # ศูนย์ส่งออกรายงานสำหรับ Audit ISO/IATF
-    │   │   ├── Navbar.tsx                  # แถบบน + สลับผู้ใช้งาน (Test Login)
-    │   │   ├── Sidebar.tsx                 # เมนูด้านข้าง
-    │   │   └── TestLoginModal.tsx          # ป๊อปอัปสลับสิทธิ์การใช้งาน
-    │   ├── App.tsx                         # ⭐ State Manager หลักของระบบ
-    │   └── index.css                       # Global Design System Tokens & CSS
+┌─────────────────────────────────────────────────────────────┐
+│  Host Server (10.255.255.173 / Local Machine)               │
+│                                                             │
+│  ┌───────────────────────┐        ┌──────────────────────┐  │
+│  │  Nginx Frontend (8088)│ ─────► │ Backend API (4002)   │  │
+│  │  (proxy_pass /api/)   │        │ Express 4 + Prisma 6 │  │
+│  └───────────────────────┘        └──────────┬───────────┘  │
+│                                              │              │
+│                                   ┌──────────▼───────────┐  │
+│                                   │ MySQL 8.4 (3308)     │  │
+│                                   └──────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+| บริการ (Service) | Host Port | Container Port | คำอธิบาย |
+|---|---|---|---|
+| **Frontend Web App** | `8088` (Dev: `5173`) | `80` | Nginx Alpine ให้บริการหน้าเว็บ + Reverse Proxy `/api/` |
+| **Backend API** | `4002` | `4000` | Express 4 RESTful API + JWT Auth Service |
+| **MySQL Database** | `3308` | `3306` | ฐานข้อมูล MySQL 8.4 สำหรับระบบ CAR Status |
+
+---
+
+## 3. บัญชีผู้ใช้งานระบบทดสอบเริ่มต้น (Default Seed Accounts)
+
+| รหัสพนักงาน | ชื่อ-นามสกุล | Role | รหัสผ่านเริ่มต้น | แผนก / ตำแหน่ง |
+|---|---|---|---|---|
+| `EMP-1001` | นางสาว สมหญิง ใจดี | `ADMIN` | `admin1234` | HR&GA IT Officer |
+| `EMP-1002` | นางสาว วรรณา สุขเจริญ | `HR` | `hr1234` | HR&GA Safety (จป.อาวุโส) |
+| `EMP-1004` | นาย มานพ ตั้งมั่น | `SUPERVISOR` | `super1234` | FMG-A Production Manager |
+| `EMP-1003` | นาย ประเสริฐ ยิ้มแย้ม | `EMPLOYEE` | `emp1234` | FMG-A พนักงานทั่วไป (ทดลองงาน) |
+
+---
+
+## 4. ขั้นตอนการ Deploy บนเซิร์ฟเวอร์จริง (Production Deployment via Docker)
+
+เมื่อเชื่อมต่อเข้าไปยังเครื่องเซิร์ฟเวอร์ (ผ่าน TightVNC หรือ Terminal):
+
+```bash
+# 1. เข้าสู่โฟลเดอร์โปรเจกต์
+cd D:\Skill\CAR_STATUS
+
+# 2. ดึงโค้ดล่าสุดจาก GitHub
+git pull origin main
+
+# 3. สั่ง Build และเริ่มต้น Container ด้วย Docker Compose
+docker compose build --no-cache
+docker compose up -d
+
+# 4. สั่ง Seed ข้อมูลเริ่มต้นและตรวจสอบความพร้อม
+docker compose exec car-status-backend npm run prisma:seed
+
+# 5. ตรวจสอบสถานะการทำงานของคอนเทนเนอร์
+docker compose ps
 ```
 
 ---
 
-## 4. แนะนำขั้นตอนการนำไปพัฒนาต่อ (Next Steps for Next Developer)
-
-### ระยะที่ 1: พัฒนาระบบหลังบ้าน (Backend API & Database)
-1. นำข้อมูลโครงสร้างจาก [app/src/types/index.ts](app/src/types/index.ts) ไปออกแบบ Database Tables (เช่น PostgreSQL / MySQL / MongoDB)
-2. สร้าง RESTful API หรือ GraphQL Service สำหรับรองรับการดึงและบันทึกข้อมูล
-3. ปรับเปลี่ยนฟังก์ชันจัดการข้อมูลใน [app/src/App.tsx](app/src/App.tsx) จากการสลับ LocalStorage เป็นการต่อ API endpoint
-
-### ระยะที่ 2: ระบบยืนยันตัวตน (Authentication & Authorization)
-1. เชื่อมต่อระบบ Login จริง (JWT / OAuth2 / Active Directory / LDAP โรงงาน) แทนที่ `TestLoginModal`
-2. ปรับการจำกัดสิทธิ์ (Role-based Access Control - Admin / Supervisor / Employee)
-
-### ระยะที่ 3: ระบบส่งออกเอกสารและแจ้งเตือน (Exports & Notifications)
-1. เชื่อมต่อ Library พิมพ์ PDF หรือ Excel (เช่น `jspdf` / `xlsx`) เพิ่มเติมในหน้า `AuditReportExporter.tsx`
-2. ตั้งค่าระบบแจ้งเตือนทาง LINE Notify หรือ Email สำหรับใบรับรองที่ใกล้หมดอายุล่วงหน้า 30 วัน
-
----
-
-## 5. คำสั่งที่จำเป็นในการรันโปรเจค
+## 5. คำสั่งสำหรับการพัฒนาและตรวจสอบ (Development & Audit Commands)
 
 ```bash
-# 1. เข้าโฟลเดอร์แอป
-cd d:/HrSkill/app
+# รัน Frontend Dev Server
+cmd /c npm run dev
 
-# 2. เริ่มต้นรันเซิร์ฟเวอร์ทดสอบ (Dev Server)
-cmd /c "npm run dev"
+# รัน Backend Dev Server
+cd backend && cmd /c npm run dev
 
-# 3. ตรวจสอบการคอมไพล์และ Build
-cmd /c "npm run build"
+# ตรวจสอบ Code Quality & Type Safety
+cmd /c npx oxlint
+cmd /c npm run build
 
-# 4. ตรวจสอบการเขียนโค้ด (Lint)
-cmd /c "npm run lint"
+# รัน Master Test Suite (7 โมดูล 26 รายการ)
+cmd /c node --experimental-strip-types scratch/verify_all_modules_e2e.mts
+
+# รัน Backend Authentication & RBAC Suite
+cd backend && cmd /c npx tsx src/verify_auth.ts
 ```
