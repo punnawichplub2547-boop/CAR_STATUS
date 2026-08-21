@@ -665,6 +665,8 @@ h4 { font-size: 1.1rem; }
   right: 0;
   width: 290px;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 85px);
+  overflow-y: auto;
   padding: 14px;
   z-index: 1000;
   background: var(--bg-card);
@@ -1861,3 +1863,32 @@ th.sticky-col {
 .react-flow__handle-connecting {
   background: var(--primary-hover) !important;
 }
+
+/* Skill Passport Print Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .navbar,
+  .sidebar,
+  .no-print {
+    display: none !important;
+  }
+  .passport-modal-backdrop {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    backdrop-filter: none !important;
+  }
+  .passport-card {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    max-height: none !important;
+  }
+}
+

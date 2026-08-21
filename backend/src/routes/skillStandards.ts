@@ -4,10 +4,14 @@ import { prisma } from '../db.js';
 export const skillStandardsRouter = Router();
 
 skillStandardsRouter.get('/skill-standards', async (_req, res) => {
-  const standards = await prisma.skillStandard.findMany({
-    orderBy: [{ department: 'asc' }, { position: 'asc' }, { category: 'asc' }],
-  });
-  res.json(standards);
+  try {
+    const standards = await prisma.skillStandard.findMany({
+      orderBy: [{ department: 'asc' }, { position: 'asc' }, { category: 'asc' }],
+    });
+    res.json(standards);
+  } catch {
+    res.status(500).json({ error: 'Database unavailable' });
+  }
 });
 
 skillStandardsRouter.post('/skill-standards', async (req, res) => {

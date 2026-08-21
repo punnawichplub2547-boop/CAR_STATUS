@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Mail, Lock, Eye, EyeOff, Check, LogIn, Shield, UserCheck, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Check, LogIn, Shield, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
 import type { Employee } from '../types';
 import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
+import { loginApi } from '../utils/api';
 
 interface LoginViewProps {
   onLoginSuccess: (user: Employee) => void;
@@ -13,41 +14,85 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
   const [password, setPassword] = useState('admin1234');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [loginAlert, setLoginAlert] = useState<string | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
 
+  const performLogin = async (identifier: string, pass: string) => {
+    setErrorAlert(null);
+    setIsLoading(true);
+
+    try {
+      const res = await loginApi(identifier, pass);
+      const backendUser = res.user;
+
+      // Reconcile with local employees array for enriched data (e.g. supervisorName)
+      const matched =
+        employees.find((e) => e.empCode === backendUser.empCode) ||
+        ({
+          id: String(backendUser.id),
+          empCode: backendUser.empCode,
+          name: backendUser.name,
+          email: backendUser.email || undefined,
+          department: backendUser.department,
+          section: backendUser.section || undefined,
+          position: backendUser.position,
+          startingDate: backendUser.startingDate.slice(0, 10),
+          status: backendUser.status as any,
+          orientationPassed: backendUser.orientationPassed,
+          role: backendUser.role as any,
+          avatar: backendUser.avatar || undefined,
+          supervisorId: backendUser.supervisorId ? String(backendUser.supervisorId) : undefined,
+        } as Employee);
+
+      setLoginAlert(`เข้าสู่ระบบสำเร็จ: ${matched.name} (${ROLE_LABELS[matched.role] || matched.role})`);
+      setTimeout(() => {
+        onLoginSuccess(matched);
+        setLoginAlert(null);
+        setIsLoading(false);
+      }, 500);
+    } catch (err: any) {
+      // If backend is offline, provide graceful fallback check
+      const cleanInput = identifier.trim().toLowerCase();
+      const localMatched = employees.find(
+        (u) =>
+          u.email?.trim().toLowerCase() === cleanInput ||
+          u.empCode.trim().toLowerCase() === cleanInput
+      );
+
+      if (localMatched && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        setLoginAlert(`เข้าสู่ระบบสำเร็จ (ออฟไลน์โหมด): ${localMatched.name} (${localMatched.role})`);
+        setTimeout(() => {
+          onLoginSuccess(localMatched);
+          setLoginAlert(null);
+          setIsLoading(false);
+        }, 500);
+        return;
+      }
+
+      setErrorAlert(err.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบข้อมูล');
+      setIsLoading(false);
+    }
+  };
+
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setErrorAlert(null);
-
-    const cleanInput = email.trim().toLowerCase();
-    const matchedUser = employees.find(
-      (u) =>
-        u.email?.trim().toLowerCase() === cleanInput ||
-        u.empCode.trim().toLowerCase() === cleanInput
-    ) || (cleanInput.includes('admin') ? employees.find((u) => u.role === 'ADMIN') : null);
-
-    if (!matchedUser) {
-      setErrorAlert('ไม่พบบัญชีผู้ใช้งานนี้ในระบบ กรุณาตรวจสอบอีเมลหรือรหัสพนักงานอีกครั้ง');
-      return;
-    }
-
-    setLoginAlert(`เข้าสู่ระบบสำเร็จในชื่อ: ${matchedUser.name} (${matchedUser.role})`);
-    setTimeout(() => {
-      onLoginSuccess(matchedUser);
-      setLoginAlert(null);
-    }, 600);
+    performLogin(email, password);
   };
 
   const handleQuickDemoLogin = (user: Employee) => {
+    const defaultPassword =
+      user.role === 'ADMIN'
+        ? 'admin1234'
+        : user.role === 'HR'
+        ? 'hr1234'
+        : user.role === 'SUPERVISOR'
+        ? 'super1234'
+        : 'emp1234';
+
     setEmail(user.email || user.empCode);
-    setPassword('••••••••');
-    setErrorAlert(null);
-    setLoginAlert(`เข้าสู่ระบบสำเร็จ: ${user.name} (${user.role})`);
-    setTimeout(() => {
-      onLoginSuccess(user);
-      setLoginAlert(null);
-    }, 600);
+    setPassword(defaultPassword);
+    performLogin(user.email || user.empCode, defaultPassword);
   };
 
   return (
@@ -167,9 +212,17 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
             </a>
           </div>
 
-          <button type="submit" className="login-submit-btn">
+          <button type="submit" className="login-submit-btn" disabled={isLoading}>
             <span className="btn-sheen"></span>
-            <LogIn size={20} /> เข้าสู่ระบบ (Login)
+            {isLoading ? (
+              <>
+                <Loader2 size={20} className="spin" /> กำลังเข้าสู่ระบบ...
+              </>
+            ) : (
+              <>
+                <LogIn size={20} /> เข้าสู่ระบบ (Login)
+              </>
+            )}
           </button>
         </form>
 

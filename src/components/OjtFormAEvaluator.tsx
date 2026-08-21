@@ -534,14 +534,49 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
           </button>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24 }}>
-          {exportMessage && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{exportMessage}</span>}
-          <button className="btn btn-secondary" onClick={handleExportOjtA} disabled={!canExportOjtA}>
-            <FileSpreadsheet size={16} /> {exporting ? 'กำลัง Export...' : 'Export F-HR-004'}
-          </button>
-          <button className="btn btn-success" onClick={handleSaveOjt} disabled={!targetEmp || !isTenureEligible}>
-            <CheckCircle2 size={18} /> บันทึกผลการประเมิน OJT (Form A)
-          </button>
+        {/* Sticky Bottom Action Bar */}
+        <div
+          className="glass-card"
+          style={{
+            position: 'sticky',
+            bottom: 16,
+            zIndex: 30,
+            marginTop: 24,
+            padding: '12px 20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.18)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 14,
+            background: 'var(--bg-card)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>จำนวนหัวข้อทักษะที่ประเมิน</div>
+              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>
+                {contentRows.filter((r) => r.description.trim()).length} / {FHR004A_ROW_CAPACITY} หัวข้อ
+              </div>
+            </div>
+            {exportMessage && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 500 }}>
+                {exportMessage}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button className="btn btn-secondary" onClick={handleExportOjtA} disabled={!canExportOjtA}>
+              <FileSpreadsheet size={16} /> {exporting ? 'กำลัง Export...' : 'Export F-HR-004'}
+            </button>
+            <button className="btn btn-success" onClick={handleSaveOjt} disabled={!targetEmp || !isTenureEligible}>
+              <CheckCircle2 size={18} /> บันทึกผลการประเมิน OJT (Form A)
+            </button>
+          </div>
         </div>
       </div>
       )}

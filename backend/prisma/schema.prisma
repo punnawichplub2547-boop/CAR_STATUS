@@ -24,6 +24,7 @@ model Employee {
   status            String   @default("PROBATION")
   orientationPassed Boolean  @default(false)
   role              String   @default("EMPLOYEE") // "ADMIN" | "HR" | "SUPERVISOR" | "EMPLOYEE"
+  passwordHash      String?  @db.VarChar(255)
   avatar            String?  @db.LongText // FileReader data URL — unbounded size, must not be bare VARCHAR(191)
   supervisorId      Int?
   supervisor        Employee?  @relation("EmployeeSupervisor", fields: [supervisorId], references: [id], onDelete: SetNull)
@@ -37,6 +38,7 @@ model Employee {
   probationEvaluations ProbationEvaluation[]
   skillEvaluations     SkillEvaluation[]
   skillEvaluationRounds SkillEvaluationRound[]
+  certificates         Certificate[]
 
   @@map("employees")
 }
@@ -274,4 +276,26 @@ model SkillEvaluationRound {
 
   @@unique([employeeId, cycle, attemptNumber])
   @@map("skill_evaluation_rounds")
+}
+
+// Certificate Vault: employee licenses and certifications with expiry tracking
+model Certificate {
+  id             Int       @id @default(autoincrement())
+  employeeId     Int?
+  employee       Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  empCode        String
+  employeeName   String
+  department     String
+  position       String
+  certName       String
+  issuer         String
+  issueDate      DateTime
+  expiryDate     DateTime
+  certNumber     String?
+  attachmentUrl  String?   @db.LongText
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([empCode])
+  @@map("certificates")
 }

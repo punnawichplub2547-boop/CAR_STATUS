@@ -1,11 +1,13 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import type { NavTab } from './components/Sidebar';
-import { TestLoginModal } from './components/TestLoginModal';
 import { LoginView } from './components/LoginView';
+import { UserProfileModal } from './components/UserProfileModal';
+import { SkillPassportModal } from './components/SkillPassportModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { generateLiveNotifications } from './utils/notificationGenerator';
 
 // Only one tab is on screen at a time, so each page is loaded on demand. This
 // keeps recharts (Dashboard / Skill Matrix), xlsx (Audit / Exam) and jszip
@@ -67,6 +69,13 @@ import {
   saveBackendSkillEvaluation,
   fetchBackendSkillEvaluationRounds,
   saveBackendSkillEvaluationRound,
+  fetchBackendCertificates,
+  createBackendCertificate,
+  updateBackendCertificate,
+  deleteBackendCertificate,
+  getMeApi,
+  getStoredToken,
+  removeStoredToken,
   type EmployeePayload,
   type BackendEmployee,
   type BackendOjtSession,
@@ -77,13 +86,14 @@ import {
 } from './utils/api';
 
 import {
+  INITIAL_EMPLOYEES,
+  INITIAL_SKILL_STANDARDS,
   INITIAL_CERTIFICATES,
   INITIAL_COURSES,
-  INITIAL_NOTIFICATIONS,
   INITIAL_ORG_CHART_NODES,
 } from './data/mockData';
 
-import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, NotificationItem, OrgChartNode, SkillStandard, SkillLevel, EmploymentStatus, Role, OjtFormType, OjtEvaluationMethod, OjtPurposeType, OjtChangeReasonCategory, ProbationPeriod, ProbationGrade, ProbationOutcome, EvaluationCycle, EvaluationAttempt } from './types';
+import type { Employee, OjtSession, OjtContentItem, OjtParticipant, ProbationEvaluation, Certificate, SkillEvaluation, SkillEvaluationRound, TrainingCourse, OrgChartNode, SkillStandard, SkillLevel, EmploymentStatus, Role, OjtFormType, OjtEvaluationMethod, OjtPurposeType, OjtChangeReasonCategory, ProbationPeriod, ProbationGrade, ProbationOutcome, EvaluationCycle, EvaluationAttempt } from './types';
 
 const DEFAULT_AVATAR_URL =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80';
@@ -263,12 +273,21 @@ export function App() {
   // on mount, no localStorage seed for the object itself. Only the logged-in
   // empCode is persisted (a tiny string, not a stale full Employee snapshot)
   // so "who was logged in" survives a reload without re-showing LoginView.
-  const [currentUser, setCurrentUser] = useState<Employee | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [currentUser, setCurrentUser] = useState<Employee | null>(() => {
+    try {
+      const raw = localStorage.getItem('hrskill_currentUserEmpCode');
+      const savedEmpCode = raw ? JSON.parse(raw) : null;
+      return (savedEmpCode && INITIAL_EMPLOYEES.find((e) => e.empCode === savedEmpCode)) || INITIAL_EMPLOYEES[0] || null;
+    } catch {
+      return INITIAL_EMPLOYEES[0] || null;
+    }
+  });
+  const [employees, setEmployees] = useState<Employee[]>(INITIAL_EMPLOYEES);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = usePersistentState<boolean>('is_logged_in', true);
+  const [isLoggedIn, setIsLoggedIn] = usePersistentState<boolean>('is_logged_in', false);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
-  const [showTestLoginModal, setShowTestLoginModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [passportEmployee, setPassportEmployee] = useState<Employee | null>(null);
 
   const persistCurrentUserEmpCode = (empCode: string) => {
     try {
@@ -279,7 +298,7 @@ export function App() {
   };
 
   // App Master States with Persistence
-  const [skillStandards, setSkillStandards] = useState<SkillStandard[]>([]);
+  const [skillStandards, setSkillStandards] = useState<SkillStandard[]>(INITIAL_SKILL_STANDARDS);
   const [skillStandardsError, setSkillStandardsError] = useState<string | null>(null);
   const [skillEvaluations, setSkillEvaluations] = useState<SkillEvaluation[]>([]);
   const [skillEvaluationRounds, setSkillEvaluationRounds] = useState<SkillEvaluationRound[]>([]);
@@ -292,44 +311,104 @@ export function App() {
   const [probationError, setProbationError] = useState<string | null>(null);
   const [certificates, setCertificates] = usePersistentState<Certificate[]>('certificates', INITIAL_CERTIFICATES);
   const [courses] = usePersistentState<TrainingCourse[]>('courses', INITIAL_COURSES);
-  const [notifications, setNotifications] = usePersistentState<NotificationItem[]>('notifications', INITIAL_NOTIFICATIONS);
+  const [readNotifIds, setReadNotifIds] = usePersistentState<string[]>('read_notif_ids', []);
   const [orgChartNodes, setOrgChartNodes] = usePersistentState<OrgChartNode[]>('orgChartNodes', INITIAL_ORG_CHART_NODES);
 
-  // F-HR-005 skill standards are DB-backed (unlike the localStorage-first
-  // state above) — fetch once on mount. No fallback to stale mock data on
-  // failure: an empty list + visible error banner is more honest than
-  // silently showing hardcoded standards that no longer match the DB.
+  const readNotifIdSet = useMemo(() => new Set(readNotifIds), [readNotifIds]);
+  const liveNotifications = useMemo(
+    () => generateLiveNotifications(employees, certificates, readNotifIdSet),
+    [employees, certificates, readNotifIdSet]
+  );
+
   useEffect(() => {
     fetchBackendSkillStandards()
-      .then((rows) =>
-        setSkillStandards(
-          rows.map((r) => ({
-            id: String(r.id),
-            department: r.department,
-            position: r.position,
-            category: r.category,
-            skillName: r.skillName,
-            targetLevel: r.targetLevel as SkillLevel,
-          }))
-        )
-      )
-      .catch((err) => setSkillStandardsError(err instanceof Error ? err.message : 'unknown error'));
-  }, []);
+      .then((rows) => {
+        if (rows.length > 0) {
+          setSkillStandards(
+            rows.map((r) => ({
+              id: String(r.id),
+              department: r.department,
+              position: r.position,
+              category: r.category,
+              skillName: r.skillName,
+              targetLevel: r.targetLevel as SkillLevel,
+            }))
+          );
+        }
+      })
+      .catch((err) => {
+        setSkillStandardsError(err instanceof Error ? err.message : 'unknown error');
+      });
 
-  // Employee roster — same DB-backed pattern as skillStandards above. No
-  // fallback to mock data on failure: a visible error banner beats silently
-  // showing employees that don't exist in the DB (their ids wouldn't resolve
-  // against any real backend write anyway).
+    fetchBackendCertificates()
+      .then((rows) => {
+        if (rows.length > 0) {
+          setCertificates(
+            rows.map((r) => {
+              const expiry = r.expiryDate ? r.expiryDate.slice(0, 10) : '';
+              return {
+                id: String(r.id),
+                employeeId: r.employeeId ? String(r.employeeId) : '',
+                empCode: r.empCode,
+                employeeName: r.employeeName,
+                department: r.department,
+                certName: r.certName,
+                issuingOrg: r.issuer || '',
+                issueDate: r.issueDate ? r.issueDate.slice(0, 10) : '',
+                expiryDate: expiry,
+                fileUrl: r.attachmentUrl || '',
+                status: computeCertificateStatus(expiry),
+              };
+            })
+          );
+        }
+      })
+      .catch(() => {});
+  }, [setCertificates]);
+
   useEffect(() => {
     fetchBackendEmployees()
       .then((rows) => {
-        const basicList = rows.map((r) => mapBackendEmployee(r, []));
-        const mapped = basicList.map((e) => ({
-          ...e,
-          supervisorName: e.supervisorId ? basicList.find((x) => x.id === e.supervisorId)?.name : undefined,
-        }));
-        setEmployees(mapped);
+        if (rows.length > 0) {
+          const basicList = rows.map((r) => mapBackendEmployee(r, []));
+          const mapped = basicList.map((e) => ({
+            ...e,
+            supervisorName: e.supervisorId ? basicList.find((x) => x.id === e.supervisorId)?.name : undefined,
+          }));
+          setEmployees(mapped);
 
+          const token = getStoredToken();
+          if (token) {
+            getMeApi(token)
+              .then((me) => {
+                const userMatch = mapped.find((e) => e.empCode === me.empCode) || mapBackendEmployee(me, []);
+                setCurrentUser(userMatch);
+                setIsLoggedIn(true);
+              })
+              .catch(() => {
+                removeStoredToken();
+              });
+          } else {
+            let savedEmpCode: string | null = null;
+            try {
+              const raw = localStorage.getItem('hrskill_currentUserEmpCode');
+              savedEmpCode = raw ? JSON.parse(raw) : null;
+            } catch {
+              savedEmpCode = null;
+            }
+            const reconciled =
+              (savedEmpCode && mapped.find((e) => e.empCode === savedEmpCode)) ||
+              mapped.find((e) => e.role === 'ADMIN') ||
+              mapped[0] ||
+              null;
+            if (reconciled) setCurrentUser(reconciled);
+          }
+        }
+      })
+      .catch((err) => {
+        setEmployeesError(err instanceof Error ? err.message : 'unknown error');
+        // Graceful fallback to initial seed employees so app always remains fully usable
+        setEmployees(INITIAL_EMPLOYEES);
         let savedEmpCode: string | null = null;
         try {
           const raw = localStorage.getItem('hrskill_currentUserEmpCode');
@@ -338,14 +417,12 @@ export function App() {
           savedEmpCode = null;
         }
         const reconciled =
-          (savedEmpCode && mapped.find((e) => e.empCode === savedEmpCode)) ||
-          mapped.find((e) => e.role === 'ADMIN') ||
-          mapped[0] ||
+          (savedEmpCode && INITIAL_EMPLOYEES.find((e) => e.empCode === savedEmpCode)) ||
+          INITIAL_EMPLOYEES[0] ||
           null;
-        setCurrentUser(reconciled);
-      })
-      .catch((err) => setEmployeesError(err instanceof Error ? err.message : 'unknown error'));
-  }, []);
+        if (reconciled) setCurrentUser(reconciled);
+      });
+  }, [setIsLoggedIn]);
 
   // F-HR-004 OJT sessions — same DB-backed pattern as skillStandards/
   // employees above. No fallback to mock data on failure.
@@ -546,17 +623,6 @@ export function App() {
       });
   };
 
-  const handleAddCertificate = (cert: Certificate) => {
-    setCertificates([cert, ...certificates]);
-  };
-
-  const handleEditCertificate = (cert: Certificate) => {
-    setCertificates(certificates.map((c) => (c.id === cert.id ? cert : c)));
-  };
-
-  const handleDeleteCertificate = (certId: string) => {
-    setCertificates(certificates.filter((c) => c.id !== certId));
-  };
 
   // F-HR-014 scores are DB-backed — optimistic local update first (same
   // pattern as handleAddProbationEval) so the score popover closes
@@ -639,10 +705,67 @@ export function App() {
       );
   };
 
+  const handleAddCertificate = (cert: Certificate) => {
+    setCertificates((prev) => [cert, ...prev]);
+    createBackendCertificate({
+      empCode: cert.empCode,
+      employeeName: cert.employeeName,
+      department: cert.department,
+      certName: cert.certName,
+      issuer: cert.issuingOrg,
+      issueDate: cert.issueDate,
+      expiryDate: cert.expiryDate,
+      attachmentUrl: cert.fileUrl,
+    })
+      .then((row) => {
+        const expiry = row.expiryDate ? row.expiryDate.slice(0, 10) : cert.expiryDate;
+        const real: Certificate = {
+          id: String(row.id),
+          employeeId: row.employeeId ? String(row.employeeId) : cert.employeeId,
+          empCode: row.empCode,
+          employeeName: row.employeeName,
+          department: row.department,
+          certName: row.certName,
+          issuingOrg: row.issuer,
+          issueDate: row.issueDate ? row.issueDate.slice(0, 10) : cert.issueDate,
+          expiryDate: expiry,
+          fileUrl: row.attachmentUrl || '',
+          status: computeCertificateStatus(expiry),
+        };
+        setCertificates((prev) => [real, ...prev.filter((c) => c.id !== cert.id)]);
+      })
+      .catch(() => {});
+  };
+
+  const handleEditCertificate = (cert: Certificate) => {
+    setCertificates((prev) => prev.map((c) => (c.id === cert.id ? cert : c)));
+    if (!isNaN(Number(cert.id))) {
+      updateBackendCertificate(Number(cert.id), {
+        empCode: cert.empCode,
+        employeeName: cert.employeeName,
+        department: cert.department,
+        certName: cert.certName,
+        issuer: cert.issuingOrg,
+        issueDate: cert.issueDate,
+        expiryDate: cert.expiryDate,
+        attachmentUrl: cert.fileUrl,
+      }).catch(() => {});
+    }
+  };
+
+  const handleDeleteCertificate = (id: string) => {
+    setCertificates((prev) => prev.filter((c) => c.id !== id));
+    if (!isNaN(Number(id))) {
+      deleteBackendCertificate(Number(id)).catch(() => {});
+    }
+  };
+
   const handleMarkNotifRead = (id: string) => {
-    setNotifications(
-      notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setReadNotifIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
+
+  const handleMarkAllNotifsRead = () => {
+    setReadNotifIds(liveNotifications.map((n) => n.id));
   };
 
   const expiringCertsCount = certificates.filter((c) => {
@@ -657,6 +780,10 @@ export function App() {
   };
 
   const handleLogout = () => {
+    removeStoredToken();
+    try {
+      localStorage.removeItem('hrskill_currentUserEmpCode');
+    } catch {}
     setIsLoggedIn(false);
   };
 
@@ -677,21 +804,15 @@ export function App() {
   // real Employee — show a lightweight loading state until the mount-time
   // fetch resolves (or a hard error if it failed).
   if (!currentUser) {
-    if (employeesError) {
-      return (
-        <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-          <div className="glass-card" style={{ padding: 24, maxWidth: 480, textAlign: 'center' }}>
-            ไม่สามารถโหลดข้อมูลพนักงานจากระบบได้: {employeesError}
-            <br />
-            ตรวจสอบว่า backend รันอยู่ (docker compose up -d car-status-mysql car-status-backend) แล้วลองรีเฟรชหน้านี้
-          </div>
-        </div>
-      );
-    }
     return (
-      <div className="app-layout" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        กำลังโหลดข้อมูลพนักงาน...
-      </div>
+      <LoginView
+        employees={employees.length > 0 ? employees : INITIAL_EMPLOYEES}
+        onLoginSuccess={(user) => {
+          setCurrentUser(user);
+          persistCurrentUserEmpCode(user.empCode);
+          setIsLoggedIn(true);
+        }}
+      />
     );
   }
 
@@ -701,10 +822,16 @@ export function App() {
       <Navbar
         currentUser={currentUser}
         allUsers={employees}
+        standards={skillStandards}
+        certificates={certificates}
         onSwitchUser={handleSwitchUser}
-        notifications={notifications}
+        notifications={liveNotifications}
         onMarkNotificationRead={handleMarkNotifRead}
-        onOpenLoginTest={() => setShowTestLoginModal(true)}
+        onMarkAllNotificationsRead={handleMarkAllNotifsRead}
+        onNavigate={setActiveTab}
+        onSelectEmployeeForPassport={(emp) => setPassportEmployee(emp)}
+        onOpenProfile={() => setShowProfileModal(true)}
+        onOpenPassport={() => setPassportEmployee(currentUser)}
         onResetDemoData={handleResetDemoData}
         onLogout={handleLogout}
       />
@@ -736,6 +863,7 @@ export function App() {
                 onAddEmployee={handleAddEmployee}
                 onEditEmployee={handleEditEmployee}
                 onDeleteEmployee={handleDeleteEmployee}
+                onViewPassport={(emp) => setPassportEmployee(emp)}
                 employeesError={employeesError}
                 orgChartNodes={orgChartNodes}
                 onChangeOrgChartNodes={setOrgChartNodes}
@@ -844,12 +972,26 @@ export function App() {
         </main>
       </div>
 
-      {/* Test Login Screen Modal */}
-      <TestLoginModal
-        isOpen={showTestLoginModal}
-        onClose={() => setShowTestLoginModal(false)}
-        onLoginSuccess={handleSwitchUser}
-        allUsers={employees}
+      {/* User Profile & Security Modal */}
+      {currentUser && (
+        <UserProfileModal
+          isOpen={showProfileModal}
+          onClose={() => setShowProfileModal(false)}
+          currentUser={currentUser}
+        />
+      )}
+
+      {/* Employee Skill Passport Modal */}
+      <SkillPassportModal
+        isOpen={!!passportEmployee}
+        onClose={() => setPassportEmployee(null)}
+        employee={passportEmployee}
+        standards={skillStandards}
+        evaluations={skillEvaluations}
+        certificates={certificates}
+        ojtSessions={ojtSessions}
+        ojtParticipants={ojtParticipants}
+        probationEvaluations={probationEvaluations}
       />
     </div>
   );

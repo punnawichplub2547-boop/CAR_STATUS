@@ -1,10 +1,12 @@
 # CAR HR Skill Matrix & Exam System Memory & Project Rules
 
-> ไฟล์นี้คือ "ความจำถาวร" ของ agent สำหรับโปรเจกต์ CAR HR Skill Matrix
+> ไฟล์นี้คือ "ความจำถาวร" ของ agent และทีม **IT Ranger** สำหรับโปรเจกต์ CAR HR Skill Matrix
+> - **เจ้าของระบบ:** คุณพลับ (Dev OS Memory: `D:\MEMORY`)
+> - **ทีมผู้รับผิดชอบ:** IT Ranger (ฟ้าใส & ทีม Agent เฉพาะทาง)
 > - **Dev Machine Path:** `D:\HrSkill\app`
 > - **Prod Server Path:** `D:\Skill\CAR_STATUS`
 > ทุกข้อในนี้ยืนยันจากโค้ดจริงแล้ว ไม่ใช่การเดา — ถ้าแก้โค้ดจนขัดกับข้อไหน **ต้องมาแก้ไฟล์นี้ด้วย**
-> เอกสารคู่กัน: `app/CLAUDE.md` (มาตรฐานการเขียนโค้ด + ตารางเฉลยข้อสอบเต็ม), `backend/README.md` (endpoint + setup)
+> เอกสารคู่กัน: [CLAUDE.md](file:///d:/HrSkill/app/CLAUDE.md) (มาตรฐานการเขียนโค้ด + ตารางเฉลยข้อสอบเต็ม), [README.md](file:///d:/HrSkill/app/backend/README.md) (endpoint + setup)
 
 ---
 
@@ -81,9 +83,17 @@
 
 **ที่อยู่:** `app/backend/` — Express 4 + Prisma 6 + MySQL 8.4 (ESM, `"type": "module"` → import ต้องลงท้าย `.js`)
 
-### Prisma models (Phase 1 เท่านั้น)
-`Employee` · `TrainingCourse` · `TrainingAttendance` · `ExamSubmission`
-> ตาราง Certificate / SkillEvaluation / OJT **ยังไม่มีใน DB** — จะเพิ่มทีละตารางในเฟสถัดไป (ระบุไว้ใน `schema.prisma:10-12`)
+### Prisma models & Backend Modules
+- **Core Models:** `Employee` (พร้อม `role`, `passwordHash`, `avatar`, `supervisor`), `SkillStandard` (F-HR-005), `TrainingCourse`, `TrainingAttendance` (F-HR-002), `ExamSubmission`, `Certificate`
+- **Auth & Security:** JWT Token Authentication (`/api/auth/login`, `/api/auth/me`, `/api/auth/change-password`), Bcrypt Password Hashing, RBAC (ADMIN, HR, SUPERVISOR, EMPLOYEE)
+- **API Endpoints:**
+  - `POST /api/auth/login` (Login with empCode/password)
+  - `POST /api/auth/change-password` (Self-service password update)
+  - `GET /api/auth/me` (Current user profile)
+  - `GET /api/employees` (Employee list with full details)
+  - `GET /api/certificates` & `POST /api/certificates` (Certificate tracking)
+  - `GET /api/skill-standards` (Competency standards F-HR-005)
+  - `POST /api/webhook/exam-result` (Google Forms webhook)
 
 ### กฎเรื่อง Port (สำคัญมาก — เครื่องคุณพลับมีของชนกัน)
 | บริการ | Host port | Container port | เหตุผล |
@@ -253,10 +263,9 @@ cmd /c npm run build   # tsc -b && vite build ต้องผ่าน
 | 3 | `VITE_API_BASE_URL` ชี้ 4000 แต่ Docker map 4001 | ✅ **แก้แล้ว** — เขียนหมายเหตุทั้ง 2 กรณีใน `.env.example` |
 | 4 | `exceljs` เป็น dead dependency | ✅ **ถอดออกแล้ว** (`npm uninstall exceljs`, -84 packages) |
 | 5 | เอกสาร `CLAUDE.md` ทั้ง 2 ไฟล์ไม่ตรงโค้ด | ✅ **แก้แล้ว** — ดู ERR-0030 |
-| 6 | Login จริง (email+password แยก role) แทนปุ่มสลับ user | ✅ **เสร็จแล้ว (2026-08-11)** — สร้าง `LoginView.tsx` (Glassmorphism + CAR Full-bleed), จัดการ Session ผ่าน `localStorage`, เพิ่มปุ่ม Logout ใน Navbar, และจำกัดสิทธิ์ให้ HR/Admin เข้าใช้งาน |
-| 7 | ผังองค์กร Org Chart Builder (Interactive Drag & Drop) | ✅ **เสร็จแล้ว (2026-08-11)** — ผสาน `@xyflow/react` + `dagre` ร่วมกับการคำนวณอายุงาน `calculateTenure` |
-| 8 | ตรวจสอบคะแนนและการซิงค์ Google Forms 14Q/30Q | ✅ **เสร็จแล้ว (2026-08-11)** — ยืนยันผลคะแนนและการตัดเกรดตรงตามมาตรฐาน 100%, ผ่านการทดสอบ `verify_all_modules_e2e.mts` (26/26 ผ่าน) |
-| 9 | ตาราง Certificate / SkillEvaluation / OJT ใน DB | ❌ Phase ถัดไป |
-| 10 | ย้ายโมดูลอื่นจาก localStorage ไป backend | ❌ Phase ถัดไป |
-
-| 9 | `ExamEngine.tsx` มีการแก้ค้างยังไม่ commit (+56/-10) | ⚠️ ของเดิมก่อนหน้า ไม่ใช่ของรอบนี้ — ตรวจก่อนทำงานต่อ |
+| 6 | Login จริง (email+password แยก role) พร้อม JWT + Bcrypt | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `LoginView.tsx`, Backend Auth Routes (`/api/auth/login`, `/me`, `/change-password`), Seed accounts, Test suite `verify_auth.ts` ผ่าน 8/8 (100%) |
+| 7 | ผังองค์กร Org Chart Builder (Interactive Drag & Drop) | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — ผสาน `@xyflow/react` + `dagre` ร่วมกับการคำนวณอายุงาน `calculateTenure` |
+| 8 | ตรวจสอบคะแนนและการซิงค์ Google Forms 14Q/30Q | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — ยืนยันผลคะแนนและการตัดเกรดตรงตามมาตรฐาน 100%, ผ่านการทดสอบ `verify_all_modules_e2e.mts` (26/26 ผ่าน) |
+| 9 | ตาราง Certificate / SkillStandard ใน DB & API | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — Prisma models, Backend endpoints (`/api/certificates`, `/api/skill-standards`), Test suite `verify_profile_and_certs.ts` ผ่าน 100% |
+| 10 | User Profile Modal & Skill Passport | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `UserProfileModal.tsx` เปลี่ยนรหัสผ่านตนเอง และ `SkillPassportModal.tsx` แฟ้มสะสมทักษะ/ใบรับรองพร้อมพิมพ์ |
+| 11 | Complete System Audit Suite | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — สคริปต์ `scratch/verify_all_modules_e2e.mts` ครอบคลุม 7 โมดูลหลัก ผ่าน 26/26 (100%) |

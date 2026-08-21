@@ -51,7 +51,8 @@ d:\HrSkill\app\
 │   │   └── orientationConstants.ts # Orientation Course Topics & Options
 │   ├── utils/
 │   │   ├── dateUtils.ts          # Tenure & Date Formatting Helpers
-│   │   ├── api.ts                # Backend API Client & Sync
+│   │   ├── api.ts                # Backend API Client & Sync (Auth, Employees, Certs)
+│   │   ├── notificationGenerator.ts # Dynamic System Notifications (Cert Expiry, OJT, Exam)
 │   │   ├── fhr002Exporter.ts     # F-HR-002 OpenXML Template Exporter
 │   │   └── excelTemplateExporter.ts # F-HR-014 OpenXML Exporter & Helpers
 │   ├── components/               # Modular UI Components
@@ -61,19 +62,39 @@ d:\HrSkill\app\
 │   │   │   ├── ExamDirectoryTable.tsx # HR Tracker, Batch Filters & Locks
 │   │   │   └── ExamQrModal.tsx       # Instant Mobile QR Code Scanner Modal
 │   │   ├── Dashboard.tsx         # Executive Overview & Recharts Visualizations
-│   │   ├── EmployeeManagement.tsx # Org Chart & Employee Directory
+│   │   ├── EmployeeManagement.tsx # Org Chart (@xyflow/react) & Employee Directory
 │   │   ├── SkillMatrixView.tsx   # Skill Matrix & Competency Radar Charts
 │   │   ├── OjtProbationEvaluator.tsx # Forms F-HR-016 (Form A/B) & Probation Evaluation
 │   │   ├── CertificateVault.tsx  # Certification Expiry Tracking
 │   │   ├── TrainingManagement.tsx# Training Calendar & QR/Check-in
 │   │   ├── ExamEngine.tsx        # Exam Engine Orchestrator & Live Sync
-│   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center
+│   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center (SheetJS)
+│   │   ├── LoginView.tsx         # Real Authentication & Role-based Login (Glassmorphic)
+│   │   ├── UserProfileModal.tsx  # User Profile & Self Password Change
+│   │   ├── SkillPassportModal.tsx# Employee Skill Passport & Printable CV/Portfolio
 │   │   ├── ErrorBoundary.tsx     # React Runtime Error Protection & Recovery
-│   │   ├── Navbar.tsx            # Header & Test Login Switcher
-│   │   ├── Sidebar.tsx           # Navigation Menu
-│   │   └── TestLoginModal.tsx    # Role Switcher Modal (Admin/Supervisor/Employee)
+│   │   ├── Navbar.tsx            # Header, Notifications Drawer, User Profile & Logout
+│   │   └── Sidebar.tsx           # Navigation Menu & Role Permission Filtering
 │   ├── App.tsx                   # Master State Manager & LocalStorage Persistence
 │   └── index.css                 # Global Design System Tokens & Glassmorphism Styles
+├── backend/                      # Express 4 + Prisma 6 + MySQL 8.4
+│   ├── prisma/
+│   │   ├── schema.prisma         # Prisma Data Models (Employee, Cert, SkillStandard, Exam)
+│   │   └── seed.ts               # Seed data with bcrypt passwords & roles
+│   └── src/
+│       ├── routes/
+│       │   ├── auth.ts           # POST /login, POST /change-password, GET /me
+│       │   ├── certificates.ts   # GET / POST /api/certificates
+│       │   ├── employees.ts      # GET / POST /api/employees
+│       │   ├── skillStandards.ts # GET /api/skill-standards
+│       │   └── webhook.ts        # POST /api/webhook/exam-result
+│       ├── server.ts             # Express Server Setup & CORS
+│       ├── verify_auth.ts        # Authentication & RBAC Test Suite
+│       └── verify_profile_and_certs.ts # Profile & Cert Status Unit Tests
+├── scratch/
+│   ├── verify_all_modules_e2e.mts # Complete 7-Module E2E System Audit Suite
+│   ├── verify_fhr014.mts         # F-HR-014 OpenXML Multi-sheet Exporter Verification
+│   └── verify_audit_export.mts   # Audit Report Exporter Verification
 ├── index.html                    # Root HTML & Google Fonts (Sarabun)
 └── package.json                  # Dependencies & Scripts
 ```

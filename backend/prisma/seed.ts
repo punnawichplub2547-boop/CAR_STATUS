@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -65,6 +66,7 @@ async function main() {
       startingDate: new Date('2015-03-12'),
       status: 'PERMANENT',
       role: 'ADMIN',
+      plainPassword: 'admin1234',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     },
     {
@@ -77,6 +79,7 @@ async function main() {
       startingDate: new Date('2022-06-15'),
       status: 'PERMANENT',
       role: 'HR',
+      plainPassword: 'hr1234',
       avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
     },
     {
@@ -89,6 +92,7 @@ async function main() {
       startingDate: new Date('2026-06-22'),
       status: 'PROBATION',
       role: 'EMPLOYEE',
+      plainPassword: 'emp1234',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
     },
     {
@@ -101,6 +105,7 @@ async function main() {
       startingDate: new Date('2018-01-10'),
       status: 'PERMANENT',
       role: 'SUPERVISOR',
+      plainPassword: 'super1234',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     },
     {
@@ -113,24 +118,30 @@ async function main() {
       startingDate: new Date('2020-11-05'),
       status: 'PERMANENT',
       role: 'EMPLOYEE',
+      plainPassword: 'emp1234',
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     },
   ];
 
   for (const emp of sampleEmployees) {
+    const passwordHash = await bcrypt.hash(emp.plainPassword, 10);
+    const { plainPassword: _, ...empData } = emp;
+
     await prisma.employee.upsert({
       where: { empCode: emp.empCode },
       update: {
-        role: emp.role,
-        name: emp.name,
-        email: emp.email,
-        department: emp.department,
-        section: emp.section,
-        position: emp.position,
-        avatar: emp.avatar,
+        role: empData.role,
+        name: empData.name,
+        email: empData.email,
+        department: empData.department,
+        section: empData.section,
+        position: empData.position,
+        avatar: empData.avatar,
+        passwordHash,
       },
       create: {
-        ...emp,
+        ...empData,
+        passwordHash,
         orientationPassed: false,
       },
     });
