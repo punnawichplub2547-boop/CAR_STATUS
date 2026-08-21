@@ -63,17 +63,22 @@ d:\HrSkill\app\
 │   │   │   └── ExamQrModal.tsx       # Instant Mobile QR Code Scanner Modal
 │   │   ├── Dashboard.tsx         # Executive Overview & Recharts Visualizations
 │   │   ├── EmployeeManagement.tsx # Org Chart (@xyflow/react) & Employee Directory
+│   │   ├── EmployeeExcelImportModal.tsx # Bulk Employee Excel (.xlsx) Import with Validation
 │   │   ├── SkillMatrixView.tsx   # Skill Matrix & Competency Radar Charts
 │   │   ├── OjtProbationEvaluator.tsx # Forms F-HR-016 (Form A/B) & Probation Evaluation
+│   │   ├── OjtFormAEvaluator.tsx # New Hire OJT (Form A) with Sticky Action Bar
+│   │   ├── OjtFormBEvaluator.tsx # Transfer OJT (Form B) with Sticky Action Bar
+│   │   ├── ProbationEvaluator.tsx# Probation Evaluation (F-HR-009) with Sticky Action Bar
 │   │   ├── CertificateVault.tsx  # Certification Expiry Tracking
 │   │   ├── TrainingManagement.tsx# Training Calendar & QR/Check-in
 │   │   ├── ExamEngine.tsx        # Exam Engine Orchestrator & Live Sync
 │   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center (SheetJS)
 │   │   ├── LoginView.tsx         # Real Authentication & Role-based Login (Glassmorphic)
 │   │   ├── UserProfileModal.tsx  # User Profile & Self Password Change
-│   │   ├── SkillPassportModal.tsx# Employee Skill Passport & Printable CV/Portfolio
+│   │   ├── SkillPassportModal.tsx# Employee Skill Passport & Printable CV/Portfolio (A4 Layout)
+│   │   ├── SystemBackupModal.tsx # 1-Click System JSON Backup & Restore Modal
 │   │   ├── ErrorBoundary.tsx     # React Runtime Error Protection & Recovery
-│   │   ├── Navbar.tsx            # Header, Notifications Drawer, User Profile & Logout
+│   │   ├── Navbar.tsx            # Header, Notifications Drawer, User Profile, Backup & Logout
 │   │   └── Sidebar.tsx           # Navigation Menu & Role Permission Filtering
 │   ├── App.tsx                   # Master State Manager & LocalStorage Persistence
 │   └── index.css                 # Global Design System Tokens & Glassmorphism Styles

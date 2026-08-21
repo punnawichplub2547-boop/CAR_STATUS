@@ -269,3 +269,8 @@ cmd /c npm run build   # tsc -b && vite build ต้องผ่าน
 | 9 | ตาราง Certificate / SkillStandard ใน DB & API | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — Prisma models, Backend endpoints (`/api/certificates`, `/api/skill-standards`), Test suite `verify_profile_and_certs.ts` ผ่าน 100% |
 | 10 | User Profile Modal & Skill Passport | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `UserProfileModal.tsx` เปลี่ยนรหัสผ่านตนเอง และ `SkillPassportModal.tsx` แฟ้มสะสมทักษะ/ใบรับรองพร้อมพิมพ์ |
 | 11 | Complete System Audit Suite | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — สคริปต์ `scratch/verify_all_modules_e2e.mts` ครอบคลุม 7 โมดูลหลัก ผ่าน 26/26 (100%) |
+| 12 | Bulk Employee Excel Import (.xlsx/.csv) | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `EmployeeExcelImportModal.tsx` ดาวน์โหลดแม่แบบ Excel, ตรวจสอบรหัสพนักงานซ้ำ, พรีวิวและนำเข้าแบบ Batch |
+| 13 | 1-Click System Backup & Restore | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `SystemBackupModal.tsx` ส่งออกและกู้คืน JSON Snapshot ทั้งระบบ พร้อมซิงก์กลับเข้า MySQL |
+| 14 | Sticky Bottom Action Bar บนแบบฟอร์มยาว | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — OJT Form A, OJT Form B (4M1E), และ Probation Form 009 มีแถบลอยแสดงคะแนนสดและปุ่มบันทึก/Export |
+| 15 | File Organization & Code Cleaning | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — ลบโฟลเดอร์ legacy backup (8,587 บรรทัด/23 ไฟล์), ล้าง temporary files, `oxlint` 0 Errors/0 Warnings |
+| 16 | Production Docker Readiness | ✅ **เสร็จสมบูรณ์ (2026-08-21)** — `docker-compose.yml`, Nginx Reverse Proxy, MySQL 8.4, Build ผ่าน 100% พร้อม Deploy บน Server `10.255.255.173` |
