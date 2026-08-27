@@ -114,6 +114,8 @@ npm run prisma:seed
 
 > หมายเหตุ: ไฟล์ `backend/.env` และ `.env.local` ไม่ได้ถูก commit ขึ้น git (เก็บค่าเฉพาะเครื่อง เช่น พอร์ต/DATABASE_URL) — ให้ copy จาก `backend/.env.example` / `.env.example` แล้วปรับค่าตามเครื่องตัวเองก่อนรันขั้นตอนด้านบน
 
+> ⚠️ **รอบนี้ (migration `add_password_hash_and_certificates`) ข้ามข้อ 4 (`prisma:seed`) ไม่ได้เด็ดขาด** — migration เพิ่มคอลัมน์ `passwordHash` แบบว่างเปล่า (nullable) ให้พนักงานทุกคน ถ้าไม่รัน seed จะไม่มีใครมีรหัสผ่านเลยสักคน หน้า Login ใหม่จะเข้าไม่ได้ทุก account (ไม่ error ชัดเจน แค่ auth fail เงียบๆ) — ถ้ามีพนักงานที่สร้างเองในเครื่อง (empCode ไม่ตรงกับใน `seed.ts`) คนนั้นจะไม่ได้ passwordHash อัตโนมัติ ต้องตั้งรหัสผ่านให้เองเพิ่ม
+
 ---
 
 ## 📂 โครงสร้างไดเรกทอรี (Directory Structure)
