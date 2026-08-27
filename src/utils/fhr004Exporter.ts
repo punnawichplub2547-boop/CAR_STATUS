@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { setCellInSheetXml, fillCheckboxInDrawingXml, addImageOneCellAnchor, clearCellInSheetXml, saveBlobFile } from './excelTemplateExporter';
-import type { OjtPurposeType, OjtEvaluationMethod } from '../types';
+import type { OjtPurposeType, OjtEvaluationMethod, OjtChangeReasonCategory, SkillLevel } from '../types';
 
 export interface ExportOjtContentItem {
   description: string;
@@ -73,7 +73,11 @@ const ATTACHMENT_LABELS: Record<'true' | 'false', { cell: string }> = {
 
 function toThaiBuddhistDate(isoDate?: string): string {
   if (!isoDate) return '';
-  const [y, m, d] = isoDate.split('-').map(Number);
+  // Accept both a plain 'YYYY-MM-DD' (what the form's own date input sends)
+  // and a full ISO datetime like 'YYYY-MM-DDTHH:mm:ss.sssZ' (what a Prisma
+  // DateTime field round-trips as through the backend API) — the date
+  // portion is always the first 10 characters in either case.
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number);
   if (!y || !m || !d) return '';
   return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y + 543}`;
 }
@@ -182,5 +186,205 @@ export async function exportFHR004A({
   return {
     exportedCount: rowsToWrite.length,
     truncatedCount: Math.max(0, contentItems.length - FHR004A_ROW_CAPACITY),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// F-HR-004 Form(B) — 4M1E change/transfer OJT, one course trains up to 10
+// employees at once (opposite of Form A, which is 1 employee × up to 25
+// topics). Cell addresses verified against the real template's raw sheet
+// XML + merge ranges (single sheet "HR-004 Rev.11(B)").
+// ---------------------------------------------------------------------------
+
+export interface ExportOjtParticipant {
+  empCode: string;
+  employeeName: string;
+  position?: string;
+  preScore?: number;
+  postScore?: number;
+  instructorScorePercent: SkillLevel;
+  isPassed: boolean;
+  remarks?: string;
+}
+
+interface ExportFHR004BOptions {
+  courseTitle: string;
+  contentSubItems: string[]; // up to 4 lines — the template's numbered 1.1-1.4
+  department: string;
+  trainingDate?: string; // YYYY-MM-DD
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  instructorName1?: string;
+  instructorName2?: string;
+  changeReasonCategory: OjtChangeReasonCategory;
+  changeReasonOtherDetail?: string;
+  evaluationMethod: OjtEvaluationMethod;
+  hasAttachment: boolean;
+  participants: ExportOjtParticipant[];
+}
+
+// Rows 25-34 = the 10-trainee band; column A in that band is pre-printed
+// with sequence numbers 1-10 in the template itself and must never be
+// written to (same convention as Form A's column A).
+const DATA_START_ROW_B = 25;
+const DATA_END_ROW_B = 34;
+export const FHR004B_ROW_CAPACITY = DATA_END_ROW_B - DATA_START_ROW_B + 1;
+
+// "2. สำหรับผู้สอนประเมิน" has two icon columns per trainee row: เกณฑ์ผ่าน
+// การประเมิน (P) — the fixed 75% passing bar, same for every row — and
+// ผลการประเมิน (R) — the trainee's actual instructor score. Unlike Form A's
+// legend (no 0% icon), this template's own legend at rows 37-41 has an icon
+// for every level 0-100, so the export can show 0% the same way it shows
+// the others.
+const PASS_CRITERIA_COL_IDX_B = 15; // column P
+const RESULT_COL_IDX_B = 17; // column R
+const RESULT_ICON_RID_B: Record<number, string> = { 0: 'rId2', 25: 'rId3', 50: 'rId4', 75: 'rId5', 100: 'rId6' };
+// Both header labels (P23:Q23, R23:S23) are merged two columns wide, but the
+// data rows only ever write into the single left column (P/R) — column Q/S
+// stays empty. Centering the icon within P/R alone would still look
+// left-shifted against that wider merged visual block above it, so the
+// offset centers it across the merged pair's combined width instead: single
+// column ≈333,375 EMU (width 5 @ Calibri 11) → pair ≈666,750 EMU, minus the
+// 200,000 EMU icon, halved. Row 25-34 are 21pt (266,700 EMU) tall.
+const RESULT_ICON_SIZE_B = { cx: 200000, cy: 200000, colOff: 233000, rowOff: 33000 };
+
+// Both icon columns ship with a decorative unfilled "⊕" AutoShape per row
+// (one per cell, not grouped like Form A's "Group 3") — remove the one at
+// this exact position before overlaying the real icon, or the two render
+// stacked on top of each other.
+function removeDecorativeAutoShape(drawingXml: string, colIdx: number, rowIdx: number): string {
+  const anchorPattern = /<xdr:twoCellAnchor(?:\s+[^>]*)?>[\s\S]*?<\/xdr:twoCellAnchor>/g;
+  return drawingXml.replace(anchorPattern, (anchor) => {
+    if (!anchor.includes('name="AutoShape')) return anchor;
+    const fromMatch = /<xdr:from><xdr:col>(\d+)<\/xdr:col>[^<]*<xdr:colOff>\d+<\/xdr:colOff><xdr:row>(\d+)<\/xdr:row>/.exec(anchor);
+    if (!fromMatch) return anchor;
+    if (Number(fromMatch[1]) !== colIdx || Number(fromMatch[2]) !== rowIdx) return anchor;
+    return '';
+  });
+}
+
+// The 11 one-per-form choices (6 สาเหตุที่อบรม + 3 ประเมินผลโดยการ + 2
+// บันทึกผลการประเมิน) are drawn "Rectangle" shapes in drawing1.xml, same
+// mechanism as Form A's 3 choices (see fillCheckboxInDrawingXml) — but this
+// template's shapes aren't spaced at a uniform "one column left of the
+// label" offset, so each one's (col, row) is hardcoded from the template's
+// own drawing XML rather than derived from the label cell.
+const REASON_RECT: Record<OjtChangeReasonCategory, { col: number; row: number }> = {
+  DOCUMENT: { col: 3, row: 13 },
+  METHOD: { col: 8, row: 13 },
+  MATERIAL: { col: 12, row: 13 },
+  MACHINE: { col: 3, row: 14 },
+  ANNUAL_REVIEW: { col: 8, row: 14 },
+  OTHER: { col: 12, row: 14 },
+};
+const EVAL_METHOD_RECT_B: Record<OjtEvaluationMethod, { col: number; row: number }> = {
+  PRE_POST_TEST: { col: 1, row: 16 },
+  PRACTICAL: { col: 7, row: 16 },
+  Q_AND_A: { col: 12, row: 16 },
+};
+const ATTACHMENT_RECT_B: Record<'true' | 'false', { col: number; row: number }> = {
+  true: { col: 1, row: 18 },
+  false: { col: 7, row: 18 },
+};
+
+export async function exportFHR004B({
+  courseTitle,
+  contentSubItems,
+  department,
+  trainingDate,
+  timeFrom,
+  timeTo,
+  location,
+  instructorName1,
+  instructorName2,
+  changeReasonCategory,
+  changeReasonOtherDetail,
+  evaluationMethod,
+  hasAttachment,
+  participants,
+}: ExportFHR004BOptions): Promise<{ exportedCount: number; truncatedCount: number }> {
+  const tplResp = await fetch('/templates/F-HR-004B_Rev11_Template.xlsx');
+  if (!tplResp.ok) throw new Error(`โหลดเทมเพลตไม่สำเร็จ (HTTP ${tplResp.status})`);
+  const templateBuffer = await tplResp.arrayBuffer();
+
+  const zip = await JSZip.loadAsync(templateBuffer);
+  const sheetPath = 'xl/worksheets/sheet1.xml';
+  const sheetFile = zip.file(sheetPath);
+  if (!sheetFile) throw new Error(`ไม่พบ ${sheetPath} ในเทมเพลต`);
+  let sheetXml = await sheetFile.async('string');
+
+  const drawingPath = 'xl/drawings/drawing1.xml';
+  const drawingFile = zip.file(drawingPath);
+  if (!drawingFile) throw new Error(`ไม่พบ ${drawingPath} ในเทมเพลต`);
+  let drawingXml = await drawingFile.async('string');
+
+  // Header
+  sheetXml = setCellInSheetXml(sheetXml, 'D5', courseTitle);
+  sheetXml = setCellInSheetXml(sheetXml, 'Q5', department);
+  contentSubItems.slice(0, 4).forEach((desc, i) => {
+    if (desc) sheetXml = setCellInSheetXml(sheetXml, `D${7 + i}`, desc);
+  });
+  if (trainingDate) sheetXml = setCellInSheetXml(sheetXml, 'C11', toThaiBuddhistDate(trainingDate));
+  if (timeFrom) sheetXml = setCellInSheetXml(sheetXml, 'L11', timeFrom);
+  if (timeTo) sheetXml = setCellInSheetXml(sheetXml, 'P11', timeTo);
+  if (instructorName1) sheetXml = setCellInSheetXml(sheetXml, 'F12', instructorName1);
+  if (instructorName2) sheetXml = setCellInSheetXml(sheetXml, 'M12', instructorName2);
+  if (location) sheetXml = setCellInSheetXml(sheetXml, 'E13', location);
+  if (changeReasonCategory === 'OTHER' && changeReasonOtherDetail) {
+    sheetXml = setCellInSheetXml(sheetXml, 'R15', changeReasonOtherDetail);
+  }
+
+  // 11 one-per-form choices — filled shapes, not cell text (see REASON_RECT etc above).
+  drawingXml = fillCheckboxInDrawingXml(drawingXml, REASON_RECT[changeReasonCategory].col, REASON_RECT[changeReasonCategory].row);
+  drawingXml = fillCheckboxInDrawingXml(
+    drawingXml,
+    EVAL_METHOD_RECT_B[evaluationMethod].col,
+    EVAL_METHOD_RECT_B[evaluationMethod].row
+  );
+  const attachmentKey = hasAttachment ? 'true' : 'false';
+  drawingXml = fillCheckboxInDrawingXml(drawingXml, ATTACHMENT_RECT_B[attachmentKey].col, ATTACHMENT_RECT_B[attachmentKey].row);
+
+  // Trainee rows — never write column A (sequence 1-10 is pre-printed)
+  const rowsToWrite = participants.slice(0, FHR004B_ROW_CAPACITY);
+  rowsToWrite.forEach((p, i) => {
+    const r = DATA_START_ROW_B + i;
+    const rowIdx0 = r - 1;
+    sheetXml = setCellInSheetXml(sheetXml, `B${r}`, p.empCode);
+    sheetXml = setCellInSheetXml(sheetXml, `D${r}`, p.employeeName);
+    if (p.position) sheetXml = setCellInSheetXml(sheetXml, `I${r}`, p.position);
+    if (p.preScore !== undefined) sheetXml = setCellInSheetXml(sheetXml, `K${r}`, p.preScore);
+    if (p.postScore !== undefined) sheetXml = setCellInSheetXml(sheetXml, `L${r}`, p.postScore);
+
+    // เกณฑ์ผ่านการประเมิน — fixed reference icon at the 75% passing bar
+    drawingXml = removeDecorativeAutoShape(drawingXml, PASS_CRITERIA_COL_IDX_B, rowIdx0);
+    drawingXml = addImageOneCellAnchor(drawingXml, PASS_CRITERIA_COL_IDX_B, rowIdx0, RESULT_ICON_RID_B[75], RESULT_ICON_SIZE_B);
+
+    // ผลการประเมิน — this trainee's actual instructor score
+    const iconRid = RESULT_ICON_RID_B[p.instructorScorePercent];
+    if (iconRid) {
+      drawingXml = removeDecorativeAutoShape(drawingXml, RESULT_COL_IDX_B, rowIdx0);
+      drawingXml = addImageOneCellAnchor(drawingXml, RESULT_COL_IDX_B, rowIdx0, iconRid, RESULT_ICON_SIZE_B);
+      sheetXml = clearCellInSheetXml(sheetXml, `R${r}`);
+    }
+    if (p.remarks) sheetXml = setCellInSheetXml(sheetXml, `T${r}`, p.remarks);
+  });
+
+  // Rows 43-46 (the 4 approval-signature blocks) are intentionally left
+  // untouched — signed by hand on the printed page, same convention as
+  // Form A's rows 45-48.
+
+  zip.file(sheetPath, sheetXml);
+  zip.file(drawingPath, drawingXml);
+
+  const safeDate = new Date().toISOString().split('T')[0];
+  const fileName = `F-HR-004B_${safeDate}.xlsx`;
+
+  const outputBuffer = await zip.generateAsync({ type: 'arraybuffer' });
+  await saveBlobFile(outputBuffer, fileName);
+
+  return {
+    exportedCount: rowsToWrite.length,
+    truncatedCount: Math.max(0, participants.length - FHR004B_ROW_CAPACITY),
   };
 }

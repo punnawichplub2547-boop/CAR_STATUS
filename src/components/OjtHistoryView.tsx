@@ -195,15 +195,22 @@ export const OjtHistoryView: React.FC<OjtHistoryViewProps> = ({ sessions, conten
                     <tr>
                       <th>รหัสพนักงาน</th>
                       <th>ชื่อ-สกุล</th>
+                      <th>ตำแหน่ง</th>
                       <th>คะแนนผู้สอน</th>
                       <th>ผลการประเมิน</th>
                     </tr>
                   </thead>
                   <tbody>
+                    {/* A Form B session can train employees from several positions at
+                        once — show each participant's own snapshot position rather
+                        than the single session-level position (which only reflects
+                        whoever was picked first) so the other participants' actual
+                        positions aren't lost from the training record. */}
                     {participantsOf(viewingSession.id).map((p) => (
                       <tr key={p.id}>
                         <td>{p.empCode}</td>
                         <td>{p.employeeName}</td>
+                        <td>{p.position || viewingSession.position || '-'}</td>
                         <td>{RESULT_LABEL[p.instructorScorePercent] ?? p.instructorScorePercent}</td>
                         <td>
                           {p.isPassed ? <span className="badge badge-green">ผ่าน</span> : <span className="badge badge-red">ไม่ผ่าน</span>}

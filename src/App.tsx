@@ -126,9 +126,17 @@ function flattenBackendOjtSession(row: BackendOjtSession): {
       hasAttachment: row.hasAttachment,
       purposeType: row.purposeType != null ? (row.purposeType as OjtPurposeType) : undefined,
       changeReasonCategory: row.changeReasonCategory != null ? (row.changeReasonCategory as OjtChangeReasonCategory) : undefined,
+      changeReasonOtherDetail: row.changeReasonOtherDetail ?? undefined,
       assessorName: row.assessorName,
       managerName: row.managerName,
       createdAt: row.createdAt,
+      courseTitle: row.courseTitle ?? undefined,
+      trainingDate: row.trainingDate ?? undefined,
+      timeFrom: row.timeFrom ?? undefined,
+      timeTo: row.timeTo ?? undefined,
+      location: row.location ?? undefined,
+      instructorName1: row.instructorName1 ?? undefined,
+      instructorName2: row.instructorName2 ?? undefined,
     },
     contentItems: row.contentItems.map((c) => ({
       id: String(c.id),
@@ -147,6 +155,7 @@ function flattenBackendOjtSession(row: BackendOjtSession): {
       employeeId: p.employeeId != null ? String(p.employeeId) : '',
       employeeName: p.employeeName,
       empCode: p.empCode,
+      position: p.position ?? undefined,
       preScore: p.preScore ?? undefined,
       postScore: p.postScore ?? undefined,
       instructorScorePercent: p.instructorScorePercent as SkillLevel,
@@ -466,8 +475,16 @@ export function App() {
       hasAttachment: session.hasAttachment,
       purposeType: session.purposeType,
       changeReasonCategory: session.changeReasonCategory,
+      changeReasonOtherDetail: session.changeReasonOtherDetail,
       assessorName: session.assessorName,
       managerName: session.managerName,
+      courseTitle: session.courseTitle,
+      trainingDate: session.trainingDate,
+      timeFrom: session.timeFrom,
+      timeTo: session.timeTo,
+      location: session.location,
+      instructorName1: session.instructorName1,
+      instructorName2: session.instructorName2,
       contentItems: contentItems.map((c) => ({
         sequence: c.sequence,
         description: c.description,
@@ -480,6 +497,7 @@ export function App() {
       participants: participants.map((p) => ({
         empCode: p.empCode,
         employeeName: p.employeeName,
+        position: p.position,
         preScore: p.preScore,
         postScore: p.postScore,
         instructorScorePercent: p.instructorScorePercent,
@@ -726,6 +744,10 @@ export function App() {
               <Dashboard
                 employees={employees}
                 certificates={certificates}
+                standards={skillStandards}
+                evaluations={skillEvaluations}
+                courses={courses}
+                probationEvaluations={probationEvaluations}
                 onNavigate={setActiveTab}
               />
             )}
@@ -807,6 +829,7 @@ export function App() {
                 onUpdateEvaluation={handleUpdateEvaluation}
                 onSaveRound={handleSaveEvaluationRound}
                 onAddEmployee={handleAddEmployee}
+                onNavigate={setActiveTab}
                 error={skillEvaluationsError}
               />
             )}

@@ -27,6 +27,7 @@ import type {
   EvaluationCycle,
 } from '../types';
 import type { EmployeePayload } from '../utils/api';
+import type { NavTab } from './Sidebar';
 import {
   exportExactFHR014Template,
   FHR014_EMPLOYEES_PER_SHEET,
@@ -41,8 +42,47 @@ interface SkillMatrixViewProps {
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
   onAddEmployee?: (payload: EmployeePayload) => void;
+  onNavigate?: (tab: NavTab) => void;
   error?: string | null;
 }
+
+// Flowchart condition ("3.2 ประเมิน Skill Matrix" → "ระดับทักษะ ≥ 75%?"): a
+// skill only counts as passed at the fixed 75% level on the F-HR-014 scale
+// itself (0/25/50/75/100), independent of whatever this skill's own F-HR-005
+// target is — a skill with a lower configured target (e.g. 50%) still isn't
+// "passed" competency-wise until it reaches 75%, per the flowchart's own
+// legend ("75% ทำเองได้(ผ่าน)"). Below this, the flow routes back to "3.1
+// อบรมเฉพาะงาน" (F-HR-004 Form B) — hence the Skill Gap banner's link there.
+const SKILL_GAP_PASS_THRESHOLD = 75;
+
+// Shared by the card-level banner and the save-round popup so both report
+// the exact same number. Each skill is scored as a % of ITS OWN F-HR-005
+// target first (capped at 100 — clearing the bar counts as fully met, no
+// bonus for overshooting), then those per-skill percentages are averaged
+// into one overall score, which is what gets checked against the fixed
+// 75% pass bar.
+const computeOverallSkillPercent = (
+  standards: SkillStandard[],
+  evaluations: SkillEvaluation[],
+  employeeId: string,
+  cycle: EvaluationCycle,
+  attemptNumber: EvaluationAttempt
+): number | null => {
+  const scored = standards
+    .map((std) => {
+      const ev = evaluations.find(
+        (e) => e.employeeId === employeeId && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === attemptNumber
+      );
+      return ev ? { std, ev } : null;
+    })
+    .filter((x): x is { std: SkillStandard; ev: SkillEvaluation } => !!x);
+  if (scored.length === 0) return null;
+  const total = scored.reduce((sum, { std, ev }) => {
+    const achievement = std.targetLevel > 0 ? Math.min((ev.resultLevel / std.targetLevel) * 100, 100) : 100;
+    return sum + achievement;
+  }, 0);
+  return Math.round(total / scored.length);
+};
 
 const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
 const LEVEL_LABEL: Record<SkillLevel, string> = {
@@ -63,6 +103,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   onUpdateEvaluation,
   onSaveRound,
   onAddEmployee,
+  onNavigate,
   error,
 }) => {
   const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
@@ -291,6 +332,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           onRemoveCrossDept={() => handleRemoveExtraEmp(emp.id)}
           onUpdateEvaluation={onUpdateEvaluation}
           onSaveRound={onSaveRound}
+          onNavigate={onNavigate}
           onOpenRadar={() => {
             setActiveEmpForRadar(emp);
             setShowRadarModal(true);
@@ -502,7 +544,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
       {/* Radar Chart Modal */}
       {showRadarModal && activeEmpForRadar && (
         <div className="modal-overlay" onClick={() => setShowRadarModal(false)}>
-          <div className="modal-content" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: 950 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>Competency Radar Chart: {activeEmpForRadar.name}</h3>
               <button
@@ -518,14 +560,14 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
                 ตำแหน่ง: <strong style={{ color: 'var(--text-main)' }}>{activeEmpForRadar.position}</strong> ({activeEmpForRadar.department}) • รอบประเมิน: {selectedCycle}
               </div>
 
-              <div style={{ width: '100%', height: 350 }}>
+              <div style={{ width: '100%', height: 540 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="70%" data={getEmployeeRadarData(activeEmpForRadar)}>
+                  <RadarChart cx="50%" cy="50%" outerRadius="62%" data={getEmployeeRadarData(activeEmpForRadar)}>
                     <PolarGrid stroke="var(--border-color)" />
                     <PolarAngleAxis
                       dataKey="skill"
                       stroke="var(--text-muted)"
-                      tick={{ fontSize: 11, fill: 'var(--text-main)', fontWeight: 600 }}
+                      tick={{ fontSize: 10, fill: 'var(--text-main)', fontWeight: 600 }}
                     />
                     <PolarRadiusAxis
                       angle={30}
@@ -586,6 +628,7 @@ const EmployeeEvalCard: React.FC<{
   onRemoveCrossDept?: () => void;
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
+  onNavigate?: (tab: NavTab) => void;
   onOpenRadar: () => void;
 }> = ({
   emp,
@@ -597,31 +640,47 @@ const EmployeeEvalCard: React.FC<{
   onRemoveCrossDept,
   onUpdateEvaluation,
   onSaveRound,
+  onNavigate,
   onOpenRadar,
 }) => {
   const [attempt, setAttempt] = useState<EvaluationAttempt>(1);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  const attempt1Done =
-    standards.length > 0 &&
-    standards.every((std) =>
-      evaluations.some(
-        (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1
-      )
+  const evalFor = (std: SkillStandard, attemptNumber: EvaluationAttempt) =>
+    evaluations.find(
+      (e) =>
+        e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === attemptNumber
     );
-  const attempt1HasGap = standards.some((std) => {
-    const ev = evaluations.find(
-      (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 1
-    );
+
+  const attempt1Done = standards.length > 0 && standards.every((std) => !!evalFor(std, 1));
+  const attempt2Done = standards.length > 0 && standards.every((std) => !!evalFor(std, 2));
+
+  // "ระดับทักษะ ≥ 75%?" is read as the employee's OVERALL score — the
+  // average resultLevel across every standard — not a per-skill bar each
+  // topic must individually clear. Checked against whichever round is the
+  // latest fully-completed one: once a re-evaluation (attempt 2) is done,
+  // the banner reflects that fresh result instead of staying stuck on the
+  // original attempt 1 numbers, so the loop back to "3.1 อบรมเฉพาะงาน" can
+  // actually resolve once the retrain works.
+  const effectiveAttempt: EvaluationAttempt = attempt2Done ? 2 : 1;
+  const effectiveDone = attempt2Done || attempt1Done;
+  const overallPercent = computeOverallSkillPercent(standards, evaluations, emp.id, cycle, effectiveAttempt);
+  // Same per-skill-target rule as the row-level Gap badge below — lists
+  // which specific topics are under their own target, as context for why
+  // the overall percentage (checked against the fixed 75% bar) came out low.
+  const gapSkills = standards.filter((std) => {
+    const ev = evalFor(std, effectiveAttempt);
     return ev && ev.resultLevel < std.targetLevel;
   });
-  const attempt2Done =
-    standards.length > 0 &&
-    standards.every((std) =>
-      evaluations.some(
-        (e) => e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === 2
-      )
-    );
+  const overallHasGap = effectiveDone && overallPercent !== null && overallPercent < SKILL_GAP_PASS_THRESHOLD;
+  // Tab-label checkmarks stay specifically about round 1's own outcome
+  // (whether a redo was ever triggered), independent of how attempt 2 goes.
+  // Uses the SAME overall-percent-vs-fixed-75%-bar rule as overallHasGap
+  // above (not a per-skill-target comparison) — a skill sitting below the
+  // fixed 75% bar but still at/above its own lower F-HR-005 target must not
+  // silently disagree with the "✓ passed" checkmark on this tab.
+  const attempt1OverallPercent = computeOverallSkillPercent(standards, evaluations, emp.id, cycle, 1);
+  const attempt1HasGap = attempt1Done && attempt1OverallPercent !== null && attempt1OverallPercent < SKILL_GAP_PASS_THRESHOLD;
 
   return (
     <div className="glass-card" style={{ marginBottom: 16, overflow: 'hidden', padding: 0, transition: 'all 0.2s ease' }}>
@@ -711,6 +770,42 @@ const EmployeeEvalCard: React.FC<{
             </button>
           </div>
 
+          {overallHasGap && (
+            <div
+              className="glass-card"
+              style={{
+                margin: '14px 20px 0',
+                padding: 14,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+                background: 'rgba(220, 38, 38, 0.06)',
+                borderColor: 'rgba(220, 38, 38, 0.3)',
+              }}
+            >
+              <AlertTriangle size={20} style={{ color: 'var(--danger, #dc2626)', flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontWeight: 700, color: 'var(--danger, #dc2626)', fontSize: '0.9rem' }}>
+                  Skill Gap: ระดับทักษะโดยรวม {overallPercent}% (ต่ำกว่าเกณฑ์ผ่าน {SKILL_GAP_PASS_THRESHOLD}%)
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                  {effectiveAttempt === 2
+                    ? 'ประเมินซ้ำครั้งที่ 2 แล้วยังไม่ผ่านเกณฑ์ — ต้องวางแผนอบรม / OJT ซ้ำอีกรอบ'
+                    : 'ต้องวางแผนอบรม / OJT ซ้ำ แล้วประเมินใหม่ในครั้งที่ 2'}
+                  {gapSkills.length > 0 && (
+                    <> — โดยเฉพาะ {gapSkills.length} หัวข้อ ({gapSkills.map((s) => s.skillName).join(', ')})</>
+                  )}
+                </div>
+              </div>
+              {onNavigate && (
+                <button className="btn btn-sm btn-secondary" style={{ flexShrink: 0 }} onClick={() => onNavigate('ojt_b')}>
+                  <RefreshCw size={14} /> ไปวางแผนอบรมเฉพาะงาน (F-HR-004 Form B)
+                </button>
+              )}
+            </div>
+          )}
+
           <RoundPanel
             key={attempt}
             attempt={attempt}
@@ -721,6 +816,7 @@ const EmployeeEvalCard: React.FC<{
             evaluationRounds={evaluationRounds}
             onUpdateEvaluation={onUpdateEvaluation}
             onSaveRound={onSaveRound}
+            onNavigate={onNavigate}
           />
         </div>
       )}
@@ -738,7 +834,8 @@ const RoundPanel: React.FC<{
   evaluationRounds: SkillEvaluationRound[];
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
-}> = ({ attempt, emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound }) => {
+  onNavigate?: (tab: NavTab) => void;
+}> = ({ attempt, emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound, onNavigate }) => {
   // Looked up by natural key, not by id — the id is a client-generated
   // placeholder until the backend responds with the real DB-assigned one.
   const roundId = `${emp.id}_${cycle}_${attempt}`;
@@ -823,8 +920,28 @@ const RoundPanel: React.FC<{
       hrDeptSignature: hrDeptSig ?? undefined,
       signedAt: new Date().toISOString().split('T')[0],
     });
-    alert(`บันทึกผลประเมิน (ครั้งที่ ${attempt}) เรียบร้อยแล้ว!`);
   };
+
+  // Driven off the actually-saved round record (existingRound), not a
+  // local "just clicked" flag — so this reads back the same whether you
+  // just hit save or are revisiting the round later: proof round N was
+  // saved, its score, and pass/gap, together instead of a fire-and-forget
+  // alert() (which also blocks the whole tab — including automation — on
+  // native browser dialogs).
+  // Only treat the round as scored for pass/fail purposes once EVERY
+  // standard has a result — computeOverallSkillPercent averages just the
+  // subset that happens to be scored, so without this gate saving after
+  // scoring only 1 of 5 skills would show a false "ผ่านเกณฑ์ ไม่มี Skill Gap"
+  // banner instead of reflecting the 4 still-unscored topics.
+  const allStandardsScored = standards.length > 0 && standards.every((std) => !!findEval(std.skillName));
+  const savedPercent =
+    existingRound && allStandardsScored ? computeOverallSkillPercent(standards, evaluations, emp.id, cycle, attempt) : null;
+  const savedIncomplete = !!existingRound && !allStandardsScored;
+  const savedGapSkills = standards.filter((std) => {
+    const ev = findEval(std.skillName);
+    return ev && ev.resultLevel < std.targetLevel;
+  });
+  const savedHasGap = savedPercent !== null && savedPercent < SKILL_GAP_PASS_THRESHOLD;
 
   return (
     <>
@@ -861,8 +978,12 @@ const RoundPanel: React.FC<{
               const ev = findEval(std.skillName);
               const actual = ev ? ev.resultLevel : null;
               const isEditing = editingSkillId === std.id;
+              // Per-row Gap is judged against this skill's own F-HR-005 target
+              // (e.g. hitting a 50% target counts as met) — distinct from the
+              // fixed 75% bar used for the employee's overall pass/fail above.
+              const isGap = actual !== null && actual < std.targetLevel;
               return (
-                <tr key={std.id}>
+                <tr key={std.id} style={isGap ? { background: 'rgba(220, 38, 38, 0.05)' } : undefined}>
                   <td>
                     {std.skillName}
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{std.category}</div>
@@ -877,6 +998,15 @@ const RoundPanel: React.FC<{
                       title="คลิกเพื่อประเมินระดับทักษะ"
                     >
                       <PieIcon level={actual ?? 0} />
+                      {isGap && (
+                        <span
+                          className="badge badge-red"
+                          style={{ fontSize: '0.68rem', padding: '1px 6px', display: 'inline-flex', alignItems: 'center', gap: 3 }}
+                          title={`ต่ำกว่าเกณฑ์ผ่าน ${SKILL_GAP_PASS_THRESHOLD}%`}
+                        >
+                          <AlertTriangle size={10} /> Gap
+                        </span>
+                      )}
                       <Edit3 size={12} style={{ opacity: 0.5 }} />
                     </button>
                     {isEditing &&
@@ -925,6 +1055,94 @@ const RoundPanel: React.FC<{
           <CheckCircle2 size={16} /> บันทึกผลประเมิน (ครั้งที่ {attempt})
         </button>
       </div>
+
+      {savedIncomplete && (
+        <div
+          className="glass-card"
+          style={{
+            margin: '0 20px 20px',
+            padding: 14,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+            background: 'rgba(100, 116, 139, 0.08)',
+            borderColor: 'rgba(100, 116, 139, 0.3)',
+          }}
+        >
+          <CheckCircle2 size={20} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.9rem' }}>
+              บันทึกผลประเมิน (ครั้งที่ {attempt}) แล้ว — ยังประเมินไม่ครบทุกหัวข้อ
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              {standards.length === 0
+                ? 'ตำแหน่งนี้ยังไม่มีมาตรฐานทักษะ (F-HR-005) ให้ประเมิน'
+                : `ให้คะแนนแล้ว ${standards.filter((s) => !!findEval(s.skillName)).length}/${standards.length} หัวข้อ — ผลรวมและ Skill Gap จะคำนวณเมื่อประเมินครบทุกหัวข้อ`}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {existingRound && savedPercent !== null && (
+        savedHasGap ? (
+          <div
+            className="glass-card"
+            style={{
+              margin: '0 20px 20px',
+              padding: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+              background: 'rgba(220, 38, 38, 0.06)',
+              borderColor: 'rgba(220, 38, 38, 0.3)',
+            }}
+          >
+            <AlertTriangle size={20} style={{ color: 'var(--danger, #dc2626)', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontWeight: 700, color: 'var(--danger, #dc2626)', fontSize: '0.9rem' }}>
+                บันทึกผลประเมิน (ครั้งที่ {attempt}) แล้ว — Skill Gap: ระดับทักษะโดยรวม {savedPercent}% (ต่ำกว่าเกณฑ์ผ่าน {SKILL_GAP_PASS_THRESHOLD}%)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                {attempt === 2
+                  ? 'ประเมินซ้ำครั้งที่ 2 แล้วยังไม่ผ่านเกณฑ์ — ต้องวางแผนอบรม / OJT ซ้ำอีกรอบ'
+                  : 'ต้องวางแผนอบรม / OJT ซ้ำ แล้วประเมินใหม่ในครั้งที่ 2'}
+                {savedGapSkills.length > 0 && (
+                  <> — โดยเฉพาะ {savedGapSkills.length} หัวข้อ ({savedGapSkills.map((s) => s.skillName).join(', ')})</>
+                )}
+              </div>
+            </div>
+            {onNavigate && (
+              <button className="btn btn-sm btn-secondary" style={{ flexShrink: 0 }} onClick={() => onNavigate('ojt_b')}>
+                <RefreshCw size={14} /> ไปวางแผนอบรมเฉพาะงาน (F-HR-004 Form B)
+              </button>
+            )}
+          </div>
+        ) : (
+          <div
+            className="glass-card"
+            style={{
+              margin: '0 20px 20px',
+              padding: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+              background: 'rgba(5, 150, 105, 0.06)',
+              borderColor: 'rgba(5, 150, 105, 0.3)',
+            }}
+          >
+            <CheckCircle2 size={20} style={{ color: 'var(--success, #059669)', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ fontWeight: 700, color: 'var(--success, #059669)', fontSize: '0.9rem' }}>
+                บันทึกผลประเมิน (ครั้งที่ {attempt}) แล้ว — ระดับทักษะโดยรวม {savedPercent}% (ผ่านเกณฑ์ {SKILL_GAP_PASS_THRESHOLD}%)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>ไม่มี Skill Gap ในรอบนี้</div>
+            </div>
+          </div>
+        )
+      )}
     </>
   );
 };

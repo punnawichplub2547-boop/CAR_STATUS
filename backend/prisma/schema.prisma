@@ -123,17 +123,28 @@ model ExamSubmission {
 // F-HR-004 Form A: one OJT training session (Form B — multi-trainee — uses
 // the same shape; the frontend just doesn't send >1 participant yet).
 model OjtSession {
-  id                   Int      @id @default(autoincrement())
-  formType             String // "A_NEW_HIRE" | "B_CHANGE"
-  department           String
-  position             String
-  evaluationMethod     String // "PRE_POST_TEST" | "PRACTICAL" | "Q_AND_A"
-  hasAttachment        Boolean  @default(false)
-  purposeType          String? // "NEW_HIRE" | "TRANSFER" — Form A only
-  changeReasonCategory String? // Form B only
-  assessorName         String
-  managerName          String
-  createdAt            DateTime @default(now())
+  id                     Int      @id @default(autoincrement())
+  formType               String // "A_NEW_HIRE" | "B_CHANGE"
+  department             String
+  position               String
+  evaluationMethod       String // "PRE_POST_TEST" | "PRACTICAL" | "Q_AND_A"
+  hasAttachment          Boolean  @default(false)
+  purposeType            String? // "NEW_HIRE" | "TRANSFER" — Form A only
+  changeReasonCategory   String? // Form B only
+  changeReasonOtherDetail String? // Form B only — free text when changeReasonCategory = "OTHER"
+  assessorName           String
+  managerName            String
+  createdAt              DateTime @default(now())
+
+  // Form B header fields — match the real F-HR-004 Form(B) template. Form A
+  // doesn't use these (its content rows carry their own date/time instead).
+  courseTitle      String?
+  trainingDate     DateTime?
+  timeFrom         String?
+  timeTo           String?
+  location         String?
+  instructorName1  String?
+  instructorName2  String?
 
   contentItems OjtContentItem[]
   participants OjtParticipant[]
@@ -171,6 +182,7 @@ model OjtParticipant {
   employeeId             Int?
   employee               Employee?  @relation(fields: [employeeId], references: [id], onDelete: SetNull)
   employeeName           String
+  position               String? // snapshot at training time — Form B prints it per row
   preScore               Int?
   postScore              Int?
   instructorScorePercent Int // 0 | 25 | 50 | 75 | 100

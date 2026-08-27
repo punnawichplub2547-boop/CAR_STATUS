@@ -16,6 +16,7 @@ interface ContentItemPayload {
 interface ParticipantPayload {
   empCode: string;
   employeeName: string;
+  position?: string;
   preScore?: number;
   postScore?: number;
   instructorScorePercent: number;
@@ -31,8 +32,16 @@ interface CreateOjtSessionPayload {
   hasAttachment?: boolean;
   purposeType?: string;
   changeReasonCategory?: string;
+  changeReasonOtherDetail?: string;
   assessorName: string;
   managerName: string;
+  courseTitle?: string;
+  trainingDate?: string;
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  instructorName1?: string;
+  instructorName2?: string;
   contentItems: ContentItemPayload[];
   participants: ParticipantPayload[];
 }
@@ -73,8 +82,16 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
       hasAttachment: body.hasAttachment ?? false,
       purposeType: body.purposeType,
       changeReasonCategory: body.changeReasonCategory,
+      changeReasonOtherDetail: body.changeReasonOtherDetail,
       assessorName: body.assessorName,
       managerName: body.managerName,
+      courseTitle: body.courseTitle,
+      trainingDate: body.trainingDate ? new Date(body.trainingDate) : undefined,
+      timeFrom: body.timeFrom,
+      timeTo: body.timeTo,
+      location: body.location,
+      instructorName1: body.instructorName1,
+      instructorName2: body.instructorName2,
       contentItems: {
         create: body.contentItems.map((c) => ({
           sequence: c.sequence,
@@ -91,6 +108,7 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
           empCode: p.empCode,
           employeeId: employeeIdByEmpCode.get(p.empCode),
           employeeName: p.employeeName,
+          position: p.position,
           preScore: p.preScore,
           postScore: p.postScore,
           instructorScorePercent: p.instructorScorePercent,

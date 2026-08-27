@@ -124,9 +124,19 @@ export interface OjtSession {
   hasAttachment: boolean;
   purposeType?: OjtPurposeType; // Form A only
   changeReasonCategory?: OjtChangeReasonCategory; // Form B only
+  changeReasonOtherDetail?: string; // Form B only — free text when changeReasonCategory === 'OTHER'
   assessorName: string;
   managerName: string;
   createdAt?: string;
+  // Form B header fields — match the real F-HR-004 Form(B) template (หลักสูตร/
+  // เวลา/สถานที่/ผู้สอนงาน). Form A doesn't have these on the real form.
+  courseTitle?: string;
+  trainingDate?: string;
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  instructorName1?: string;
+  instructorName2?: string;
 }
 
 // Each content/topic line within a session (Form A: up to 25 lines). Date
@@ -151,6 +161,7 @@ export interface OjtParticipant {
   employeeId: string;
   employeeName: string;
   empCode: string;
+  position?: string; // snapshot at training time — the real form prints it per row
   preScore?: number;
   postScore?: number;
   instructorScorePercent: SkillLevel;

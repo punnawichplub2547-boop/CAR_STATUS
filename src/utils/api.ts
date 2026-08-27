@@ -127,8 +127,16 @@ export interface CreateOjtSessionPayload {
   hasAttachment?: boolean;
   purposeType?: string;
   changeReasonCategory?: string;
+  changeReasonOtherDetail?: string;
   assessorName: string;
   managerName: string;
+  courseTitle?: string;
+  trainingDate?: string;
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  instructorName1?: string;
+  instructorName2?: string;
   contentItems: {
     sequence: number;
     description: string;
@@ -141,6 +149,7 @@ export interface CreateOjtSessionPayload {
   participants: {
     empCode: string;
     employeeName: string;
+    position?: string;
     preScore?: number;
     postScore?: number;
     instructorScorePercent: number;
@@ -167,6 +176,7 @@ export interface BackendOjtParticipant {
   empCode: string;
   employeeId: number | null;
   employeeName: string;
+  position: string | null;
   preScore: number | null;
   postScore: number | null;
   instructorScorePercent: number;
@@ -183,9 +193,17 @@ export interface BackendOjtSession {
   hasAttachment: boolean;
   purposeType: string | null;
   changeReasonCategory: string | null;
+  changeReasonOtherDetail: string | null;
   assessorName: string;
   managerName: string;
   createdAt: string;
+  courseTitle: string | null;
+  trainingDate: string | null;
+  timeFrom: string | null;
+  timeTo: string | null;
+  location: string | null;
+  instructorName1: string | null;
+  instructorName2: string | null;
   contentItems: BackendOjtContentItem[];
   participants: BackendOjtParticipant[];
 }

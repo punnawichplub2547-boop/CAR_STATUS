@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Users,
   Clock,
@@ -27,22 +27,38 @@ import {
   Radar,
   Legend,
 } from 'recharts';
-import type { Employee, Certificate } from '../types';
+import type { Employee, Certificate, SkillStandard, SkillEvaluation, TrainingCourse, ProbationEvaluation, ProbationPeriod, EvaluationCycle } from '../types';
 import type { NavTab } from './Sidebar';
 import { computeCertificateStatus } from '../utils/certificateStatus';
+
+const formatDMY = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
 interface DashboardProps {
   employees: Employee[];
   certificates: Certificate[];
+  standards: SkillStandard[];
+  evaluations: SkillEvaluation[];
+  courses: TrainingCourse[];
+  probationEvaluations: ProbationEvaluation[];
   onNavigate: (tab: NavTab) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   employees,
   certificates,
+  standards,
+  evaluations,
+  courses,
+  probationEvaluations,
   onNavigate,
 }) => {
-  const [selectedDept, setSelectedDept] = useState<string>('FMG-A');
+  // Departments that actually have F-HR-005 standards on file — not a fixed
+  // list, since only some departments are seeded (e.g. FMG-B/Maintenance
+  // have none yet) and a switcher tab for a department with no standards
+  // would just show an empty chart.
+  const availableDepts = [...new Set(standards.map((s) => s.department))].sort();
+  const [selectedDept, setSelectedDept] = useState<string>(availableDepts[0] || 'FMG-A');
+  const effectiveDept = availableDepts.includes(selectedDept) ? selectedDept : availableDepts[0];
 
   const probationCount = employees.filter((e) => e.status === 'PROBATION').length;
   const expiringCertsCount = certificates.filter((c) => {
@@ -50,54 +66,163 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return status === 'EXPIRING_SOON' || status === 'EXPIRED';
   }).length;
 
-  // Department-specific Radar Chart Data
-  const radarDataByDept: Record<string, Array<{ category: string; Target: number; Actual: number }>> = {
-    'FMG-A': [
-      { category: 'ฉีดอัดยาง', Target: 75, Actual: 60 },
-      { category: 'ตกแต่ง Part', Target: 75, Actual: 75 },
-      { category: 'ประกอบชิ้นงาน', Target: 50, Actual: 50 },
-      { category: 'บันทึกรายงาน', Target: 75, Actual: 65 },
-      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 95 },
-      { category: 'ระบบ ERP', Target: 50, Actual: 40 },
-    ],
-    'FMG-B': [
-      { category: 'ฉีดอัดยาง', Target: 75, Actual: 75 },
-      { category: 'ตกแต่ง Part', Target: 100, Actual: 85 },
-      { category: 'ประกอบชิ้นงาน', Target: 75, Actual: 70 },
-      { category: 'บันทึกรายงาน', Target: 50, Actual: 50 },
-      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
-      { category: 'ระบบ ERP', Target: 50, Actual: 45 },
-    ],
-    'QA/QC': [
-      { category: 'ตรวจสอบมิติ', Target: 100, Actual: 90 },
-      { category: 'ใช้ Vernier/Caliper', Target: 100, Actual: 100 },
-      { category: 'เกณฑ์รับ/ปฏิเสธ', Target: 100, Actual: 95 },
-      { category: 'บันทึกสถิติ Cpk', Target: 75, Actual: 75 },
-      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
-      { category: 'ระบบ ERP', Target: 75, Actual: 60 },
-    ],
-    'Maintenance': [
-      { category: 'PM เครื่องฉีด', Target: 100, Actual: 85 },
-      { category: 'ซ่อมบำรุงไฟฟ้า', Target: 75, Actual: 75 },
-      { category: 'ระบบไฮดรอลิก', Target: 100, Actual: 90 },
-      { category: 'วิเคราะห์ 5G/5Why', Target: 75, Actual: 70 },
-      { category: 'ความปลอดภัย CCCF', Target: 100, Actual: 100 },
-      { category: 'ระบบ ERP', Target: 75, Actual: 65 },
-    ],
-  };
+  // Action Center — flowchart's "แจ้งเตือน: ทดลองงาน & รอ Skill Matrix"
+  // output. Each of the 3 cards below surfaces the single most-urgent real
+  // record of its kind (not a fixed example) and disappears entirely when
+  // there's genuinely nothing of that kind to flag.
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const now = new Date();
 
-  const currentRadarData = radarDataByDept[selectedDept] || radarDataByDept['FMG-A'];
-
-  // Chart Data: Training Hours by Month
-  const trainingChartData = [
-    { month: 'ม.ค.', hours: 42 },
-    { month: 'ก.พ.', hours: 38 },
-    { month: 'มี.ค.', hours: 54 },
-    { month: 'เม.ย.', hours: 30 },
-    { month: 'พ.ค.', hours: 48 },
-    { month: 'มิ.ย.', hours: 62 },
-    { month: 'ก.ค.', hours: 75 },
+  // F-HR-009 checkpoints fall at 30/90/119 days from hire date — flag each
+  // PROBATION employee's next checkpoint that has no matching ProbationEvaluation
+  // on file yet, then surface whoever's checkpoint is nearest (includes
+  // already-overdue ones, which sort first).
+  const PROBATION_MILESTONES: { days: number; period: ProbationPeriod }[] = [
+    { days: 30, period: '30_DAYS' },
+    { days: 90, period: '90_DAYS' },
+    { days: 119, period: '119_DAYS' },
   ];
+  const probationAlerts = employees
+    .filter((e) => e.status === 'PROBATION')
+    .map((e) => {
+      const start = new Date(e.startingDate);
+      if (isNaN(start.getTime())) return null;
+      const nextMilestone = PROBATION_MILESTONES.find(
+        (m) => !probationEvaluations.some((pe) => pe.employeeId === e.id && pe.period === m.period)
+      );
+      if (!nextMilestone) return null; // all 3 checkpoints already evaluated
+      const dueDate = new Date(start.getTime() + nextMilestone.days * msPerDay);
+      const daysUntilDue = Math.round((dueDate.getTime() - now.getTime()) / msPerDay);
+      return { employee: e, dueDate, daysUntilDue, milestoneDays: nextMilestone.days };
+    })
+    .filter((x): x is NonNullable<typeof x> => !!x)
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue);
+  const topProbationAlert = probationAlerts[0] ?? null;
+
+  // Nearest EXPIRING_SOON/EXPIRED certificate — same "most urgent real
+  // record" rule as above.
+  const certAlerts = certificates
+    .filter((c) => {
+      const status = computeCertificateStatus(c.expiryDate);
+      return status === 'EXPIRING_SOON' || status === 'EXPIRED';
+    })
+    .map((c) => ({ cert: c, daysUntilExpiry: Math.round((new Date(c.expiryDate).getTime() - now.getTime()) / msPerDay) }))
+    .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+  const topCertAlert = certAlerts[0] ?? null;
+
+  // Pending Skill Matrix (F-HR-014) — employees whose own position has
+  // F-HR-005 standards on file but haven't had attempt 1 recorded yet for
+  // the current 6-month cycle (ม.ค./ก.ค., per F-HR-014's own cadence).
+  const currentCycle: EvaluationCycle = now.getMonth() >= 6 ? '2026-07' : '2026-01';
+  const CYCLE_LABEL: Record<EvaluationCycle, string> = { '2026-01': 'มกราคม 2026', '2026-07': 'กรกฎาคม 2026' };
+  const pendingSkillMatrixCount = employees.filter((e) => {
+    if (e.status === 'RESIGNED') return false;
+    const empStandards = standards.filter((s) => s.department === e.department && s.position === e.position);
+    if (empStandards.length === 0) return false;
+    return !empStandards.every((s) =>
+      evaluations.some(
+        (ev) => ev.employeeId === e.id && ev.skillName === s.skillName && ev.cycle === currentCycle && ev.attemptNumber === 1
+      )
+    );
+  }).length;
+
+  // Skill Gap Overview — real F-HR-005 targets vs real F-HR-014 results,
+  // grouped by each standard's own category (e.g. "อัดขึ้นรูป", "Set up
+  // mold") so the radar's axes are meaningful groupings rather than one
+  // point per individual topic. "Latest" result per employee×skill prefers
+  // attempt 2 over attempt 1, and the newest cycle when both exist — same
+  // rule SkillMatrixView's own radar uses per employee.
+  // Wrapped in useMemo — this recomputes a full categories × standards ×
+  // employees × evaluations scan, which would otherwise re-run from
+  // scratch on every Dashboard re-render (e.g. an unrelated sibling state
+  // update) even though standards/employees/evaluations/effectiveDept
+  // rarely change between renders.
+  const currentRadarData = useMemo(() => {
+    // "Latest" result per employee×skill prefers attempt 2 over attempt 1,
+    // and the newest cycle when both exist — same rule SkillMatrixView's
+    // own radar uses per employee.
+    const getLatestResult = (empId: string, skillName: string): number => {
+      const matches = evaluations.filter((e) => e.employeeId === empId && e.skillName === skillName);
+      if (matches.length === 0) return 0;
+      const best = matches.reduce((a, b) => {
+        if (a.cycle !== b.cycle) return b.cycle > a.cycle ? b : a;
+        return (b.attemptNumber ?? 1) > (a.attemptNumber ?? 1) ? b : a;
+      });
+      return best.resultLevel;
+    };
+
+    // Some categories (e.g. FMG-A's "อัดขึ้นรูป"/"Set up mold") bundle a single
+    // managerial topic in with the rest of that group's functional ones — the
+    // real F-HR-005 source document itself splits "Functional Competency" from
+    // "Managerial Competency" within each of those groups, this DB's `category`
+    // field just doesn't carry that finer split. Deriving it from the skill
+    // name (already real data, not invented) gives departments like FMG-A more
+    // than 2 real axes instead of the radar collapsing to a line — departments
+    // with no such skill at all (e.g. MIX) are unaffected, since the split only
+    // fires where a matching skill genuinely exists in that department's data.
+    const isManagerialSkill = (skillName: string) => /บริหารการจัดการ/.test(skillName);
+    const radarCategoryOf = (s: SkillStandard) => (isManagerialSkill(s.skillName) ? `${s.category} (บริหาร)` : s.category);
+
+    const deptStandards = standards.filter((s) => s.department === effectiveDept);
+    const deptEmployees = employees.filter((e) => e.department === effectiveDept);
+    const categories = [...new Set(deptStandards.map(radarCategoryOf))];
+
+    const data = categories.map((category) => {
+      const catStandards = deptStandards.filter((s) => radarCategoryOf(s) === category);
+      const avgTarget = catStandards.reduce((sum, s) => sum + s.targetLevel, 0) / catStandards.length;
+
+      let actualSum = 0;
+      let actualCount = 0;
+      catStandards.forEach((std) => {
+        deptEmployees
+          .filter((e) => e.position === std.position)
+          .forEach((emp) => {
+            actualSum += getLatestResult(emp.id, std.skillName);
+            actualCount++;
+          });
+      });
+
+      return {
+        category,
+        Target: Math.round(avgTarget),
+        Actual: actualCount > 0 ? Math.round(actualSum / actualCount) : 0,
+      };
+    });
+
+    // Padded to a fixed 6 axes so every department's chart reads as the same
+    // hexagon shape — departments with fewer than 6 real F-HR-005 categories
+    // get placeholder axes at 0/0 to fill the rest. These aren't real
+    // standards (there's nothing to average), so they're labeled distinctly
+    // rather than given a name that could be mistaken for one.
+    const RADAR_AXIS_COUNT = 6;
+    while (data.length > 0 && data.length < RADAR_AXIS_COUNT) {
+      data.push({
+        category: `(ยังไม่มีมาตรฐาน ${data.length + 1})`,
+        Target: 0,
+        Actual: 0,
+      });
+    }
+    return data;
+  }, [standards, employees, evaluations, effectiveDept]);
+
+  // "ชั่วโมงอบรมสะสมประจำปี" / monthly bar chart — flowchart's "3.3 อบรมเพื่อ
+  // พัฒนา" node feeding "Dashboard & รายงาน". Only COMPLETED courses count
+  // toward hours actually delivered (a SCHEDULED course hasn't happened
+  // yet), scoped to the current calendar year. No per-employee attendance
+  // multiplier — TrainingAttendance isn't loaded into app state yet, so
+  // this is course-hours held, not man-hours; revisit once attendance is wired up.
+  const currentYear = new Date().getFullYear();
+  const completedCoursesThisYear = courses.filter(
+    (c) => c.status === 'COMPLETED' && new Date(c.date).getFullYear() === currentYear
+  );
+  const totalTrainingHours = completedCoursesThisYear.reduce((sum, c) => sum + c.hours, 0);
+  const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const trainingChartData = THAI_MONTHS.map((month, idx) => ({
+    month,
+    hours: completedCoursesThisYear
+      .filter((c) => new Date(c.date).getMonth() === idx)
+      .reduce((sum, c) => sum + c.hours, 0),
+  }));
 
   return (
     <div className="dashboard-page content-container">
@@ -196,7 +321,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Award size={24} />
           </div>
           <div className="stat-info">
-            <span className="stat-value">349 hrs</span>
+            <span className="stat-value">{totalTrainingHours} hrs</span>
             <span className="stat-label">ชั่วโมงอบรมสะสมประจำปี</span>
           </div>
         </div>
@@ -229,17 +354,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <h3 style={{ fontSize: '1.05rem' }}>ภาพรวม Competency Radar Chart</h3>
               <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                เปรียบเทียบ Target (มาตรฐาน) vs Actual (ทักษะจริง) ประจำแผนก {selectedDept}
+                เปรียบเทียบ Target (F-HR-005) vs Actual (F-HR-014) ประจำแผนก {effectiveDept || '-'}
               </span>
             </div>
 
             {/* Department Filter Switcher */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <Filter size={13} style={{ color: 'var(--text-dim)' }} />
-              {['FMG-A', 'FMG-B', 'QA/QC', 'Maintenance'].map((dept) => (
+              {availableDepts.map((dept) => (
                 <button
                   key={dept}
-                  className={`btn btn-sm ${selectedDept === dept ? 'btn-primary' : 'btn-ghost'}`}
+                  className={`btn btn-sm ${effectiveDept === dept ? 'btn-primary' : 'btn-ghost'}`}
                   style={{ padding: '4px 10px', fontSize: '0.8rem' }}
                   onClick={() => setSelectedDept(dept)}
                 >
@@ -249,6 +374,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
           </div>
 
+          {currentRadarData.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              ยังไม่มีมาตรฐานทักษะ (F-HR-005) สำหรับแผนกนี้
+            </div>
+          ) : (
           <div style={{ width: '100%', height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={currentRadarData}>
@@ -293,6 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </RadarChart>
             </ResponsiveContainer>
           </div>
+          )}
         </div>
 
         {/* Bar Chart: Training Hours */}
@@ -343,53 +474,75 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div
-              className="glass-card glass-card-interactive"
-              style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-              onClick={() => onNavigate('probation')}
-            >
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                  ประเมินผลทดลองงาน (30 วัน): นาย ประเสริฐ ยิ้มแย้ม
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  ครบกำหนดวันที่ 22/07/2026 • แผนก FMG-A
-                </div>
+            {!topProbationAlert && !topCertAlert && pendingSkillMatrixCount === 0 && (
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                ไม่มีรายการที่ต้องดำเนินการตอนนี้
               </div>
-              <span className="badge badge-amber">ทำแบบประเมิน F-HR-009</span>
-            </div>
+            )}
 
-            <div
-              className="glass-card glass-card-interactive"
-              style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-              onClick={() => onNavigate('certificates')}
-            >
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                  ใบรับรอง จป.วิชาชีพ หมดอายุใน 24 วัน
+            {topProbationAlert && (
+              <div
+                className="glass-card glass-card-interactive"
+                style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                onClick={() => onNavigate('probation')}
+              >
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                    ประเมินผลทดลองงาน ({topProbationAlert.milestoneDays} วัน): {topProbationAlert.employee.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    {topProbationAlert.daysUntilDue < 0
+                      ? `เลยกำหนดมาแล้ว ${Math.abs(topProbationAlert.daysUntilDue)} วัน`
+                      : topProbationAlert.daysUntilDue === 0
+                        ? 'ครบกำหนดวันนี้'
+                        : `ครบกำหนดใน ${topProbationAlert.daysUntilDue} วัน`}{' '}
+                    ({formatDMY(topProbationAlert.dueDate)}) • แผนก {topProbationAlert.employee.department}
+                    {probationAlerts.length > 1 && ` • และอีก ${probationAlerts.length - 1} คน`}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  น.ส. วรรณา สุขเจริญ • หมดอายุ 15/08/2026
-                </div>
+                <span className="badge badge-amber">ทำแบบประเมิน F-HR-009</span>
               </div>
-              <span className="badge badge-red">แจ้งเตือนต่ออายุ</span>
-            </div>
+            )}
 
-            <div
-              className="glass-card glass-card-interactive"
-              style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-              onClick={() => onNavigate('skill_matrix')}
-            >
-              <div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
-                  ประเมิน Skill Matrix ประจำรอบ กรกฎาคม 2026
+            {topCertAlert && (
+              <div
+                className="glass-card glass-card-interactive"
+                style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                onClick={() => onNavigate('certificates')}
+              >
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                    {topCertAlert.cert.certName}:{' '}
+                    {topCertAlert.daysUntilExpiry < 0
+                      ? `หมดอายุแล้ว ${Math.abs(topCertAlert.daysUntilExpiry)} วัน`
+                      : `หมดอายุใน ${topCertAlert.daysUntilExpiry} วัน`}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    {topCertAlert.cert.employeeName} • หมดอายุ {formatDMY(new Date(topCertAlert.cert.expiryDate))}
+                    {certAlerts.length > 1 && ` • และอีก ${certAlerts.length - 1} ใบ`}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                  เปิดให้ประเมินทักษะพนักงานประจำปี (F-HR-014)
-                </div>
+                <span className="badge badge-red">แจ้งเตือนต่ออายุ</span>
               </div>
-              <span className="badge badge-blue">เข้าสู่ Skill Matrix</span>
-            </div>
+            )}
+
+            {pendingSkillMatrixCount > 0 && (
+              <div
+                className="glass-card glass-card-interactive"
+                style={{ padding: 14, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                onClick={() => onNavigate('skill_matrix')}
+              >
+                <div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                    ประเมิน Skill Matrix ประจำรอบ {CYCLE_LABEL[currentCycle]}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    ยังค้างประเมิน {pendingSkillMatrixCount} คน (F-HR-014)
+                  </div>
+                </div>
+                <span className="badge badge-blue">เข้าสู่ Skill Matrix</span>
+              </div>
+            )}
           </div>
         </div>
 

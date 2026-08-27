@@ -59,8 +59,25 @@ export function fillCheckboxInDrawingXml(drawingXml: string, colIdx: number, row
     const fromMatch = /<xdr:from><xdr:col>(\d+)<\/xdr:col>[^<]*<xdr:colOff>\d+<\/xdr:colOff><xdr:row>(\d+)<\/xdr:row>/.exec(anchor);
     if (!fromMatch) return anchor;
     if (Number(fromMatch[1]) !== colIdx || Number(fromMatch[2]) !== rowIdx) return anchor;
-    if (anchor.includes('<a:solidFill>')) return anchor; // already filled — don't double-inject
-    return anchor.replace('</a:prstGeom>', '</a:prstGeom><a:solidFill><a:srgbClr val="000000"/></a:solidFill>');
+    // Already filled — don't double-inject. Matched on the exact pattern our
+    // own fill inserts (right after </a:prstGeom>), not a bare "<a:solidFill>"
+    // substring search — some templates' checkbox outlines use a <a:ln> border
+    // that itself contains <a:solidFill> for its line color, which a bare
+    // substring check false-positives on and silently skips the real fill.
+    if (anchor.includes('</a:prstGeom><a:solidFill>')) return anchor;
+    // DrawingML's CT_ShapeProperties only allows one EG_FillProperties child
+    // (noFill/solidFill/... are a choice, not a sequence) — the template's
+    // pristine "unchecked" shapes carry an explicit <a:noFill/> there, so it
+    // must be removed, not left alongside the new <a:solidFill/>, or the
+    // shape ends up with two fill elements. Real Excel tolerates that on most
+    // shapes (picks the first) but not reliably on all of them, so some
+    // checkboxes silently fail to render at all instead of just staying
+    // unfilled. Only the first <a:noFill/> is removed — spPr's sequence is
+    // prstGeom → fill → ln, so it's always the shape's own fill, never one
+    // that might appear later inside <a:ln> for an invisible line color.
+    return anchor
+      .replace('<a:noFill/>', '')
+      .replace('</a:prstGeom>', '</a:prstGeom><a:solidFill><a:srgbClr val="000000"/></a:solidFill>');
   });
 }
 
@@ -283,6 +300,21 @@ function buildChunkSheet(
     sheetXml = setCellInSheetXml(sheetXml, `E${cellRowNumber}`, emp.position);
 
     chunkStandards.forEach((std, sIdx) => {
+      // This topic column belongs to a different department+position than
+      // this employee's own — e.g. a "Set up mold" topic on a "พนักงานทั่วไป"
+      // row, OR a same-named position in a different department pulled in
+      // via a cross-department customEmployees export (deptStandards is
+      // keyed by department+position — see the plan-building comment
+      // above, so it can legitimately contain two departments' standards
+      // for an identically-named position). Checking position alone would
+      // cross-draw one department's targets/results onto another
+      // department's employee row for that shared position name. Every
+      // employee shares the same set of columns now, so skip drawing
+      // anything here rather than showing a target/0% circle — or another
+      // department's data — for a topic they were never meant to be
+      // evaluated on.
+      if (std.department !== emp.department || std.position !== emp.position) return;
+
       const colInfo = SKILL_COLS[sIdx];
       const targetColIdx = colInfo.colIdx;
       const res1ColIdx = colInfo.colIdx + 1;
@@ -337,7 +369,6 @@ export async function exportExactFHR014Template({
   customEmployees,
 }: ExportOptions): Promise<ExportFHR014Result> {
   const deptEmployees = customEmployees || employees.filter((e) => e.department === department);
-  const deptStandards = standards.filter((s) => s.department === department);
 
   anchorCounter = 9900; // keep drawing ids deterministic per export
 
@@ -404,7 +435,22 @@ export async function exportExactFHR014Template({
 
   const baseSheetRels = (await zip.file('xl/worksheets/_rels/sheet2.xml.rels')?.async('string')) ?? '';
 
-  // 5. Split into sheet-sized chunks — skills first, then employees, so the
+  // 5. Every employee being exported appears together on the same set of
+  // sheets (not split off into a separate sheet-per-position — HR wants one
+  // combined view of the department). The topic columns are the union of
+  // every position actually present among these employees; buildChunkSheet
+  // below leaves an employee's cell blank for any topic that isn't part of
+  // their own position's F-HR-005 standards (matching what the on-screen
+  // Skill Matrix shows per employee — SkillMatrixView's
+  // getEmployeeStandards), instead of drawing a misleading 0%/target circle
+  // for a topic they were never meant to be evaluated on. Keyed on each
+  // standard's own department+position, not the page's selected
+  // `department`, so customEmployees (cross-department extras pulled into
+  // one page) still only pull in topics for positions actually present.
+  const presentPositionKeys = new Set(deptEmployees.map((e) => `${e.department} ${e.position}`));
+  const deptStandards = standards.filter((s) => presentPositionKeys.has(`${s.department} ${s.position}`));
+
+  // Split into sheet-sized chunks — skills first, then employees, so the
   // printed order reads "Topic 1-6 for everyone, then Topic 7-12".
   const skillChunks = chunkList(deptStandards, FHR014_SKILLS_PER_SHEET);
   const employeeChunks = chunkList(deptEmployees, FHR014_EMPLOYEES_PER_SHEET);

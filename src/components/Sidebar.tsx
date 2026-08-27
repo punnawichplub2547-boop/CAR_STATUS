@@ -61,13 +61,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     localStorage.setItem('hrskill_sidebarCollapsed', collapsed ? '1' : '0');
   }, [collapsed]);
 
+  // Order follows the employee-lifecycle flow (Flow Chart - Skill Matrix.svg)
+  // exactly, node by node: employee profile → orientation → exam → OJT (new
+  // hire) → probation → OJT (job change / skill gap retrain) → skill
+  // standards → skill matrix → certificates → Dashboard & รายงาน (the
+  // flow's own last node, right before the terminal "ข้อมูลพร้อมใช้วางแผน
+  // พัฒนาบุคลากร") — Dashboard and the Audit report both represent that one node.
   const allNavItems = [
-    {
-      id: 'dashboard',
-      label: currentUserRole === 'EMPLOYEE' ? 'ภาพรวมของฉัน (Overview)' : 'Executive Dashboard',
-      icon: LayoutDashboard,
-      badge: null,
-    },
     {
       id: 'employees',
       label: 'ข้อมูลพนักงาน & ผังองค์กร',
@@ -82,21 +82,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: null,
     },
     {
+      id: 'exam',
+      label: currentUserRole === 'EMPLOYEE' ? 'แบบทดสอบของฉัน (My Exams)' : 'ข้อสอบปฐมนิเทศออนไลน์',
+      icon: FileCheck2,
+      badge: 'Google Forms',
+      badgeColor: 'badge-purple',
+    },
+    {
       id: 'ojt_a',
       label: 'F-HR-004A: OJT พนักงานใหม่',
       icon: ClipboardCheck,
-      badge: null,
-    },
-    {
-      id: 'ojt_b',
-      label: 'F-HR-004B: OJT เปลี่ยนงาน',
-      icon: FileText,
-      badge: null,
-    },
-    {
-      id: 'ojt_history',
-      label: 'ประวัติการอบรม OJT (F-HR-004)',
-      icon: History,
       badge: null,
     },
     {
@@ -110,6 +105,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'probation_history',
       label: 'ประวัติการประเมินทดลองงาน (F-HR-009)',
       icon: ClipboardList,
+      badge: null,
+    },
+    {
+      id: 'ojt_b',
+      label: 'F-HR-004B: OJT เปลี่ยนงาน',
+      icon: FileText,
+      badge: null,
+    },
+    {
+      id: 'ojt_history',
+      label: 'ประวัติการอบรม OJT (F-HR-004)',
+      icon: History,
       badge: null,
     },
     {
@@ -133,11 +140,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badgeColor: 'badge-red',
     },
     {
-      id: 'exam',
-      label: currentUserRole === 'EMPLOYEE' ? 'แบบทดสอบของฉัน (My Exams)' : 'ข้อสอบปฐมนิเทศออนไลน์',
-      icon: FileCheck2,
-      badge: 'Google Forms',
-      badgeColor: 'badge-purple',
+      id: 'dashboard',
+      label: currentUserRole === 'EMPLOYEE' ? 'ภาพรวมของฉัน (Overview)' : 'Executive Dashboard',
+      icon: LayoutDashboard,
+      badge: null,
     },
     {
       id: 'audit',
