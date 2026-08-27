@@ -7,6 +7,8 @@ import { ojtRouter } from './routes/ojt.js';
 import { probationRouter } from './routes/probation.js';
 import { skillEvaluationsRouter } from './routes/skillEvaluations.js';
 import { skillStandardsRouter } from './routes/skillStandards.js';
+import { authRouter } from './routes/auth.js';
+import { certificatesRouter } from './routes/certificates.js';
 
 const app = express();
 
@@ -36,12 +38,14 @@ app.use(express.json({ limit: '15mb' }));
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.use('/api', authRouter);
 app.use('/api', employeesRouter);
 app.use('/api', examResultsRouter);
 app.use('/api', ojtRouter);
 app.use('/api', probationRouter);
 app.use('/api', skillEvaluationsRouter);
 app.use('/api', skillStandardsRouter);
+app.use('/api', certificatesRouter);
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {

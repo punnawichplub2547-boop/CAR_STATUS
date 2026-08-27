@@ -5,8 +5,31 @@ import type { ExamSubmission } from '@prisma/client';
 export const employeesRouter = Router();
 
 employeesRouter.get('/employees', async (_req, res) => {
-  const employees = await prisma.employee.findMany({ orderBy: { empCode: 'asc' } });
-  res.json(employees);
+  try {
+    const employees = await prisma.employee.findMany({
+      orderBy: { empCode: 'asc' },
+      select: {
+        id: true,
+        empCode: true,
+        name: true,
+        email: true,
+        department: true,
+        section: true,
+        position: true,
+        startingDate: true,
+        status: true,
+        orientationPassed: true,
+        role: true,
+        avatar: true,
+        supervisorId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    res.json(employees);
+  } catch {
+    res.status(500).json({ error: 'Database unavailable' });
+  }
 });
 
 type CourseCategory = 'REGULATION' | 'SAFETY';
@@ -45,7 +68,7 @@ employeesRouter.get('/employees/pending-orientation', async (_req, res) => {
     include: { examSubmissions: true },
   });
 
-  const withExamStatus = employees.map(({ examSubmissions, ...emp }) => ({
+  const withExamStatus = employees.map(({ examSubmissions, passwordHash: _, ...emp }) => ({
     ...emp,
     examStatus: latestSubmissionPerCategory(examSubmissions),
   }));

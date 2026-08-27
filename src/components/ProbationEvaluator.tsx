@@ -377,14 +377,52 @@ export const ProbationEvaluator: React.FC<ProbationEvaluatorProps> = ({ employee
           )}
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 24 }}>
-          {exportMessage && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{exportMessage}</span>}
-          <button className="btn btn-secondary" onClick={handleExportProbation} disabled={!probTargetEmp || exporting}>
-            <FileSpreadsheet size={16} /> {exporting ? 'กำลัง Export...' : 'Export F-HR-009'}
-          </button>
-          <button className="btn btn-success" onClick={handleSaveProbation}>
-            <CheckCircle2 size={18} /> บันทึกผลการประเมินทดลองงาน F-HR-009
-          </button>
+        {/* Sticky Bottom Action Bar */}
+        <div
+          className="glass-card"
+          style={{
+            position: 'sticky',
+            bottom: 16,
+            zIndex: 30,
+            marginTop: 24,
+            padding: '12px 20px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.18)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid var(--border-color)',
+            borderRadius: 14,
+            background: 'var(--bg-card)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>คะแนนรวม & เกรด</div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{resultScore.toFixed(1)}%</span>
+                <span className={`badge ${isPassed ? 'badge-green' : 'badge-red'}`} style={{ fontSize: '0.78rem' }}>
+                  เกรด {getProbationGrade(resultScore)} ({isPassed ? 'ผ่าน' : 'ไม่ผ่าน'})
+                </span>
+              </div>
+            </div>
+            {exportMessage && (
+              <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 500 }}>
+                {exportMessage}
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button className="btn btn-secondary" onClick={handleExportProbation} disabled={!probTargetEmp || exporting}>
+              <FileSpreadsheet size={16} /> {exporting ? 'กำลัง Export...' : 'Export F-HR-009'}
+            </button>
+            <button className="btn btn-success" onClick={handleSaveProbation}>
+              <CheckCircle2 size={18} /> บันทึกผลการประเมินทดลองงาน F-HR-009
+            </button>
+          </div>
         </div>
 
         {/* Post-save follow-up — only for the employee whose result was just saved */}

@@ -157,10 +157,12 @@ export const TestLoginModal: React.FC<TestLoginModalProps> = ({
             <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
           </div>
           <div className="demo-user-list">
-            {allUsers.filter((u) => LOGINABLE_ROLES.includes(u.role)).map((u) => {
-              const roleClass =
-                u.role === 'ADMIN' ? 'role-admin' : u.role === 'HR' ? 'role-hr' : u.role === 'SUPERVISOR' ? 'role-supervisor' : 'role-operator';
-              const roleLabel = ROLE_LABELS[u.role];
+            {LOGINABLE_ROLES.map((r) => allUsers.find((u) => u.role === r))
+              .filter((u): u is Employee => Boolean(u))
+              .map((u) => {
+                const roleClass =
+                  u.role === 'ADMIN' ? 'role-admin' : u.role === 'HR' ? 'role-hr' : u.role === 'SUPERVISOR' ? 'role-supervisor' : 'role-operator';
+                const roleLabel = ROLE_LABELS[u.role];
 
               return (
                 <button

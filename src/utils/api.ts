@@ -12,6 +12,160 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+const TOKEN_KEY = 'hrskill_jwt_token';
+
+export function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+  } catch {}
+}
+
+export function removeStoredToken(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {}
+}
+
+export interface AuthLoginResponse {
+  token: string;
+  user: BackendEmployee;
+}
+
+export async function loginApi(identifier: string, password: string): Promise<AuthLoginResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ identifier, password }),
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    throw new Error(errorBody?.message || `เข้าสู่ระบบไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  const data: AuthLoginResponse = await res.json();
+  setStoredToken(data.token);
+  return data;
+}
+
+export async function getMeApi(token?: string): Promise<BackendEmployee> {
+  const authToken = token || getStoredToken();
+  if (!authToken) {
+    throw new Error('No auth token found');
+  }
+  const res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!res.ok) {
+    const errorBody = await res.json().catch(() => null);
+    throw new Error(errorBody?.message || `ตรวจสอบ Session ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  const data = await res.json();
+  return data.user;
+}
+
+export async function changePasswordApi(oldPassword: string, newPassword: string): Promise<string> {
+  const token = getStoredToken();
+  if (!token) {
+    throw new Error('กรุณาเข้าสู่ระบบก่อนเปลี่ยนรหัสผ่าน');
+  }
+  const res = await fetch(`${API_BASE_URL}/api/auth/change-password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ oldPassword, newPassword }),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.message || `เปลี่ยนรหัสผ่านไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return data?.message || 'เปลี่ยนรหัสผ่านสำเร็จ';
+}
+
+export interface BackendCertificate {
+  id: number;
+  employeeId: number | null;
+  empCode: string;
+  employeeName: string;
+  department: string;
+  position: string;
+  certName: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate: string;
+  certNumber: string | null;
+  attachmentUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CertificatePayload {
+  empCode: string;
+  employeeName: string;
+  department?: string;
+  position?: string;
+  certName: string;
+  issuer: string;
+  issueDate: string;
+  expiryDate: string;
+  certNumber?: string;
+  attachmentUrl?: string;
+}
+
+export async function fetchBackendCertificates(empCode?: string): Promise<BackendCertificate[]> {
+  const url = empCode
+    ? `${API_BASE_URL}/api/certificates?empCode=${encodeURIComponent(empCode)}`
+    : `${API_BASE_URL}/api/certificates`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`โหลดข้อมูล Certificate ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function createBackendCertificate(payload: CertificatePayload): Promise<BackendCertificate> {
+  const res = await fetch(`${API_BASE_URL}/api/certificates`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || `เพิ่ม Certificate ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateBackendCertificate(id: number | string, payload: Partial<CertificatePayload>): Promise<BackendCertificate> {
+  const res = await fetch(`${API_BASE_URL}/api/certificates/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.error || `แก้ไข Certificate ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteBackendCertificate(id: number | string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/certificates/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`ลบ Certificate ไม่สำเร็จ (HTTP ${res.status})`);
+  }
+}
+
 export interface ExamCategoryStatus {
   attempted: true;
   isPassed: boolean;

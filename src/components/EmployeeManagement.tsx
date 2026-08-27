@@ -1,14 +1,16 @@
 import React, { useRef, useState } from 'react';
-import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle } from 'lucide-react';
+import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle, Award, FileSpreadsheet } from 'lucide-react';
 import type { Employee, OrgChartNode } from '../types';
 import type { EmployeePayload } from '../utils/api';
 import { OrgChartBuilder } from './OrgChartBuilder';
+import { EmployeeExcelImportModal } from './EmployeeExcelImportModal';
 
 interface EmployeeManagementProps {
   employees: Employee[];
   onAddEmployee: (payload: EmployeePayload) => void;
   onEditEmployee: (id: string, payload: EmployeePayload) => void;
   onDeleteEmployee: (id: string) => void;
+  onViewPassport?: (emp: Employee) => void;
   employeesError: string | null;
   orgChartNodes: OrgChartNode[];
   onChangeOrgChartNodes: (nodes: OrgChartNode[]) => void;
@@ -34,6 +36,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   onAddEmployee,
   onEditEmployee,
   onDeleteEmployee,
+  onViewPassport,
   employeesError,
   orgChartNodes,
   onChangeOrgChartNodes,
@@ -42,6 +45,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState<string>('ALL');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const [editForm, setEditForm] = useState<Employee | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -186,13 +190,40 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
               <Network size={16} /> โครงสร้างองค์กร (Org Chart)
             </button>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
-            <UserPlus size={18} /> เพิ่มพนักงานใหม่
-          </button>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-secondary" onClick={() => setShowImportModal(true)}>
+              <FileSpreadsheet size={16} /> นำเข้าจาก Excel
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+              <UserPlus size={18} /> เพิ่มพนักงานใหม่
+            </button>
+          </div>
         </div>
       </div>
 
-      {employeesError && (
+      {employeesError && employees.length > 0 && (
+        <div
+          className="glass-card"
+          style={{
+            padding: '10px 16px',
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: '0.86rem',
+            color: 'var(--text-muted)',
+            borderLeft: '4px solid var(--primary, #3b82f6)',
+          }}
+        >
+          <span style={{ fontSize: '1rem' }}>💾</span>
+          <span>
+            <strong>โหมดออฟไลน์ / Local Storage:</strong> กำลังแสดงผลจากฐานข้อมูลในเบราว์เซอร์ ({employees.length} คน)
+          </span>
+        </div>
+      )}
+
+      {employeesError && employees.length === 0 && (
         <div
           className="glass-card"
           style={{ padding: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10, color: 'var(--danger, #dc2626)' }}
@@ -237,7 +268,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
           </div>
 
           {/* Employee Table */}
-          <div className="glass-card table-responsive">
+          <div className="glass-card table-responsive" style={{ overflowX: 'auto' }}>
             <table className="custom-table">
               <thead>
                 <tr>
@@ -247,7 +278,19 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                   <th>ตำแหน่ง</th>
                   <th>วันเริ่มงาน / อายุงาน</th>
                   <th>สถานะ</th>
-                  <th>การจัดการ</th>
+                  <th
+                    style={{
+                      position: 'sticky',
+                      right: 0,
+                      background: 'var(--bg-card)',
+                      boxShadow: '-4px 0 8px rgba(0, 0, 0, 0.04)',
+                      zIndex: 3,
+                      minWidth: 160,
+                      textAlign: 'center',
+                    }}
+                  >
+                    การจัดการ
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -280,8 +323,31 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
                         <span className="badge badge-green">พนักงานประจำ</span>
                       )}
                     </td>
-                    <td>
-                      <button className="btn btn-sm btn-secondary" onClick={() => setViewingEmployee(emp)}>ดูประวัติ</button>
+                    <td
+                      style={{
+                        position: 'sticky',
+                        right: 0,
+                        background: 'var(--bg-card)',
+                        boxShadow: '-4px 0 8px rgba(0, 0, 0, 0.04)',
+                        zIndex: 2,
+                      }}
+                    >
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                        {onViewPassport && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-primary"
+                            onClick={() => onViewPassport(emp)}
+                            title="ดูบัตรทักษะความสามารถพนักงาน (Skill Passport)"
+                            style={{ padding: '5px 9px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: 4 }}
+                          >
+                            <Award size={13} /> บัตรทักษะ
+                          </button>
+                        )}
+                        <button className="btn btn-sm btn-secondary" onClick={() => setViewingEmployee(emp)} style={{ padding: '5px 9px', fontSize: '0.78rem' }}>
+                          ดูประวัติ
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -689,6 +755,19 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Excel Bulk Import Modal */}
+      {showImportModal && (
+        <EmployeeExcelImportModal
+          existingEmployees={employees}
+          onImport={(importedEmps) => {
+            for (const emp of importedEmps) {
+              onAddEmployee(emp);
+            }
+          }}
+          onClose={() => setShowImportModal(false)}
+        />
       )}
     </div>
   );
