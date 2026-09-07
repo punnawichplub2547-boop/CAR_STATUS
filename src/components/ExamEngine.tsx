@@ -13,14 +13,12 @@ import {
   Award,
   ArrowRight,
   ClipboardList,
-  Settings,
   QrCode,
 } from 'lucide-react';
 import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap, OrientationBatch } from '../types';
 import { loadOrientationBatchesFromLocalStorage } from '../services/orientationBatchService';
 import {
   DEFAULT_APPS_SCRIPT_URL,
-  DEFAULT_GOOGLE_FORM_URL,
   DEFAULT_SAFETY_FORM_URL,
   DEFAULT_ORIENTATION_FORM_URL,
   loadExamResultsFromLocalStorage,
@@ -29,7 +27,6 @@ import {
   saveExamResultsToLocalStorage,
   savePreTestLockStatusToLocalStorage,
 } from '../services/googleFormSync';
-import { ExamConfigModal } from './exam/ExamConfigModal';
 import { ExamDetailDrawer } from './exam/ExamDetailDrawer';
 import { ExamDirectoryTable } from './exam/ExamDirectoryTable';
 import { ExamQrModal } from './exam/ExamQrModal';
@@ -42,23 +39,6 @@ interface ExamEngineProps {
 export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }) => {
   const [selectedExamType, setSelectedExamType] = useState<ExamType>('SAFETY_ATTITUDE');
   const [selectedPhase, setSelectedPhase] = useState<ExamPhase>('PRE_TEST');
-
-  const [googleFormUrl, setGoogleFormUrl] = useState(() => {
-    const saved = localStorage.getItem('hrskill_google_form_url');
-    if (!saved || saved.includes('EXAMPLE_FORM_ID')) {
-      return DEFAULT_GOOGLE_FORM_URL;
-    }
-    return saved;
-  });
-  const [appsScriptUrl, setAppsScriptUrl] = useState(() => {
-    const saved = localStorage.getItem('hrskill_apps_script_url');
-    if (!saved || saved !== DEFAULT_APPS_SCRIPT_URL) {
-      localStorage.setItem('hrskill_apps_script_url', DEFAULT_APPS_SCRIPT_URL);
-      return DEFAULT_APPS_SCRIPT_URL;
-    }
-    return saved;
-  });
-  const [showConfigModal, setShowConfigModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [importStatusMessage, setImportStatusMessage] = useState<string | null>(null);
@@ -105,14 +85,6 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    localStorage.setItem('hrskill_google_form_url', googleFormUrl);
-  }, [googleFormUrl]);
-
-  useEffect(() => {
-    localStorage.setItem('hrskill_apps_script_url', appsScriptUrl);
-  }, [appsScriptUrl]);
 
   // Selected Employee for Detail Drawer (for Admin/Supervisor or Active User)
   const [viewingResult, setViewingResult] = useState<GoogleFormExamResult | null>(null);
@@ -166,7 +138,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
   // Sync Logic / Live Apps Script Fetch (High-Performance Optimized)
   const handleSyncData = useCallback(async (silent: boolean = false) => {
     if (!silent) setIsSyncing(true);
-    const targetUrl = appsScriptUrl || DEFAULT_APPS_SCRIPT_URL;
+    const targetUrl = DEFAULT_APPS_SCRIPT_URL;
     if (targetUrl) {
       try {
         const res = await fetch(`${targetUrl}?empCode=`);
@@ -240,7 +212,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         setIsSyncing(false);
       }, 500);
     }
-  }, [appsScriptUrl]);
+  }, []);
 
   // Smart Live Auto-Sync Polling (Every 15s & Only When Page Visible)
   useEffect(() => {
@@ -379,17 +351,6 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
             <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
             {isSyncing ? 'กำลังซิงค์ข้อมูล...' : 'ซิงค์ผลสอบล่าสุด'}
           </button>
-
-          {isHR && (
-            <button
-              className="btn btn-secondary"
-              onClick={() => setShowConfigModal(true)}
-              style={{ borderRadius: 14, padding: '10px 14px', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-              title="ตั้งค่า URL Google Forms / Apps Script Web App"
-            >
-              <Settings size={18} /> ตั้งค่า Google API
-            </button>
-          )}
 
           <div
             style={{
@@ -763,17 +724,7 @@ export const ExamEngine: React.FC<ExamEngineProps> = ({ currentUser, employees }
         isHR={isHR}
       />
 
-      {/* MODAL 2: Admin Config Modal */}
-      <ExamConfigModal
-        isOpen={showConfigModal}
-        onClose={() => setShowConfigModal(false)}
-        googleFormUrl={googleFormUrl}
-        setGoogleFormUrl={setGoogleFormUrl}
-        appsScriptUrl={appsScriptUrl}
-        setAppsScriptUrl={setAppsScriptUrl}
-      />
-
-      {/* MODAL 3: QR Code Scanner Modal */}
+      {/* MODAL 2: QR Code Scanner Modal */}
       <ExamQrModal
         isOpen={showQrModal}
         onClose={() => setShowQrModal(false)}

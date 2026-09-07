@@ -30,7 +30,13 @@ export const ExamConfigModal: React.FC<ExamConfigModalProps> = ({
   };
 
   return (
-    <div className="modal-backdrop" style={{ zIndex: 1100 }}>
+    <div
+      className="modal-backdrop"
+      style={{ zIndex: 1200 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
         className="glass-card modal-container"
         style={{
