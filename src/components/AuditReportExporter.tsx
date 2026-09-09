@@ -22,8 +22,9 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   ojtContentItems,
   ojtParticipants,
   certificates,
+  courses = [],
 }) => {
-  const [reportType, setReportType] = useState<'individual' | 'department_matrix' | 'certs_compliance'>('individual');
+  const [reportType, setReportType] = useState<'individual' | 'department_matrix' | 'certs_compliance' | 'training_courses'>('individual');
   const [selectedEmpId, setSelectedEmpId] = useState(employees[2]?.id || employees[0]?.id);
 
   const selectedEmp = employees.find((e) => e.id === selectedEmpId);
@@ -84,31 +85,112 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
   const certExpiringSoon = certRows.filter((c) => c.liveStatus === 'EXPIRING_SOON').length;
   const certExpired = certRows.filter((c) => c.liveStatus === 'EXPIRED').length;
 
+  // --- Tab 4: Training Courses summary ---
+  const totalTrainingHours = courses.reduce((sum, c) => sum + (c.hours || 0), 0);
+
   const handlePrint = () => {
     window.print();
   };
 
   const handleExportExcel = async () => {
-    const fileName = `ISO_IATF_16949_Skill_Matrix_Audit_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `ISO_IATF_16949_Full_Audit_Package_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const workbook = XLSX.utils.book_new();
 
-    const data: (string | number)[][] = [];
-    data.push(["รหัสพนักงาน", "ชื่อ-นามสกุล", "แผนก", "ตำแหน่ง", "ทักษะมาตรฐาน", "ระดับเป้าหมาย (%)", "ระดับประเมินจริง (%)", "สถานะ ISO/IATF"]);
+    // 1. Sheet: Skill Matrix Individual & Detail
+    const skillData: (string | number)[][] = [];
+    skillData.push(["รหัสพนักงาน", "ชื่อ-นามสกุล", "แผนก", "ตำแหน่ง", "ทักษะมาตรฐาน", "ระดับเป้าหมาย (%)", "ระดับประเมินจริง (%)", "รอบประเมิน", "ครั้งที่", "สถานะ ISO/IATF"]);
 
     employees.forEach((emp) => {
-      const empSkills = skillEvaluations.filter((s) => s.employeeId === emp.id);
-      if (empSkills.length === 0) {
-        data.push([emp.empCode, emp.name, emp.department, emp.position, "ไม่มีข้อมูล", "0%", "0%", "รอดำเนินการ"]);
+      const skills = latestEvals.filter((s) => s.employeeId === emp.id);
+      if (skills.length === 0) {
+        skillData.push([emp.empCode, emp.name, emp.department, emp.position, "ไม่มีข้อมูล", "0%", "0%", "-", "-", "รอดำเนินการ"]);
       } else {
-        empSkills.forEach((sk) => {
+        skills.forEach((sk) => {
           const status = sk.resultLevel >= sk.targetLevel ? "ผ่านเกณฑ์มาตรฐาน (Passed)" : "ต้องพัฒนาทักษะ (Gap)";
-          data.push([emp.empCode, emp.name, emp.department, emp.position, sk.skillName, formatSkillLevelWithIcon(sk.targetLevel), formatSkillLevelWithIcon(sk.resultLevel), status]);
+          skillData.push([
+            emp.empCode,
+            emp.name,
+            emp.department,
+            emp.position,
+            sk.skillName,
+            formatSkillLevelWithIcon(sk.targetLevel),
+            formatSkillLevelWithIcon(sk.resultLevel),
+            sk.cycle,
+            sk.attemptNumber === 2 ? "ครั้งที่ 2 (ประเมินซ้ำ)" : "ครั้งที่ 1",
+            status,
+          ]);
         });
       }
     });
+    const wsSkills = XLSX.utils.aoa_to_sheet(skillData);
+    XLSX.utils.book_append_sheet(workbook, wsSkills, "Skill Matrix Audit");
 
-    const worksheet = XLSX.utils.aoa_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Audit Skill Matrix");
+    // 2. Sheet: Department Summary (F-HR-014)
+    const deptData: (string | number)[][] = [];
+    deptData.push(["แผนก", "หัวข้อทักษะ", "จำนวนคนที่ประเมิน", "เป้าหมายเฉลี่ย (%)", "ผลจริงเฉลี่ย (%)", "ผ่านเกณฑ์ (คน)", "ต่ำกว่าเกณฑ์ Gap (คน)", "% ผ่านเกณฑ์"]);
+    Object.entries(departmentGroups).forEach(([dept, evals]) => {
+      const rows = buildSkillRows(evals);
+      rows.forEach((r) => {
+        deptData.push([dept, r.skillName, r.total, `${r.avgTarget}%`, `${r.avgResult}%`, r.passed, r.gap, `${r.passRate}%`]);
+      });
+    });
+    const wsDept = XLSX.utils.aoa_to_sheet(deptData);
+    XLSX.utils.book_append_sheet(workbook, wsDept, "Department Summary");
+
+    // 3. Sheet: Certificate Compliance
+    const certData: (string | number)[][] = [];
+    certData.push(["รหัสพนักงาน", "ชื่อพนักงาน", "แผนก", "ชื่อใบรับรอง", "สถาบันผู้ออก", "วันที่หมดอายุ", "สถานะการรับรอง"]);
+    certRows.forEach((c) => {
+      const statusLabel = c.liveStatus === 'ACTIVE' ? "ใช้งานได้ปกติ (Active)" : c.liveStatus === 'EXPIRING_SOON' ? "ใกล้หมดอายุ (Expiring Soon)" : "หมดอายุแล้ว (Expired)";
+      certData.push([c.empCode, c.employeeName, c.department, c.certName, c.issuingOrg, c.expiryDate, statusLabel]);
+    });
+    const wsCerts = XLSX.utils.aoa_to_sheet(certData);
+    XLSX.utils.book_append_sheet(workbook, wsCerts, "Certificates Compliance");
+
+    // 4. Sheet: OJT Records (F-HR-004)
+    const ojtData: (string | number)[][] = [];
+    ojtData.push(["รหัสพนักงาน", "ชื่อพนักงาน", "แผนก", "หลักสูตร OJT", "ผู้ประเมิน", "วันที่ฝึกอบรม", "คะแนน (%)", "ผลการประเมิน"]);
+    ojtParticipants.forEach((p) => {
+      const emp = employees.find((e) => e.id === p.employeeId);
+      const session = ojtSessions.find((s) => s.id === p.sessionId);
+      const lines = session ? ojtContentItems.filter((c) => c.sessionId === session.id) : [];
+      const courseLabel = lines.length > 0 ? lines.map((l) => l.description).join(', ') : '-';
+      const dates = lines.map((c) => c.trainingDate).filter((d): d is string => !!d).sort();
+      const lastDate = dates.length > 0 ? dates[dates.length - 1] : '-';
+      ojtData.push([
+        emp?.empCode || '-',
+        emp?.name || '-',
+        emp?.department || '-',
+        courseLabel,
+        session?.assessorName || '-',
+        lastDate,
+        `${p.instructorScorePercent}%`,
+        p.isPassed ? "ผ่านเกณฑ์ (Passed)" : "ไม่ผ่าน (Failed)",
+      ]);
+    });
+    const wsOjt = XLSX.utils.aoa_to_sheet(ojtData);
+    XLSX.utils.book_append_sheet(workbook, wsOjt, "OJT Records (F-HR-004)");
+
+    // 5. Sheet: Training Courses (F-HR-002)
+    if (courses.length > 0) {
+      const courseData: (string | number)[][] = [];
+      courseData.push(["รหัสหลักสูตร", "ชื่อหลักสูตร", "หมวดหมู่", "วิทยากร", "วันที่จัดอบรม", "ช่วงเวลา", "สถานที่", "จำนวนชั่วโมง", "สถานะ"]);
+      courses.forEach((crs) => {
+        courseData.push([
+          crs.code,
+          crs.title,
+          crs.category,
+          crs.instructor,
+          crs.date,
+          crs.timeRange,
+          crs.location,
+          crs.hours,
+          crs.status,
+        ]);
+      });
+      const wsCourses = XLSX.utils.aoa_to_sheet(courseData);
+      XLSX.utils.book_append_sheet(workbook, wsCourses, "Training Courses");
+    }
 
     try {
       await downloadExcelWorkbook(workbook, fileName);
@@ -139,13 +221,13 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             onClick={handleExportExcel}
             title="ดาวน์โหลดรายงานสรุปทักษะพนักงานเป็นไฟล์ Excel (.xlsx)"
           >
-            <FileSpreadsheet size={18} /> Export Excel (.xlsx)
+            <FileSpreadsheet size={18} /> Export Full Audit Package (.xlsx)
           </button>
         </div>
       </div>
 
       {/* Selectors Bar */}
-      <div className="glass-card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 16, alignItems: 'center' }}>
+      <div className="glass-card" style={{ padding: 16, marginBottom: 24, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           className={`btn btn-sm ${reportType === 'individual' ? 'btn-primary' : 'btn-secondary'}`}
           onClick={() => setReportType('individual')}
@@ -163,6 +245,12 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
           onClick={() => setReportType('certs_compliance')}
         >
           3. รายงานความพร้อม Certificate Compliance ({certificates.length} ใบ)
+        </button>
+        <button
+          className={`btn btn-sm ${reportType === 'training_courses' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setReportType('training_courses')}
+        >
+          4. ทะเบียนหลักสูตรการฝึกอบรม ({courses.length} หลักสูตร)
         </button>
       </div>
 
@@ -297,18 +385,18 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20, marginTop: 40, paddingTop: 20, borderTop: '1px solid #e2e8f0', textAlign: 'center', fontSize: '0.8rem' }}>
               <div>
                 <div style={{ height: 40 }}></div>
-                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้จัดทำเอกสาร (HR Officer)</div>
-                <div style={{ color: '#64748b' }}>(นางสาว สมหญิง ใจดี)</div>
+                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้จัดทำเอกสาร</div>
+                <div style={{ color: '#64748b' }}>เจ้าหน้าที่ฝ่ายทรัพยากรบุคคล (HR&GA)</div>
               </div>
               <div>
                 <div style={{ height: 40 }}></div>
-                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้ตรวจสอบ (Supervisor)</div>
-                <div style={{ color: '#64748b' }}>(นาย มานพ ตั้งมั่น)</div>
+                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้ตรวจสอบ</div>
+                <div style={{ color: '#64748b' }}>หัวหน้าแผนก / Supervisor</div>
               </div>
               <div>
                 <div style={{ height: 40 }}></div>
-                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้อนุมัติ (Department Manager)</div>
-                <div style={{ color: '#64748b' }}>(น.ส. วรรณา สุขเจริญ)</div>
+                <div style={{ borderTop: '1px dashed #94a3b8', paddingTop: 4 }}>ลงชื่อผู้อนุมัติ</div>
+                <div style={{ color: '#64748b' }}>ผู้จัดการฝ่าย / Department Manager</div>
               </div>
             </div>
           </div>
@@ -458,6 +546,99 @@ export const AuditReportExporter: React.FC<AuditReportExporterProps> = ({
                         }}
                       >
                         {c.liveStatus === 'ACTIVE' ? 'ใช้งานได้ปกติ' : c.liveStatus === 'EXPIRING_SOON' ? 'ใกล้หมดอายุ' : 'หมดอายุแล้ว'}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {reportType === 'training_courses' && (
+        <div className="glass-card" style={{ padding: '24px 32px', background: '#ffffff', color: '#0f172a', borderRadius: 16, maxWidth: '100%', boxSizing: 'border-box' }} id="printable-area">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.08)', flexShrink: 0 }}>
+                <img src="/CARLOGO.png" alt="CAR Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '1.15rem', color: '#0f172a', margin: 0 }}>บริษัท คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง จำกัด</h2>
+                <div style={{ fontSize: '0.85rem', color: '#475569' }}>COMPLETE AUTO RUBBER MANUFACTURING CO., LTD.</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e40af', marginTop: 4 }}>
+                  ANNUAL TRAINING COURSE REGISTER & PLAN (F-HR-002)
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#64748b' }}>
+              <div>Document No: CAR-HR-REC-02</div>
+              <div>ISO 9001 / IATF 16949 Compliant</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800 }}>{courses.length}</div>
+              <div style={{ fontSize: '0.8rem', color: '#64748b' }}>หลักสูตรทั้งหมด</div>
+            </div>
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#166534' }}>{totalTrainingHours}</div>
+              <div style={{ fontSize: '0.8rem', color: '#166534' }}>ชั่วโมงการฝึกอบรมรวม</div>
+            </div>
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e40af' }}>
+                {courses.filter((c) => c.status === 'COMPLETED').length}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#1e40af' }}>อบรมเสร็จสิ้นแล้ว</div>
+            </div>
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: 16, textAlign: 'center' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#92400e' }}>
+                {courses.filter((c) => c.status === 'SCHEDULED').length}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#92400e' }}>ตามแผนกำหนดการ</div>
+            </div>
+          </div>
+
+          <div style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 650, borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9' }}>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left', minWidth: 90 }}>รหัสวิชา</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'left', minWidth: 180 }}>ชื่อหลักสูตรการฝึกอบรม</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 100 }}>หมวดหมู่</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 130 }}>วิทยากร</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 100 }}>วันที่อบรม</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 60 }}>ชม.</th>
+                  <th style={{ border: '1px solid #cbd5e1', padding: 8, minWidth: 90 }}>สถานะ</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} style={{ border: '1px solid #cbd5e1', padding: 12, textAlign: 'center', color: '#64748b' }}>
+                      ยังไม่มีหลักสูตรการอบรมในระบบ
+                    </td>
+                  </tr>
+                ) : (
+                  courses.map((c) => (
+                    <tr key={c.id}>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 700 }}>{c.code}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, fontWeight: 600 }}>{c.title}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.category}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8 }}>{c.instructor}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center' }}>{c.date}</td>
+                      <td style={{ border: '1px solid #cbd5e1', padding: 8, textAlign: 'center', fontWeight: 700 }}>{c.hours}</td>
+                      <td
+                        style={{
+                          border: '1px solid #cbd5e1',
+                          padding: 8,
+                          textAlign: 'center',
+                          fontWeight: 700,
+                          color: c.status === 'COMPLETED' ? '#166534' : c.status === 'SCHEDULED' ? '#1e40af' : '#991b1b',
+                        }}
+                      >
+                        {c.status === 'COMPLETED' ? 'เสร็จสิ้น' : c.status === 'SCHEDULED' ? 'ตามแผน' : 'ยกเลิก'}
                       </td>
                     </tr>
                   ))
