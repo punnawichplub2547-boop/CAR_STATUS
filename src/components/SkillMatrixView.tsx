@@ -340,8 +340,9 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
         />
       ))}
 
-      {/* Modal: Search / Select / Create Employee */}
-      {showAddEmpModal && (
+      {/* Modal: Search / Select / Create Employee — portaled to <body>, see
+          note on the Radar Chart modal below for why. */}
+      {showAddEmpModal && createPortal(
         <div className="modal-overlay" onClick={() => setShowAddEmpModal(false)}>
           <div className="modal-content" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -538,11 +539,15 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Radar Chart Modal */}
-      {showRadarModal && activeEmpForRadar && (
+      {/* Radar Chart Modal — portaled to <body> so position:fixed isn't
+          clipped by the overflow:hidden/auto ancestors (.app-container /
+          .main-content), which otherwise confine the dimmed backdrop to the
+          content area and let the navbar/sidebar show through un-dimmed. */}
+      {showRadarModal && activeEmpForRadar && createPortal(
         <div className="modal-overlay" onClick={() => setShowRadarModal(false)}>
           <div className="modal-content" style={{ maxWidth: 950 }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
@@ -560,6 +565,24 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
                 ตำแหน่ง: <strong style={{ color: 'var(--text-main)' }}>{activeEmpForRadar.position}</strong> ({activeEmpForRadar.department}) • รอบประเมิน: {selectedCycle}
               </div>
 
+              {getEmployeeRadarData(activeEmpForRadar).length === 0 ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '60px 20px',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <AlertTriangle size={32} />
+                  <div>
+                    ยังไม่มีมาตรฐานทักษะ (F-HR-005) สำหรับตำแหน่ง "{activeEmpForRadar.position}" ในแผนก{' '}
+                    {activeEmpForRadar.department} — กรุณาเพิ่มมาตรฐานทักษะให้ตำแหน่งนี้ก่อน จึงจะแสดง Radar Chart ได้
+                  </div>
+                </div>
+              ) : (
               <div style={{ width: '100%', height: 540 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <RadarChart cx="50%" cy="50%" outerRadius="62%" data={getEmployeeRadarData(activeEmpForRadar)}>
@@ -604,6 +627,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn btn-primary" onClick={() => setShowRadarModal(false)}>
@@ -611,7 +635,8 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
