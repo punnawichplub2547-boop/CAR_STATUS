@@ -205,24 +205,36 @@ export const Dashboard: React.FC<DashboardProps> = ({
     return data;
   }, [standards, employees, evaluations, effectiveDept]);
 
-  // "ชั่วโมงอบรมสะสมประจำปี" / monthly bar chart — flowchart's "3.3 อบรมเพื่อ
-  // พัฒนา" node feeding "Dashboard & รายงาน". Only COMPLETED courses count
-  // toward hours actually delivered (a SCHEDULED course hasn't happened
-  // yet), scoped to the current calendar year. No per-employee attendance
-  // multiplier — TrainingAttendance isn't loaded into app state yet, so
-  // this is course-hours held, not man-hours; revisit once attendance is wired up.
-  const currentYear = new Date().getFullYear();
-  const completedCoursesThisYear = courses.filter(
-    (c) => c.status === 'COMPLETED' && new Date(c.date).getFullYear() === currentYear
-  );
-  const totalTrainingHours = completedCoursesThisYear.reduce((sum, c) => sum + c.hours, 0);
+  // Multi-Year History Filter for Training Hours & Evaluation tracking
+  const availableYears = useMemo(() => {
+    const courseYears = courses.map((c) => new Date(c.date).getFullYear()).filter((y) => !isNaN(y) && y > 2000);
+    const evalYears = evaluations.map((e) => parseInt(e.cycle.slice(0, 4), 10)).filter((y) => !isNaN(y) && y > 2000);
+    const thisYear = new Date().getFullYear();
+    const uniqueYears = [...new Set([...courseYears, ...evalYears, thisYear])].sort((a, b) => b - a);
+    return uniqueYears;
+  }, [courses, evaluations]);
+
+  const [selectedYear, setSelectedYear] = useState<string>('2026');
+
+  // "ชั่วโมงอบรมสะสมประจำปี" / monthly bar chart
+  const completedCoursesFiltered = useMemo(() => {
+    return courses.filter((c) => {
+      if (c.status !== 'COMPLETED') return false;
+      if (selectedYear === 'ALL') return true;
+      return new Date(c.date).getFullYear() === parseInt(selectedYear, 10);
+    });
+  }, [courses, selectedYear]);
+
+  const totalTrainingHours = completedCoursesFiltered.reduce((sum, c) => sum + c.hours, 0);
   const THAI_MONTHS = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   const trainingChartData = THAI_MONTHS.map((month, idx) => ({
     month,
-    hours: completedCoursesThisYear
+    hours: completedCoursesFiltered
       .filter((c) => new Date(c.date).getMonth() === idx)
       .reduce((sum, c) => sum + c.hours, 0),
   }));
+
+  const displayYearText = selectedYear === 'ALL' ? 'ทุกปี (All Time)' : `ปี ${parseInt(selectedYear, 10) + 543} (${selectedYear})`;
 
   return (
     <div className="dashboard-page content-container">
@@ -287,7 +299,44 @@ export const Dashboard: React.FC<DashboardProps> = ({
             ระบบบริหารจัดการทักษะและการฝึกอบรมพนักงาน บจก. คอมพลีท โอโต รับเบอร์ แมนูแฟ็คเจอริ่ง (CAR)
           </p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 12,
+              padding: '6px 14px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+            }}
+          >
+            <Filter size={15} style={{ color: 'var(--accent-blue)' }} />
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>ปี:</span>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-main)',
+                fontSize: '0.88rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+            >
+              <option value="ALL" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
+                ทุกปี (All Years)
+              </option>
+              {availableYears.map((yr) => (
+                <option key={yr} value={String(yr)} style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>
+                  {yr + 543} ({yr})
+                </option>
+              ))}
+            </select>
+          </div>
           <button className="btn btn-primary" onClick={() => onNavigate('audit')}>
             <ShieldCheck size={18} /> Export ISO/IATF Audit Report
           </button>
@@ -322,7 +371,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </div>
           <div className="stat-info">
             <span className="stat-value">{totalTrainingHours} hrs</span>
-            <span className="stat-label">ชั่วโมงอบรมสะสมประจำปี</span>
+            <span className="stat-label">ชั่วโมงอบรมสะสม ({displayYearText})</span>
           </div>
         </div>
 

@@ -17,16 +17,24 @@ export const ExamDetailDrawer: React.FC<ExamDetailDrawerProps> = ({
   if (!result) return null;
 
   return (
-    <div className="modal-backdrop" style={{ zIndex: 1100 }}>
+    <div
+      className="modal-backdrop"
+      style={{ zIndex: 1200 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div
         className="glass-card modal-container"
         style={{
-          maxWidth: 840,
-          width: '92%',
+          maxWidth: 'min(860px, 94vw)',
+          width: '100%',
           maxHeight: '90vh',
           display: 'flex',
           flexDirection: 'column',
           padding: 0,
+          boxSizing: 'border-box',
+          overflow: 'hidden',
         }}
       >
         {/* Modal Header */}
@@ -131,8 +139,8 @@ export const ExamDetailDrawer: React.FC<ExamDetailDrawerProps> = ({
                           border: `1px solid ${q.isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.25)'}`,
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-                          <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+                          <div style={{ fontWeight: 600, fontSize: '0.92rem', color: 'var(--text-main)', flex: 1, minWidth: 200, wordBreak: 'break-word', whiteSpace: 'pre-line', lineHeight: 1.45 }}>
                             {q.questionText}
                           </div>
                           <span className={`badge ${q.isCorrect ? 'badge-green' : 'badge-red'}`} style={{ flexShrink: 0, fontSize: '0.78rem' }}>
@@ -140,12 +148,12 @@ export const ExamDetailDrawer: React.FC<ExamDetailDrawerProps> = ({
                           </span>
                         </div>
 
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '0.86rem', color: 'var(--text-muted)', wordBreak: 'break-word', lineHeight: 1.4 }}>
                           คำตอบของพนักงาน: <strong style={{ color: q.isCorrect ? '#047857' : '#b91c1c' }}>{q.userAnswer}</strong>
                         </div>
 
                         {!q.isCorrect && (
-                          <div style={{ fontSize: '0.85rem', color: '#047857', marginTop: 3, fontWeight: 600 }}>
+                          <div style={{ fontSize: '0.86rem', color: '#047857', marginTop: 4, fontWeight: 600, wordBreak: 'break-word', lineHeight: 1.4 }}>
                             เฉลยข้อที่ถูกต้อง: <span>{q.correctAnswer}</span>
                           </div>
                         )}
