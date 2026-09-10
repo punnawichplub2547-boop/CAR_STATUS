@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Eye,
@@ -63,26 +63,27 @@ const SKILL_GAP_PASS_THRESHOLD = 75;
 // 75% pass bar.
 const computeOverallSkillPercent = (
   standards: SkillStandard[],
-  evaluations: SkillEvaluation[],
-  employeeId: string,
+  empEvalMap: Map<string, SkillEvaluation>,
   cycle: EvaluationCycle,
   attemptNumber: EvaluationAttempt
 ): number | null => {
-  const scored = standards
-    .map((std) => {
-      const ev = evaluations.find(
-        (e) => e.employeeId === employeeId && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === attemptNumber
-      );
-      return ev ? { std, ev } : null;
-    })
-    .filter((x): x is { std: SkillStandard; ev: SkillEvaluation } => !!x);
-  if (scored.length === 0) return null;
-  const total = scored.reduce((sum, { std, ev }) => {
-    const achievement = std.targetLevel > 0 ? Math.min((ev.resultLevel / std.targetLevel) * 100, 100) : 100;
-    return sum + achievement;
-  }, 0);
-  return Math.round(total / scored.length);
+  let total = 0;
+  let scoredCount = 0;
+  for (let i = 0; i < standards.length; i++) {
+    const std = standards[i];
+    const ev = empEvalMap.get(`${std.skillName}|${cycle}|${attemptNumber}`);
+    if (ev) {
+      const achievement = std.targetLevel > 0 ? Math.min((ev.resultLevel / std.targetLevel) * 100, 100) : 100;
+      total += achievement;
+      scoredCount++;
+    }
+  }
+  if (scoredCount === 0) return null;
+  return Math.round(total / scoredCount);
 };
+
+const EMPTY_EVALS: SkillEvaluation[] = [];
+const EMPTY_ROUNDS: SkillEvaluationRound[] = [];
 
 const LEVELS: SkillLevel[] = [0, 25, 50, 75, 100];
 const LEVEL_LABEL: Record<SkillLevel, string> = {
@@ -128,6 +129,50 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   const extraEmployees = employees.filter((e) => extraEmpIds.includes(e.id) && e.department !== selectedDept);
   const displayedEmployees = [...deptEmployees, ...extraEmployees];
 
+  // Index evaluations, rounds and standards for O(1) partitioning & instant lookup
+  const evalsByEmpId = useMemo(() => {
+    const map = new Map<string, SkillEvaluation[]>();
+    for (let i = 0; i < evaluations.length; i++) {
+      const e = evaluations[i];
+      let list = map.get(e.employeeId);
+      if (!list) {
+        list = [];
+        map.set(e.employeeId, list);
+      }
+      list.push(e);
+    }
+    return map;
+  }, [evaluations]);
+
+  const roundsByEmpId = useMemo(() => {
+    const map = new Map<string, SkillEvaluationRound[]>();
+    for (let i = 0; i < evaluationRounds.length; i++) {
+      const r = evaluationRounds[i];
+      let list = map.get(r.employeeId);
+      if (!list) {
+        list = [];
+        map.set(r.employeeId, list);
+      }
+      list.push(r);
+    }
+    return map;
+  }, [evaluationRounds]);
+
+  const standardsByDeptPos = useMemo(() => {
+    const map = new Map<string, SkillStandard[]>();
+    for (let i = 0; i < standards.length; i++) {
+      const s = standards[i];
+      const key = `${s.department}|${s.position}`;
+      let list = map.get(key);
+      if (!list) {
+        list = [];
+        map.set(key, list);
+      }
+      list.push(s);
+    }
+    return map;
+  }, [standards]);
+
   // Standards are matched per-employee (department + exact position), not
   // just department — the real F-HR-005 targets vary by position within a
   // department (e.g. หัวหน้าแผนก vs พนักงานทั่วไป have different targets for
@@ -135,7 +180,7 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
   // selectedDept, so cross-department employees pulled into this view still
   // get their own real standards rather than whatever tab is open.
   const getEmployeeStandards = (emp: Employee) =>
-    standards.filter((s) => s.department === emp.department && s.position === emp.position);
+    standardsByDeptPos.get(`${emp.department}|${emp.position}`) || [];
 
   // Reset extra employees when department changes
   const handleDeptChange = (dept: string) => {
@@ -203,12 +248,14 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
 
   // Radar chart uses the latest known result per skill (attempt 2 if it exists, else attempt 1)
   const getLatestResult = (empId: string, skillName: string) => {
-    const attempt2 = evaluations.find(
-      (e) => e.employeeId === empId && e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 2
+    const empEvals = evalsByEmpId.get(empId);
+    if (!empEvals) return 0;
+    const attempt2 = empEvals.find(
+      (e) => e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 2
     );
     if (attempt2) return attempt2.resultLevel;
-    const attempt1 = evaluations.find(
-      (e) => e.employeeId === empId && e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 1
+    const attempt1 = empEvals.find(
+      (e) => e.skillName === skillName && e.cycle === selectedCycle && e.attemptNumber === 1
     );
     return attempt1 ? attempt1.resultLevel : 0;
   };
@@ -326,8 +373,8 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
           emp={emp}
           standards={getEmployeeStandards(emp)}
           cycle={selectedCycle}
-          evaluations={evaluations}
-          evaluationRounds={evaluationRounds}
+          empEvaluations={evalsByEmpId.get(emp.id) || EMPTY_EVALS}
+          empRounds={roundsByEmpId.get(emp.id) || EMPTY_ROUNDS}
           isCrossDept={emp.department !== selectedDept}
           onRemoveCrossDept={() => handleRemoveExtraEmp(emp.id)}
           onUpdateEvaluation={onUpdateEvaluation}
@@ -643,24 +690,26 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
 };
 
 // ---- one F-HR-014 form-card per employee (Collapsible Accordion) ----
-const EmployeeEvalCard: React.FC<{
+interface EmployeeEvalCardProps {
   emp: Employee;
   standards: SkillStandard[];
   cycle: EvaluationCycle;
-  evaluations: SkillEvaluation[];
-  evaluationRounds: SkillEvaluationRound[];
+  empEvaluations: SkillEvaluation[];
+  empRounds: SkillEvaluationRound[];
   isCrossDept?: boolean;
   onRemoveCrossDept?: () => void;
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
   onNavigate?: (tab: NavTab) => void;
   onOpenRadar: () => void;
-}> = ({
+}
+
+const EmployeeEvalCard = React.memo<EmployeeEvalCardProps>(({
   emp,
   standards,
   cycle,
-  evaluations,
-  evaluationRounds,
+  empEvaluations,
+  empRounds,
   isCrossDept = false,
   onRemoveCrossDept,
   onUpdateEvaluation,
@@ -671,14 +720,24 @@ const EmployeeEvalCard: React.FC<{
   const [attempt, setAttempt] = useState<EvaluationAttempt>(1);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  const evalFor = (std: SkillStandard, attemptNumber: EvaluationAttempt) =>
-    evaluations.find(
-      (e) =>
-        e.employeeId === emp.id && e.skillName === std.skillName && e.cycle === cycle && e.attemptNumber === attemptNumber
-    );
+  const empEvalMap = useMemo(() => {
+    const map = new Map<string, SkillEvaluation>();
+    for (let i = 0; i < empEvaluations.length; i++) {
+      const e = empEvaluations[i];
+      map.set(`${e.skillName}|${e.cycle}|${e.attemptNumber}`, e);
+    }
+    return map;
+  }, [empEvaluations]);
 
-  const attempt1Done = standards.length > 0 && standards.every((std) => !!evalFor(std, 1));
-  const attempt2Done = standards.length > 0 && standards.every((std) => !!evalFor(std, 2));
+  const attempt1Done = useMemo(() => {
+    if (standards.length === 0) return false;
+    return standards.every((std) => empEvalMap.has(`${std.skillName}|${cycle}|1`));
+  }, [standards, empEvalMap, cycle]);
+
+  const attempt2Done = useMemo(() => {
+    if (standards.length === 0) return false;
+    return standards.every((std) => empEvalMap.has(`${std.skillName}|${cycle}|2`));
+  }, [standards, empEvalMap, cycle]);
 
   // "ระดับทักษะ ≥ 75%?" is read as the employee's OVERALL score — the
   // average resultLevel across every standard — not a per-skill bar each
@@ -689,14 +748,19 @@ const EmployeeEvalCard: React.FC<{
   // actually resolve once the retrain works.
   const effectiveAttempt: EvaluationAttempt = attempt2Done ? 2 : 1;
   const effectiveDone = attempt2Done || attempt1Done;
-  const overallPercent = computeOverallSkillPercent(standards, evaluations, emp.id, cycle, effectiveAttempt);
+  const overallPercent = useMemo(
+    () => computeOverallSkillPercent(standards, empEvalMap, cycle, effectiveAttempt),
+    [standards, empEvalMap, cycle, effectiveAttempt]
+  );
   // Same per-skill-target rule as the row-level Gap badge below — lists
   // which specific topics are under their own target, as context for why
   // the overall percentage (checked against the fixed 75% bar) came out low.
-  const gapSkills = standards.filter((std) => {
-    const ev = evalFor(std, effectiveAttempt);
-    return ev && ev.resultLevel < std.targetLevel;
-  });
+  const gapSkills = useMemo(() => {
+    return standards.filter((std) => {
+      const ev = empEvalMap.get(`${std.skillName}|${cycle}|${effectiveAttempt}`);
+      return ev && ev.resultLevel < std.targetLevel;
+    });
+  }, [standards, empEvalMap, cycle, effectiveAttempt]);
   const overallHasGap = effectiveDone && overallPercent !== null && overallPercent < SKILL_GAP_PASS_THRESHOLD;
   // Tab-label checkmarks stay specifically about round 1's own outcome
   // (whether a redo was ever triggered), independent of how attempt 2 goes.
@@ -704,7 +768,10 @@ const EmployeeEvalCard: React.FC<{
   // above (not a per-skill-target comparison) — a skill sitting below the
   // fixed 75% bar but still at/above its own lower F-HR-005 target must not
   // silently disagree with the "✓ passed" checkmark on this tab.
-  const attempt1OverallPercent = computeOverallSkillPercent(standards, evaluations, emp.id, cycle, 1);
+  const attempt1OverallPercent = useMemo(
+    () => computeOverallSkillPercent(standards, empEvalMap, cycle, 1),
+    [standards, empEvalMap, cycle]
+  );
   const attempt1HasGap = attempt1Done && attempt1OverallPercent !== null && attempt1OverallPercent < SKILL_GAP_PASS_THRESHOLD;
 
   return (
@@ -837,8 +904,8 @@ const EmployeeEvalCard: React.FC<{
             emp={emp}
             standards={standards}
             cycle={cycle}
-            evaluations={evaluations}
-            evaluationRounds={evaluationRounds}
+            empEvalMap={empEvalMap}
+            empRounds={empRounds}
             onUpdateEvaluation={onUpdateEvaluation}
             onSaveRound={onSaveRound}
             onNavigate={onNavigate}
@@ -847,25 +914,37 @@ const EmployeeEvalCard: React.FC<{
       )}
     </div>
   );
-};
+});
 
 // ---- the Action Period / skill grid / sign-off block for one attempt ----
-const RoundPanel: React.FC<{
+interface RoundPanelProps {
   attempt: EvaluationAttempt;
   emp: Employee;
   standards: SkillStandard[];
   cycle: EvaluationCycle;
-  evaluations: SkillEvaluation[];
-  evaluationRounds: SkillEvaluationRound[];
+  empEvalMap: Map<string, SkillEvaluation>;
+  empRounds: SkillEvaluationRound[];
   onUpdateEvaluation: (updated: SkillEvaluation) => void;
   onSaveRound: (round: SkillEvaluationRound) => void;
   onNavigate?: (tab: NavTab) => void;
-}> = ({ attempt, emp, standards, cycle, evaluations, evaluationRounds, onUpdateEvaluation, onSaveRound, onNavigate }) => {
+}
+
+const RoundPanel = React.memo<RoundPanelProps>(({
+  attempt,
+  emp,
+  standards,
+  cycle,
+  empEvalMap,
+  empRounds,
+  onUpdateEvaluation,
+  onSaveRound,
+  onNavigate,
+}) => {
   // Looked up by natural key, not by id — the id is a client-generated
   // placeholder until the backend responds with the real DB-assigned one.
   const roundId = `${emp.id}_${cycle}_${attempt}`;
-  const existingRound = evaluationRounds.find(
-    (r) => r.employeeId === emp.id && r.cycle === cycle && r.attemptNumber === attempt
+  const existingRound = empRounds.find(
+    (r) => r.cycle === cycle && r.attemptNumber === attempt
   );
 
   const [actionFrom, setActionFrom] = useState(existingRound?.actionPeriodFrom ?? '');
@@ -899,7 +978,7 @@ const RoundPanel: React.FC<{
   };
 
   const findEval = (skillName: string) =>
-    evaluations.find((e) => e.employeeId === emp.id && e.skillName === skillName && e.cycle === cycle && e.attemptNumber === attempt);
+    empEvalMap.get(`${skillName}|${cycle}|${attempt}`);
 
   const handleScoreSelect = (std: SkillStandard, level: SkillLevel) => {
     const existing = findEval(std.skillName);
@@ -960,7 +1039,7 @@ const RoundPanel: React.FC<{
   // banner instead of reflecting the 4 still-unscored topics.
   const allStandardsScored = standards.length > 0 && standards.every((std) => !!findEval(std.skillName));
   const savedPercent =
-    existingRound && allStandardsScored ? computeOverallSkillPercent(standards, evaluations, emp.id, cycle, attempt) : null;
+    existingRound && allStandardsScored ? computeOverallSkillPercent(standards, empEvalMap, cycle, attempt) : null;
   const savedIncomplete = !!existingRound && !allStandardsScored;
   const savedGapSkills = standards.filter((std) => {
     const ev = findEval(std.skillName);
@@ -1170,4 +1249,4 @@ const RoundPanel: React.FC<{
       )}
     </>
   );
-};
+});

@@ -135,11 +135,20 @@ body {
   font-size: 1.05rem;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -999;
+  pointer-events: none;
   background-image: 
     radial-gradient(1100px 600px at 8% -5%, rgba(59, 130, 246, 0.08), transparent 55%),
     radial-gradient(900px 500px at 100% 105%, rgba(139, 92, 246, 0.06), transparent 55%),
     var(--bg-main);
-  background-attachment: fixed;
+  will-change: transform;
 }
 
 /* Custom Scrollbar - Ultra-Sleek Floating Glass Design */
@@ -326,11 +335,17 @@ h4 { font-size: 1.1rem; }
   border: 1px solid var(--border-color);
   border-radius: 18px;
   box-shadow: var(--shadow-card);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Eliminate nested multi-layer blur in list cards to avoid GPU overdraw */
+.glass-card .glass-card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 #printable-area {

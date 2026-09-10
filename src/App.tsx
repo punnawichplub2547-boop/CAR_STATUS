@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -650,11 +650,11 @@ export function App() {
   // backend responds. Reconciled by natural key (employeeId+skillName+
   // cycle+attemptNumber), not by id, since the optimistic entry's id is
   // still the client-generated temp one.
-  const handleUpdateEvaluation = (updated: SkillEvaluation) => {
-    const exists = skillEvaluations.some((e) => e.id === updated.id);
-    setSkillEvaluations(
-      exists ? skillEvaluations.map((e) => (e.id === updated.id ? updated : e)) : [updated, ...skillEvaluations]
-    );
+  const handleUpdateEvaluation = useCallback((updated: SkillEvaluation) => {
+    setSkillEvaluations((prev) => {
+      const exists = prev.some((e) => e.id === updated.id);
+      return exists ? prev.map((e) => (e.id === updated.id ? updated : e)) : [updated, ...prev];
+    });
 
     saveBackendSkillEvaluation({
       employeeId: Number(updated.employeeId),
@@ -689,13 +689,13 @@ export function App() {
       .catch((err) =>
         window.alert(`บันทึกผลประเมินทักษะเข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`)
       );
-  };
+  }, []);
 
-  const handleSaveEvaluationRound = (round: SkillEvaluationRound) => {
-    const exists = skillEvaluationRounds.some((r) => r.id === round.id);
-    setSkillEvaluationRounds(
-      exists ? skillEvaluationRounds.map((r) => (r.id === round.id ? round : r)) : [round, ...skillEvaluationRounds]
-    );
+  const handleSaveEvaluationRound = useCallback((round: SkillEvaluationRound) => {
+    setSkillEvaluationRounds((prev) => {
+      const exists = prev.some((r) => r.id === round.id);
+      return exists ? prev.map((r) => (r.id === round.id ? round : r)) : [round, ...prev];
+    });
 
     saveBackendSkillEvaluationRound({
       employeeId: Number(round.employeeId),
@@ -723,7 +723,7 @@ export function App() {
       .catch((err) =>
         window.alert(`บันทึกรอบการประเมินทักษะเข้าระบบ backend ไม่สำเร็จ: ${err instanceof Error ? err.message : 'unknown error'}`)
       );
-  };
+  }, []);
 
   const handleAddCertificate = (cert: Certificate) => {
     setCertificates((prev) => [cert, ...prev]);
