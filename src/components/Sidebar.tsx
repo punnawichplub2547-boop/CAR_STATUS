@@ -18,6 +18,7 @@ import {
   Info,
   History,
   ClipboardList,
+  BookOpen,
 } from 'lucide-react';
 
 export type NavTab =
@@ -41,6 +42,7 @@ interface SidebarProps {
   expiringCertsCount: number;
   probationCount: number;
   currentUserRole?: 'ADMIN' | 'HR' | 'SUPERVISOR' | 'EMPLOYEE';
+  onOpenManual?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -49,6 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   expiringCertsCount,
   probationCount,
   currentUserRole = 'ADMIN',
+  onOpenManual,
 }) => {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('hrskill_sidebarCollapsed') === '1');
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -203,6 +206,41 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </nav>
         </div>
+
+        {/* User Manual & Onboarding Guide Trigger */}
+        {onOpenManual && (
+          <div style={{ padding: '0 12px 8px 12px' }}>
+            <button
+              type="button"
+              onClick={onOpenManual}
+              className="glass-card glass-card-interactive"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 14px',
+                borderRadius: 12,
+                border: '1px solid rgba(21, 96, 208, 0.25)',
+                background: 'rgba(21, 96, 208, 0.08)',
+                color: '#1560d0',
+                fontWeight: 700,
+                fontSize: '0.84rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+              title="เปิดคู่มือการใช้งานระบบ & Quick Start Guide"
+            >
+              <BookOpen size={17} style={{ flexShrink: 0 }} />
+              {!collapsed && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                  <span>คู่มือการใช้งานระบบ</span>
+                  <span className="badge badge-blue" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>Guide</span>
+                </div>
+              )}
+            </button>
+          </div>
+        )}
 
         <div
           className="sidebar-footer glass-card glass-card-interactive"

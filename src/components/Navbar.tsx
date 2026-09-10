@@ -16,6 +16,7 @@ import {
   BookOpen,
   X,
   Database,
+  HelpCircle,
 } from 'lucide-react';
 import type { Employee, Certificate, SkillStandard } from '../types';
 import type { NavTab } from './Sidebar';
@@ -36,6 +37,7 @@ interface NavbarProps {
   onSelectEmployeeForPassport?: (emp: Employee) => void;
   onOpenProfile?: () => void;
   onOpenPassport?: () => void;
+  onOpenManual?: () => void;
   onResetDemoData?: () => void;
   onLogout?: () => void;
 }
@@ -53,6 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectEmployeeForPassport,
   onOpenProfile,
   onOpenPassport,
+  onOpenManual,
   onResetDemoData,
   onLogout,
 }) => {
@@ -160,7 +163,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Global Universal Search */}
       <div className="navbar-search" ref={searchRef} style={{ position: 'relative' }}>
         <Search className="search-icon" size={18} />
         <input
@@ -390,6 +392,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             style={{ borderRadius: 12, padding: '8px 12px', color: 'var(--text-muted)' }}
           >
             <RotateCcw size={15} /> รีเซ็ตข้อมูล
+          </button>
+        )}
+
+        {/* User Manual & Help Guide Button */}
+        {onOpenManual && (
+          <button
+            type="button"
+            className="notif-btn"
+            onClick={onOpenManual}
+            title="คู่มือการใช้งานระบบ & Quick Start Guide (User Manual)"
+            style={{ width: '44px', height: '44px', color: '#1560d0', background: 'rgba(21, 96, 208, 0.08)' }}
+          >
+            <HelpCircle size={20} />
           </button>
         )}
 

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>คู่มือการใช้งานระบบ CAR HR Skill Matrix & Evaluation Platform</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+  
+  :root {
+    --primary: #1560d0;
+    --primary-dark: #0d4294;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --bg-light: #f8fafc;
+    --border: #e2e8f0;
+  }
+  
+  * { box-sizing: border-box; }
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--text-main);
+    background: #f1f5f9;
+    margin: 0;
+    padding: 24px;
+    line-height: 1.6;
+  }
+  
+  .manual-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 48px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 16px;
+    margin-bottom: 32px;
+  }
+  
+  .header-title h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 6px 0;
+  }
+  .header-title p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  
+  .print-btn {
+    background: linear-gradient(135deg, var(--primary), #1e9bf0);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(21, 96, 208, 0.3);
+    transition: transform 0.2s;
+  }
+  .print-btn:hover { transform: translateY(-2px); }
+  
+  .section-card {
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  
+  .section-card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-dark);
+    margin-top: 0;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .section-card ul {
+    margin: 8px 0 16px 0;
+    padding-left: 24px;
+  }
+  .section-card li {
+    margin-bottom: 6px;
+    font-size: 14.5px;
+  }
+  
+  .screenshot-frame {
+    text-align: center;
+    margin: 16px 0;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .screenshot-frame img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  }
+  .screenshot-caption {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 8px;
+  }
+  
+  @media print {
+    body { background: white; padding: 0; }
+    .manual-container { box-shadow: none; padding: 20px; max-width: 100%; }
+    .print-btn { display: none; }
+    .section-card { page-break-inside: avoid; border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="manual-container">
+  <div class="header-bar">
+    <div class="header-title">
+      <h1>📘 คู่มือการใช้งาน CAR HR Skill Matrix & Evaluation Platform</h1>
+      <p>Complete Auto Rubber Manufacturing Co., Ltd. · มาตรฐาน ISO 9001:2015 & IATF 16949</p>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨️ สั่งพิมพ์ / บันทึกเป็น PDF</button>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="section-card">
+    <h2>1. การเข้าสู่ระบบ (Login: Production vs Demo Mode)</h2>
+    <p>ระบบมี 2 โหมดการเข้าใช้งานเพื่อความสะดวกในการทดสอบและการใช้งานจริง:</p>
+    <ul>
+      <li><strong>โหมดทดสอบ (Demo Mode):</strong> มีปุ่มคลิกเดียวเพื่อสลับ Role ผู้ใช้ (Admin, HR, Supervisor, พนักงาน) เหมาะสำหรับผู้บริหารทดลองเล่น</li>
+      <li><strong>โหมดใช้งานจริง (Production Mode):</strong> กรอกรหัสพนักงานหรืออีเมลบริษัทและรหัสผ่านส่วนตัว ตรวจสอบตรงกับฐานข้อมูล Database</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="/assets/guides/guide_login.webp" alt="Demo Login Animation">
+      <div class="screenshot-caption">🎬 ภาพเคลื่อนไหวสาธิต: การสลับโหมดใช้งานจริง vs โหมดทดสอบ และการล็อกอินสลับ Role ใน 1 คลิก</div>
+    </div>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="section-card">
+    <h2>2. ภาพรวมระบบ (Executive Dashboard)</h2>
+    <p>หน้าจอสรุปตัวชี้วัด KPIs และความพร้อมรับการตรวจประเมินของโรงงานแบบเรียลไทม์:</p>
+    <ul>
+      <li><strong>KPI Cards:</strong> สรุปจำนวนพนักงาน, คนที่อยู่ระหว่างทดลองงาน, ชั่วโมงการอบรมรวม, และใบเซอร์เตือนหมดอายุ</li>
+      <li><strong>Action Center:</strong> กล่องแจ้งเตือนด่วนสำหรับพนักงานที่ครบกำหนดประเมินโปร และใบเซอร์ที่ใกล้หมดอายุ</li>
+      <li><strong>Skill Radar Chart:</strong> กราฟเรดาร์เปรียบเทียบระดับทักษะจริงกับเป้าหมายแยกตามแผนก</li>
+      <li><strong>Audit Readiness Index:</strong> ตัวเลข % ความพร้อมในการตรวจประเมิน IATF 16949</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="file:///C:/Users/trainee_IT02/.gemini/antigravity-ide/brain/24832177-6c79-4e46-a493-f6a9fd3317e0/dashboard_page_1789007476478.png" alt="Dashboard">
+      <div class="screenshot-caption">ภาพที่ 2: หน้าจอ Executive Dashboard แสดงข้อมูลภาพรวมโรงงาน</div>
+    </div>
+  </div>
+
+  <!-- Section 3 -->
+  <div class="section-card">
+    <h2>3. ข้อมูลพนักงาน & ผังองค์กร (Employee Management & Org Chart)</h2>
+    <p>ศูนย์กลางการจัดการข้อมูลบุคลากรและสายการบังคับบัญชา:</p>
+    <ul>
+      <li><strong>ปุ่ม + เพิ่มพนักงานใหม่:</strong> กรอกข้อมูลพนักงาน, แผนก, ตำแหน่ง, วันที่เริ่มงาน และเลือกหัวหน้างาน (Supervisor)</li>
+      <li><strong>ตัวกรองและค้นหา:</strong> ค้นหาตามรหัส, ชื่อ หรือกรองแยกตามแผนก (FMG-A, QA/QC, HR&GA, PD)</li>
+      <li><strong>ผังองค์กร (Org Chart):</strong> แสดงสายการบังคับบัญชาและโครงสร้างองค์กรแบบ Interactive</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="file:///C:/Users/trainee_IT02/.gemini/antigravity-ide/brain/24832177-6c79-4e46-a493-f6a9fd3317e0/employees_page_1789007210091.png" alt="Employees">
+      <div class="screenshot-caption">ภาพที่ 3: หน้ารายชื่อพนักงานและระบบค้นหา/จัดกลุ่มแผนก</div>
+    </div>
+  </div>
+
+  <!-- Section 4 -->
+  <div class="section-card">
+    <h2>4. บันทึกการอบรมปฐมนิเทศ (F-HR-002: Training Record)</h2>
+    <p>ระบบบันทึกประวัติการฝึกอบรมปฐมนิเทศพนักงานใหม่ตามมาตรฐานโรงงาน:</p>
+    <ul>
+      <li><strong>สร้างรอบการอบรม:</strong> กำหนดวันที่, เวลาเช้า-บ่าย, วิทยากร, และสถานที่อบรม</li>
+      <li><strong>Export Excel F-HR-002 Rev.6:</strong> ส่งออกไฟล์ Excel ลง Template แท้ แยก Sheet กฎระเบียบและ Sheet ความปลอดภัย พร้อมช่องเซ็นชื่อจริง</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="file:///C:/Users/trainee_IT02/.gemini/antigravity-ide/brain/24832177-6c79-4e46-a493-f6a9fd3317e0/training_page_1789007230380.png" alt="Training">
+      <div class="screenshot-caption">ภาพที่ 4: หน้าระบบบันทึกการฝึกอบรมปฐมนิเทศ F-HR-002</div>
+    </div>
+  </div>
+
+  <!-- Section 5 -->
+  <div class="section-card">
+    <h2>5. ศูนย์ข้อสอบออนไลน์ & QR Code (Google Forms Live Sync & Phase Lock)</h2>
+    <p>ระบบข้อสอบออนไลน์ผ่าน Google Forms 100% สำหรับพนักงานสแกนทำข้อสอบผ่านมือถือ:</p>
+    <ul>
+      <li><strong>Exam QR Code Modal:</strong> แสดง QR Code คมชัดสูง สำหรับฉายขึ้นจอโปรเจกเตอร์หรือพิมพ์ติดห้องอบรม</li>
+      <li><strong>Phase Lock:</strong> ก่อนอบรมเปิดรับ Pre-Test หลังอบรม HR กดปิด Pre-Test เพื่อปลดล็อคให้ทำรอบ Post-Test</li>
+      <li><strong>เกณฑ์ผ่านอัตโนมัติ:</strong> กฎระเบียบ (30 ข้อ) ≥ 80% (24/30 คะแนน) และความปลอดภัย (14 ข้อ) ผิดได้ไม่เกิน 2 ข้อ (≥ 12/14 คะแนน)</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="/assets/guides/guide_exam_qr.webp" alt="QR Modal Animation">
+      <div class="screenshot-caption">🎬 ภาพเคลื่อนไหวสาธิต: การเปิด QR Code ขึ้นจออบรม และการกดสลับ Phase Lock เพื่อปลดล็อค Post-Test</div>
+    </div>
+  </div>
+
+  <!-- Section 6 -->
+  <div class="section-card">
+    <h2>6. การประเมินฝึกอบรมหน้างาน OJT (F-HR-004A & F-HR-004B)</h2>
+    <p>เครื่องมือสำหรับหัวหน้างาน (Supervisor) ในการสอนงานและประเมินผลภาคปฏิบัติ:</p>
+    <ul>
+      <li><strong>F-HR-004A:</strong> สำหรับพนักงานใหม่ในช่วง 30 วันแรก ณ หน้างานจริง</li>
+      <li><strong>F-HR-004B:</strong> สำหรับการโอนย้ายงาน/เปลี่ยนเครื่องจักร หรือ Re-training ทักษะที่ยังไม่ถึงเป้าหมาย (Skill Gap)</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="file:///C:/Users/trainee_IT02/.gemini/antigravity-ide/brain/24832177-6c79-4e46-a493-f6a9fd3317e0/ojt_a_page_1789007342341.png" alt="OJT">
+      <div class="screenshot-caption">ภาพที่ 6: แบบฟอร์มประเมินการฝึกอบรม OJT หน้างาน F-HR-004A</div>
+    </div>
+  </div>
+
+  <!-- Section 7 -->
+  <div class="section-card">
+    <h2>7. Skill Matrix & Gap Analysis (F-HR-014 Rev.4)</h2>
+    <p>ศูนย์กลางการประเมินระดับความสามารถและวิเคราะห์ช่องว่างทักษะพนักงาน:</p>
+    <ul>
+      <li><strong>ประเมินปีละ 2 รอบ:</strong> รอบ ม.ค. และ ก.ค. พร้อมบันทึกเป้าหมาย Target</li>
+      <li><strong>Skill Gap Visualizer:</strong> ไฮไลท์สีส้ม/แดงทันทีเมื่อคะแนนจริงต่ำกว่า Target</li>
+      <li><strong>Export Excel F-HR-014:</strong> วาดไอคอนวงกลมคะแนน (0-100%) ลงใน Template แท้ พร้อมแตกชีตอัตโนมัติ</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="/assets/guides/guide_skill_matrix.webp" alt="Skill Matrix Animation">
+      <div class="screenshot-caption">🎬 ภาพเคลื่อนไหวสาธิต: ตาราง Skill Matrix และการกดส่งออกไฟล์ Excel F-HR-014 Template จริง</div>
+    </div>
+  </div>
+
+  <!-- Section 8 -->
+  <div class="section-card">
+    <h2>8. คลังใบรับรอง & บัตรทักษะ (Digital Skill Passport)</h2>
+    <p>ระบบจัดเก็บและติดตามใบอนุญาตวิชาชีพและใบประกาศนียบัตร:</p>
+    <ul>
+      <li><strong>จัดเก็บเอกสาร:</strong> จป.วิชาชีพ, โฟล์คลิฟต์, ใบรับรองงานเชื่อม, IATF Internal Auditor</li>
+      <li><strong>Digital Skill Passport:</strong> ค้นหาชื่อพนักงานด่วนและเปิดบัตรทักษะดิจิทัลพร้อม QR Code ประจำตัว</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="/assets/guides/guide_passport.webp" alt="Passport Animation">
+      <div class="screenshot-caption">🎬 ภาพเคลื่อนไหวสาธิต: การค้นหาชื่อพนักงานด่วนและเปิดบัตร Digital Skill Passport พร้อม QR Code</div>
+    </div>
+  </div>
+
+  <!-- Section 9 -->
+  <div class="section-card">
+    <h2>9. รายงานการตรวจประเมิน (ISO 9001 / IATF 16949 Audit Package)</h2>
+    <p>หน้ารายงานสรุปหลักฐานสำหรับรองรับการตรวจประเมินของ Auditor:</p>
+    <ul>
+      <li><strong>4 แท็บหลัก:</strong> รายบุคคล, รายแผนก, Skill Matrix รวม, และทะเบียนหลักสูตรอบรมประจำปี (CAR-HR-REC-02)</li>
+      <li><strong>Export Excel 5-Sheet:</strong> ดาวน์โหลดชุดเอกสาร Audit ครบ 5 แผ่นงานในคลิกเดียว</li>
+    </ul>
+    <div class="screenshot-frame">
+      <img src="file:///C:/Users/trainee_IT02/.gemini/antigravity-ide/brain/24832177-6c79-4e46-a493-f6a9fd3317e0/audit_report_page_1789007514549.png" alt="Audit Report">
+      <div class="screenshot-caption">ภาพที่ 9: หน้ารายงาน Audit และปุ่มดาวน์โหลด 5-Sheet Package</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

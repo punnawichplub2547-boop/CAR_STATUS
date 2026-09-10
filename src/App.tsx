@@ -6,6 +6,7 @@ import type { NavTab } from './components/Sidebar';
 import { LoginView } from './components/LoginView';
 import { UserProfileModal } from './components/UserProfileModal';
 import { SkillPassportModal } from './components/SkillPassportModal';
+import { UserManualModal } from './components/UserManualModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { generateLiveNotifications } from './utils/notificationGenerator';
 
@@ -296,6 +297,7 @@ export function App() {
   const [isLoggedIn, setIsLoggedIn] = usePersistentState<boolean>('is_logged_in', false);
   const [activeTab, setActiveTab] = useState<NavTab>('dashboard');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showManualModal, setShowManualModal] = useState(false);
   const [passportEmployee, setPassportEmployee] = useState<Employee | null>(null);
 
   const persistCurrentUserEmpCode = (empCode: string) => {
@@ -850,6 +852,7 @@ export function App() {
         onSelectEmployeeForPassport={(emp) => setPassportEmployee(emp)}
         onOpenProfile={() => setShowProfileModal(true)}
         onOpenPassport={() => setPassportEmployee(currentUser)}
+        onOpenManual={() => setShowManualModal(true)}
         onResetDemoData={handleResetDemoData}
         onLogout={handleLogout}
       />
@@ -862,6 +865,7 @@ export function App() {
           expiringCertsCount={expiringCertsCount}
           probationCount={probationCount}
           currentUserRole={currentUser.role}
+          onOpenManual={() => setShowManualModal(true)}
         />
 
         <main className="main-content">
@@ -1015,6 +1019,12 @@ export function App() {
         ojtSessions={ojtSessions}
         ojtParticipants={ojtParticipants}
         probationEvaluations={probationEvaluations}
+      />
+
+      {/* Interactive User Manual & Guide Modal */}
+      <UserManualModal
+        isOpen={showManualModal}
+        onClose={() => setShowManualModal(false)}
       />
     </div>
   );
