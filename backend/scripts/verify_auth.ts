@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from './db.js';
+import { prisma } from '../src/db.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'car_hr_skill_matrix_jwt_secret_dev_key_2026';
 

@@ -30,7 +30,7 @@ import type {
   OjtSession,
   OjtParticipant,
   ProbationEvaluation,
-} from '../types';
+} from '../../types';
 
 interface SkillPassportModalProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { History, Search, Filter, AlertTriangle } from 'lucide-react';
-import type { OjtSession, OjtContentItem, OjtParticipant } from '../types';
+import type { OjtSession, OjtContentItem, OjtParticipant } from '../../types';
 
 interface OjtHistoryViewProps {
   sessions: OjtSession[];

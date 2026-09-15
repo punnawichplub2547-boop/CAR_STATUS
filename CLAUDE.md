@@ -49,43 +49,41 @@ d:\HrSkill\app\
 │   ├── data/mockData.ts          # Sanitized Demo Data & Question Bank
 │   ├── constants/
 │   │   └── orientationConstants.ts # Orientation Course Topics & Options
+│   ├── hooks/                    # Domain Custom Hooks (Decoupled App State)
+│   │   ├── index.ts              # Hooks Barrel Export
+│   │   ├── usePersistentState.ts # LocalStorage Persistence Hook
+│   │   ├── useEmployeeState.ts   # Employee & Auth State Management
+│   │   ├── useSkillMatrixState.ts # Skills, Standards & Rounds Management
+│   │   ├── useOjtProbationState.ts # OJT & Probation Evaluation State
+│   │   └── useCertificateState.ts # Certificate Vault & Compliance State
 │   ├── utils/
 │   │   ├── dateUtils.ts          # Tenure & Date Formatting Helpers
 │   │   ├── api.ts                # Backend API Client & Sync (Auth, Employees, Certs)
 │   │   ├── notificationGenerator.ts # Dynamic System Notifications (Cert Expiry, OJT, Exam)
 │   │   ├── fhr002Exporter.ts     # F-HR-002 OpenXML Template Exporter
 │   │   └── excelTemplateExporter.ts # F-HR-014 OpenXML Exporter & Helpers
-│   ├── components/               # Modular UI Components
-│   │   ├── exam/                 # Exam Sub-components
-│   │   │   ├── ExamConfigModal.tsx   # Google Forms API Config Modal
-│   │   │   ├── ExamDetailDrawer.tsx  # Score Detail & Mistakes (isHR Gate)
-│   │   │   ├── ExamDirectoryTable.tsx # HR Tracker, Batch Filters & Locks
-│   │   │   └── ExamQrModal.tsx       # Instant Mobile QR Code Scanner Modal
-│   │   ├── Dashboard.tsx         # Executive Overview & Recharts Visualizations
-│   │   ├── EmployeeManagement.tsx # Org Chart (@xyflow/react) & Employee Directory
-│   │   ├── EmployeeExcelImportModal.tsx # Bulk Employee Excel (.xlsx) Import with Validation
-│   │   ├── SkillMatrixView.tsx   # Skill Matrix & Competency Radar Charts
-│   │   ├── OjtProbationEvaluator.tsx # Forms F-HR-016 (Form A/B) & Probation Evaluation
-│   │   ├── OjtFormAEvaluator.tsx # New Hire OJT (Form A) with Sticky Action Bar
-│   │   ├── OjtFormBEvaluator.tsx # Transfer OJT (Form B) with Sticky Action Bar
-│   │   ├── ProbationEvaluator.tsx# Probation Evaluation (F-HR-009) with Sticky Action Bar
-│   │   ├── CertificateVault.tsx  # Certification Expiry Tracking
-│   │   ├── TrainingManagement.tsx# Training Calendar & QR/Check-in
-│   │   ├── ExamEngine.tsx        # Exam Engine Orchestrator & Live Sync
-│   │   ├── AuditReportExporter.tsx # ISO/IATF Audit Report Center (SheetJS)
-│   │   ├── LoginView.tsx         # Real Authentication & Role-based Login (Glassmorphic)
-│   │   ├── UserProfileModal.tsx  # User Profile & Self Password Change
-│   │   ├── SkillPassportModal.tsx# Employee Skill Passport & Printable CV/Portfolio (A4 Layout)
-│   │   ├── SystemBackupModal.tsx # 1-Click System JSON Backup & Restore Modal
-│   │   ├── ErrorBoundary.tsx     # React Runtime Error Protection & Recovery
-│   │   ├── Navbar.tsx            # Header, Notifications Drawer, User Profile, Backup & Logout
-│   │   └── Sidebar.tsx           # Navigation Menu & Role Permission Filtering
+│   ├── components/               # Organized Domain-based UI Components
+│   │   ├── index.ts              # Centralized Barrel Re-export
+│   │   ├── layout/               # Navbar, Sidebar, ErrorBoundary
+│   │   ├── auth/                 # LoginView, TestLoginModal, UserProfileModal
+│   │   ├── dashboard/            # Executive Overview & Analytics (Dashboard)
+│   │   ├── employee/             # Employee Directory, Import, OrgChart, SkillPassport
+│   │   ├── ojt/                  # OJT Form A/B, History, Probation Evaluator & History
+│   │   ├── skills/               # SkillMatrixView, SkillStandardManagement
+│   │   ├── certificates/         # CertificateVault, TrainingManagement
+│   │   ├── exam/                 # ExamEngine, OrientationExport, QR & Directory modals
+│   │   ├── reports/              # ISO/IATF Audit Report Center (AuditReportExporter)
+│   │   └── modals/               # SystemBackupModal, UserManualModal
 │   ├── App.tsx                   # Master State Manager & LocalStorage Persistence
 │   └── index.css                 # Global Design System Tokens & Glassmorphism Styles
 ├── backend/                      # Express 4 + Prisma 6 + MySQL 8.4
 │   ├── prisma/
 │   │   ├── schema.prisma         # Prisma Data Models (Employee, Cert, SkillStandard, Exam)
 │   │   └── seed.ts               # Seed data with bcrypt passwords & roles
+│   ├── scripts/
+│   │   ├── importSkillMatrixStandards.ts # F-HR-005 Excel Import Tool
+│   │   ├── verify_auth.ts        # Authentication & RBAC Test Suite
+│   │   └── verify_profile_and_certs.ts # Profile & Cert Status Unit Tests
 │   └── src/
 │       ├── routes/
 │       │   ├── auth.ts           # POST /login, POST /change-password, GET /me
@@ -93,9 +91,7 @@ d:\HrSkill\app\
 │       │   ├── employees.ts      # GET / POST /api/employees
 │       │   ├── skillStandards.ts # GET /api/skill-standards
 │       │   └── webhook.ts        # POST /api/webhook/exam-result
-│       ├── server.ts             # Express Server Setup & CORS
-│       ├── verify_auth.ts        # Authentication & RBAC Test Suite
-│       └── verify_profile_and_certs.ts # Profile & Cert Status Unit Tests
+│       └── server.ts             # Express Server Setup & CORS
 ├── scratch/
 │   ├── verify_all_modules_e2e.mts # Complete 7-Module E2E System Audit Suite
 │   ├── verify_fhr014.mts         # F-HR-014 OpenXML Multi-sheet Exporter Verification

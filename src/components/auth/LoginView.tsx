@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, LogIn, Shield, UserCheck, AlertCircle, Loader2, Server, Sparkles } from 'lucide-react';
-import type { Employee } from '../types';
-import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
-import { loginApi } from '../utils/api';
+import type { Employee } from '../../types';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../../utils/roleLabels';
+import { loginApi } from '../../utils/api';
 
 interface LoginViewProps {
   onLoginSuccess: (user: Employee) => void;

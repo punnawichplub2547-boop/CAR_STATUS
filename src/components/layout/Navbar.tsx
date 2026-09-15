@@ -18,11 +18,11 @@ import {
   Database,
   HelpCircle,
 } from 'lucide-react';
-import type { Employee, Certificate, SkillStandard } from '../types';
+import type { Employee, Certificate, SkillStandard } from '../../types';
 import type { NavTab } from './Sidebar';
-import type { DynamicNotificationItem } from '../utils/notificationGenerator';
-import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
-import { SystemBackupModal } from './SystemBackupModal';
+import type { DynamicNotificationItem } from '../../utils/notificationGenerator';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../../utils/roleLabels';
+import { SystemBackupModal } from '../modals/SystemBackupModal';
 
 interface NavbarProps {
   currentUser: Employee;

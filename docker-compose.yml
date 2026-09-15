@@ -17,6 +17,7 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: "mysql://car_user:car_password@car-status-mysql:3306/car_status"
+      PORT: 4000
     ports:
       # host 4002 — container listens on 4000 internally
       - "4002:4000"

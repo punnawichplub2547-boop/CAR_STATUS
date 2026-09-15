@@ -8,8 +8,8 @@ import type {
   OjtChangeReasonCategory,
   OjtEvaluationMethod,
   SkillLevel,
-} from '../types';
-import { exportFHR004B, FHR004B_ROW_CAPACITY, type ExportOjtParticipant } from '../utils/fhr004Exporter';
+} from '../../types';
+import { exportFHR004B, FHR004B_ROW_CAPACITY, type ExportOjtParticipant } from '../../utils/fhr004Exporter';
 
 interface OjtFormBEvaluatorProps {
   employees: Employee[];

@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Download, X, AlertTriangle } from 'lucide-react';
-import type { Employee } from '../types';
-import type { EmployeePayload } from '../utils/api';
+import type { Employee } from '../../types';
+import type { EmployeePayload } from '../../utils/api';
 
 interface EmployeeExcelImportModalProps {
   existingEmployees: Employee[];

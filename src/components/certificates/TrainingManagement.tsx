@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraduationCap } from 'lucide-react';
-import { OrientationExport } from './OrientationExport';
+import { OrientationExport } from '../exam/OrientationExport';
 
 export const TrainingManagement: React.FC<{ onNavigateToExam?: (batchId?: string) => void }> = ({ onNavigateToExam }) => {
   return (

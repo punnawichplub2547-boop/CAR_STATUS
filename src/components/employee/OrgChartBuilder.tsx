@@ -20,8 +20,8 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { LayoutGrid, Trash2, User, X } from 'lucide-react';
-import type { OrgChartNode, OrgChartLevel, Employee } from '../types';
-import { autoLayoutOrgChart } from '../utils/orgChartLayout';
+import type { OrgChartNode, OrgChartLevel, Employee } from '../../types';
+import { autoLayoutOrgChart } from '../../utils/orgChartLayout';
 
 // The real position tags from F-HR-038 (CAR's actual org chart file),
 // ordered senior-to-junior. Badge color groups them into rough tiers —

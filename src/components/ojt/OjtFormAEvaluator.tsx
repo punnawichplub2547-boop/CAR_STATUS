@@ -9,8 +9,9 @@ import type {
   OjtEvaluationMethod,
   SkillLevel,
   SkillStandard,
-} from '../types';
-import { exportFHR004A, FHR004A_ROW_CAPACITY } from '../utils/fhr004Exporter';
+} from '../../types';
+import { exportFHR004A, FHR004A_ROW_CAPACITY } from '../../utils/fhr004Exporter';
+import { matchEmployeeStandards } from '../../utils/skillStandardMatcher';
 
 interface OjtFormAEvaluatorProps {
   employees: Employee[];
@@ -86,7 +87,7 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
   // standards on file yet.
   const buildContentRowsForEmployee = (emp: typeof targetEmp): ContentRowDraft[] => {
     if (!emp) return [createEmptyContentRow()];
-    const matched = standards.filter((s) => s.department === emp.department && s.position === emp.position);
+    const matched = matchEmployeeStandards(standards, emp);
     // Cap at the real form's fixed 25-row band (rows 13-37) so the on-screen
     // table, the "เพิ่มแถว (n/25)" counter, and what gets saved/exported all
     // agree — otherwise a role with >25 F-HR-005 standards (e.g. หัวหน้าแผนก)
@@ -109,14 +110,12 @@ export const OjtFormAEvaluator: React.FC<OjtFormAEvaluatorProps> = ({ employees,
   const daysUntilEligible = Math.max(0, MIN_TENURE_DAYS_FOR_OJT - tenureDays);
 
   const hasMatchedStandards =
-    !!targetEmp &&
-    standards.some((s) => s.department === targetEmp.department && s.position === targetEmp.position);
+    !!targetEmp && matchEmployeeStandards(standards, targetEmp).length > 0;
 
   const matchedStandardsOverflow = targetEmp
     ? Math.max(
         0,
-        standards.filter((s) => s.department === targetEmp.department && s.position === targetEmp.position).length -
-          FHR004A_ROW_CAPACITY
+        matchEmployeeStandards(standards, targetEmp).length - FHR004A_ROW_CAPACITY
       )
     : 0;
 

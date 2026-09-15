@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, Check, LogIn, X, Shield, UserCheck } from 'lucide-react';
-import type { Employee } from '../types';
-import { ROLE_LABELS, LOGINABLE_ROLES } from '../utils/roleLabels';
+import type { Employee } from '../../types';
+import { ROLE_LABELS, LOGINABLE_ROLES } from '../../utils/roleLabels';
 
 interface TestLoginModalProps {
   isOpen: boolean;

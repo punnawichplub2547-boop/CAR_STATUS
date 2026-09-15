@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ClipboardList, Search, Filter, AlertTriangle } from 'lucide-react';
-import type { ProbationEvaluation, ProbationCriteriaScores } from '../types';
+import type { ProbationEvaluation, ProbationCriteriaScores } from '../../types';
 
 interface ProbationHistoryViewProps {
   evaluations: ProbationEvaluation[];

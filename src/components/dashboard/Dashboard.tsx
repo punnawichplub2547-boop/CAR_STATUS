@@ -27,9 +27,9 @@ import {
   Radar,
   Legend,
 } from 'recharts';
-import type { Employee, Certificate, SkillStandard, SkillEvaluation, TrainingCourse, ProbationEvaluation, ProbationPeriod, EvaluationCycle } from '../types';
-import type { NavTab } from './Sidebar';
-import { computeCertificateStatus } from '../utils/certificateStatus';
+import type { Employee, Certificate, SkillStandard, SkillEvaluation, TrainingCourse, ProbationEvaluation, ProbationPeriod, EvaluationCycle } from '../../types';
+import type { NavTab } from '../layout/Sidebar';
+import { computeCertificateStatus } from '../../utils/certificateStatus';
 
 const formatDMY = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 

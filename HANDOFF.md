@@ -98,5 +98,5 @@ cmd /c npm run build
 cmd /c node --experimental-strip-types scratch/verify_all_modules_e2e.mts
 
 # รัน Backend Authentication & RBAC Suite
-cd backend && cmd /c npx tsx src/verify_auth.ts
+cd backend && cmd /c npx tsx scripts/verify_auth.ts
 ```

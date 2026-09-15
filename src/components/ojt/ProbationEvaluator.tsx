@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Award, CheckCircle2, UserCheck, RotateCcw, FileSpreadsheet, Lock, Globe2 } from 'lucide-react';
-import type { Employee, ProbationEvaluation, ProbationCriteriaScores, ProbationPeriod, ProbationOutcome } from '../types';
-import type { EmployeePayload } from '../utils/api';
-import { exportFHR009 } from '../utils/fhr009Exporter';
+import type { Employee, ProbationEvaluation, ProbationCriteriaScores, ProbationPeriod, ProbationOutcome } from '../../types';
+import type { EmployeePayload } from '../../utils/api';
+import { exportFHR009 } from '../../utils/fhr009Exporter';
 
 interface ProbationEvaluatorProps {
   employees: Employee[];

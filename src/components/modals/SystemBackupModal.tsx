@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Download, Upload, Database, CheckCircle2, AlertTriangle, X, ShieldAlert, FileJson } from 'lucide-react';
-import type { Employee } from '../types';
-import { syncLocalStorageEmployeesToBackend } from '../utils/api';
+import type { Employee } from '../../types';
+import { syncLocalStorageEmployeesToBackend } from '../../utils/api';
 
 interface SystemBackupModalProps {
   currentUser: Employee;

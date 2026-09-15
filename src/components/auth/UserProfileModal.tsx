@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { X, Shield, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, KeyRound } from 'lucide-react';
-import type { Employee } from '../types';
-import { ROLE_LABELS } from '../utils/roleLabels';
-import { changePasswordApi } from '../utils/api';
+import type { Employee } from '../../types';
+import { ROLE_LABELS } from '../../utils/roleLabels';
+import { changePasswordApi } from '../../utils/api';
 
 interface UserProfileModalProps {
   isOpen: boolean;

@@ -15,8 +15,8 @@ import {
   ClipboardList,
   QrCode,
 } from 'lucide-react';
-import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap, OrientationBatch } from '../types';
-import { loadOrientationBatchesFromLocalStorage } from '../services/orientationBatchService';
+import type { Employee, GoogleFormExamResult, ExamType, ExamPhase, PreTestLockMap, OrientationBatch } from '../../types';
+import { loadOrientationBatchesFromLocalStorage } from '../../services/orientationBatchService';
 import {
   DEFAULT_APPS_SCRIPT_URL,
   DEFAULT_SAFETY_FORM_URL,
@@ -26,10 +26,10 @@ import {
   parseExcelOrCsvFile,
   saveExamResultsToLocalStorage,
   savePreTestLockStatusToLocalStorage,
-} from '../services/googleFormSync';
-import { ExamDetailDrawer } from './exam/ExamDetailDrawer';
-import { ExamDirectoryTable } from './exam/ExamDirectoryTable';
-import { ExamQrModal } from './exam/ExamQrModal';
+} from '../../services/googleFormSync';
+import { ExamDetailDrawer } from './ExamDetailDrawer';
+import { ExamDirectoryTable } from './ExamDirectoryTable';
+import { ExamQrModal } from './ExamQrModal';
 
 interface ExamEngineProps {
   currentUser: Employee;

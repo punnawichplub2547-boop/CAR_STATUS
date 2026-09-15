@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Users, Search, Filter, UserPlus, Network, Pencil, Camera, Trash2, AlertTriangle, Award, FileSpreadsheet } from 'lucide-react';
-import type { Employee, OrgChartNode } from '../types';
-import type { EmployeePayload } from '../utils/api';
+import type { Employee, OrgChartNode } from '../../types';
+import type { EmployeePayload } from '../../utils/api';
 import { OrgChartBuilder } from './OrgChartBuilder';
 import { EmployeeExcelImportModal } from './EmployeeExcelImportModal';
 
@@ -24,7 +24,7 @@ const DEPARTMENT_OPTIONS = [
   { value: 'PD', label: 'PD (แผนกผลิต)' },
 ];
 
-import { calculateTenure } from '../utils/dateUtils';
+import { calculateTenure } from '../../utils/dateUtils';
 
 const statusLabel: Record<Employee['status'], string> = {
   PROBATION: 'ทดลองงาน (Probation)',

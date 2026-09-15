@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Printer, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee, SkillEvaluation, OjtSession, OjtContentItem, OjtParticipant, Certificate, TrainingCourse } from '../types';
-import { computeCertificateStatus } from '../utils/certificateStatus';
-import { downloadExcelWorkbook, formatSkillLevelWithIcon } from '../utils/excelTemplateExporter';
+import type { Employee, SkillEvaluation, OjtSession, OjtContentItem, OjtParticipant, Certificate, TrainingCourse } from '../../types';
+import { computeCertificateStatus } from '../../utils/certificateStatus';
+import { downloadExcelWorkbook, formatSkillLevelWithIcon } from '../../utils/excelTemplateExporter';
 
 interface AuditReportExporterProps {
   employees: Employee[];

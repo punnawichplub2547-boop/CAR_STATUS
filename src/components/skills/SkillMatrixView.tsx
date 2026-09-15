@@ -25,14 +25,15 @@ import type {
   SkillLevel,
   EvaluationAttempt,
   EvaluationCycle,
-} from '../types';
-import type { EmployeePayload } from '../utils/api';
-import type { NavTab } from './Sidebar';
+} from '../../types';
+import type { EmployeePayload } from '../../utils/api';
+import type { NavTab } from '../layout/Sidebar';
 import {
   exportExactFHR014Template,
   FHR014_EMPLOYEES_PER_SHEET,
   FHR014_SKILLS_PER_SHEET,
-} from '../utils/excelTemplateExporter';
+} from '../../utils/excelTemplateExporter';
+import { matchEmployeeStandards } from '../../utils/skillStandardMatcher';
 
 interface SkillMatrixViewProps {
   employees: Employee[];
@@ -173,14 +174,14 @@ export const SkillMatrixView: React.FC<SkillMatrixViewProps> = ({
     return map;
   }, [standards]);
 
-  // Standards are matched per-employee (department + exact position), not
-  // just department — the real F-HR-005 targets vary by position within a
-  // department (e.g. หัวหน้าแผนก vs พนักงานทั่วไป have different targets for
-  // the same skill). Matched by the employee's own department, not
-  // selectedDept, so cross-department employees pulled into this view still
-  // get their own real standards rather than whatever tab is open.
-  const getEmployeeStandards = (emp: Employee) =>
-    standardsByDeptPos.get(`${emp.department}|${emp.position}`) || [];
+  // Standards are matched per-employee (department + position). Uses
+  // matchEmployeeStandards for resilient matching against variations such as
+  // "พนักงานทั่วไป (ยางรถยนต์)" vs "พนักงานทั่วไป".
+  const getEmployeeStandards = (emp: Employee) => {
+    const direct = standardsByDeptPos.get(`${emp.department}|${emp.position}`);
+    if (direct && direct.length > 0) return direct;
+    return matchEmployeeStandards(standards, emp);
+  };
 
   // Reset extra employees when department changes
   const handleDeptChange = (dept: string) => {

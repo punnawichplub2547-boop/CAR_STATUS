@@ -1,5 +1,5 @@
 import type { Employee, Certificate, NotificationItem } from '../types';
-import type { NavTab } from '../components/Sidebar';
+import type { NavTab } from '../components/layout/Sidebar';
 
 export interface DynamicNotificationItem extends NotificationItem {
   targetTab?: NavTab;

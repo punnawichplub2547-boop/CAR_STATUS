@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ListChecks, Search, Filter, Plus, Pencil, Trash2, AlertTriangle } from 'lucide-react';
-import type { SkillStandard, SkillLevel } from '../types';
-import type { SkillStandardPayload } from '../utils/api';
+import type { SkillStandard, SkillLevel } from '../../types';
+import type { SkillStandardPayload } from '../../utils/api';
 
 interface SkillStandardManagementProps {
   standards: SkillStandard[];

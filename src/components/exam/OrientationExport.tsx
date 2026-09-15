@@ -7,18 +7,18 @@ import {
   syncLocalStorageEmployeesToBackend,
   type PendingOrientationEmployee,
   type ExamCategoryStatus,
-} from '../utils/api';
-import { exportOrientationFHR002, ORIENTATION_ROW_CAPACITY, type OrientationCourseCategory } from '../utils/fhr002Exporter';
+} from '../../utils/api';
+import { exportOrientationFHR002, ORIENTATION_ROW_CAPACITY, type OrientationCourseCategory } from '../../utils/fhr002Exporter';
 import {
   saveOrientationBatch,
   loadOrientationBatchesFromLocalStorage,
   deleteOrientationBatch,
-} from '../services/orientationBatchService';
-import type { OrientationBatch, Employee } from '../types';
-import { DEFAULT_SAFETY_FORM_URL, DEFAULT_ORIENTATION_FORM_URL } from '../services/googleFormSync';
-import { ExamQrModal } from './exam/ExamQrModal';
+} from '../../services/orientationBatchService';
+import type { OrientationBatch, Employee } from '../../types';
+import { DEFAULT_SAFETY_FORM_URL, DEFAULT_ORIENTATION_FORM_URL } from '../../services/googleFormSync';
+import { ExamQrModal } from './ExamQrModal';
 
-import { COURSE_OPTIONS, DEFAULT_COURSE_TOPICS } from '../constants/orientationConstants';
+import { COURSE_OPTIONS, DEFAULT_COURSE_TOPICS } from '../../constants/orientationConstants';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 

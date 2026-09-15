@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Award, AlertTriangle, Download, Plus, Pencil, Trash2, X, Paperclip, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Certificate, Employee } from '../types';
-import { computeCertificateStatus } from '../utils/certificateStatus';
+import type { Certificate, Employee } from '../../types';
+import { computeCertificateStatus } from '../../utils/certificateStatus';
 
 interface CertificateVaultProps {
   certificates: Certificate[];
