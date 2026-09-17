@@ -6,7 +6,7 @@ export const skillStandardsRouter = Router();
 skillStandardsRouter.get('/skill-standards', async (_req, res) => {
   try {
     const standards = await prisma.skillStandard.findMany({
-      orderBy: [{ department: 'asc' }, { position: 'asc' }, { category: 'asc' }],
+      orderBy: [{ department: 'asc' }, { position: 'asc' }, { category: 'asc' }, { id: 'asc' }],
     });
     res.json(standards);
   } catch {

@@ -1,6 +1,6 @@
 # CAR_STATUS Backend
 
-Express + Prisma + MySQL API. Phase 1 scope: employee lookup for the F-HR-002
+Express + Prisma + PostgreSQL API. Phase 1 scope: employee lookup for the F-HR-002
 name list, and a webhook that receives orientation exam scores from a Google
 Form (via Google Apps Script) in real time. Phase 2 (in progress): OJT
 (F-HR-004) and Probation (F-HR-009) evaluations.
@@ -12,8 +12,8 @@ cd backend
 npm install
 cp .env.example .env        # then edit DATABASE_URL / WEBHOOK_SECRET
 
-# start MySQL (or point DATABASE_URL at an existing instance)
-docker compose up -d car-status-mysql
+# start PostgreSQL (or point DATABASE_URL at an existing instance)
+docker compose up -d car-status-postgres
 
 npx prisma migrate dev      # creates tables from prisma/schema.prisma
 npm run prisma:seed         # seeds the 2 fixed F-HR-002 courses

@@ -22,8 +22,8 @@ authRouter.post('/auth/login', async (req: Request, res: Response) => {
 
     const employee = await prisma.employee.findFirst({
       where: isEmail
-        ? { email: { equals: trimmedInput.toLowerCase() } }
-        : { empCode: { equals: trimmedInput.toUpperCase() } },
+        ? { email: { equals: trimmedInput, mode: 'insensitive' } }
+        : { empCode: { equals: trimmedInput, mode: 'insensitive' } },
     });
 
     if (!employee) {
