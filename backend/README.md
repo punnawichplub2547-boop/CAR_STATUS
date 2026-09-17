@@ -12,7 +12,9 @@ cd backend
 npm install
 cp .env.example .env        # then edit DATABASE_URL / WEBHOOK_SECRET
 
-# start PostgreSQL (or point DATABASE_URL at an existing instance)
+# start PostgreSQL (or point DATABASE_URL at an existing instance).
+# docker compose reads the DB credentials from the root .env — create it once:
+#   cp ../.env.example ../.env   (then set POSTGRES_PASSWORD)
 docker compose up -d car-status-postgres
 
 npx prisma migrate dev      # creates tables from prisma/schema.prisma

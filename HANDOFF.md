@@ -68,12 +68,19 @@ cd D:\Skill\CAR_STATUS
 # 2. ดึงโค้ดล่าสุดจาก GitHub
 git pull origin main
 
-# 3. สั่ง Build และเริ่มต้น Container ด้วย Docker Compose
+# 3. (ครั้งแรกเท่านั้น) สร้างไฟล์ .env สำหรับรหัสผ่านฐานข้อมูล แล้วตั้ง POSTGRES_PASSWORD ใหม่
+#    ไฟล์ .env ไม่ถูก commit ขึ้น Git — ถ้าไม่มีไฟล์นี้ docker compose จะไม่ยอมเริ่มทำงาน
+copy .env.example .env
+
+# 4. สั่ง Build และเริ่มต้น Container ด้วย Docker Compose
+#    (backend จะรัน prisma migrate deploy สร้าง/อัปเดตตารางให้อัตโนมัติ)
 docker compose build --no-cache
 docker compose up -d
 
-# 4. สั่ง Seed ข้อมูลเริ่มต้นและตรวจสอบความพร้อม
-docker compose exec car-status-backend npm run prisma:seed
+# ⚠️ ห้ามรัน prisma:seed บนระบบที่มีข้อมูลจริงแล้ว — seed จะรีเซ็ตรหัสผ่านและ role
+#    ของบัญชี EMP-1001..EMP-1005 กลับเป็นค่าเริ่มต้น (admin1234, hr1234, ...)
+#    ใช้เฉพาะตอนติดตั้งครั้งแรกบนฐานข้อมูลว่าง:
+#    docker compose exec car-status-backend npm run prisma:seed
 
 # 5. ตรวจสอบสถานะการทำงานของคอนเทนเนอร์
 docker compose ps

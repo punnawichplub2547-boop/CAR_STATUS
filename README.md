@@ -104,7 +104,8 @@ git pull
 npm install
 cd backend && npm install && cd ..
 
-# 3. รัน migration ที่ค้างอยู่ (ต้องมี PostgreSQL รันอยู่ก่อน เช่น docker compose up -d car-status-postgres)
+# 3. รัน migration ที่ค้างอยู่ (ต้องมี PostgreSQL รันอยู่ก่อน — ครั้งแรกให้ copy .env.example เป็น .env
+#    แล้วรัน docker compose up -d car-status-postgres)
 cd backend
 npx prisma migrate deploy
 
