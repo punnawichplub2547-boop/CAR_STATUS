@@ -130,7 +130,7 @@ export const SystemBackupModal: React.FC<SystemBackupModalProps> = ({
           restoredCount++;
         }
 
-        // Auto background sync employees to MySQL
+        // Push restored employees that don't exist in the database yet (create-only)
         await syncLocalStorageEmployeesToBackend().catch(() => {});
 
         setStatusMessage({

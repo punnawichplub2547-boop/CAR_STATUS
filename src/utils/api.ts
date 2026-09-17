@@ -659,16 +659,27 @@ export async function saveBackendSkillEvaluationRound(
   return res.json();
 }
 
-// Auto background sync: ensures every employee in localStorage is mirrored into
-// the MySQL database so MySQL DB and localStorage are always 100% in sync.
+// Legacy migration helper: pushes employees that only exist in this browser's
+// localStorage (from before the backend existed) up to the database.
+// Create-only — the database is the source of truth, so an employee that
+// already exists there is never touched. Upserting them used to let any
+// browser holding a stale localStorage copy silently overwrite real
+// positions/roles in the database every time OrientationExport loaded.
 export async function syncLocalStorageEmployeesToBackend(): Promise<void> {
   try {
     const saved = localStorage.getItem('hrskill_employees');
     if (!saved) return;
     const empList: Partial<Employee>[] = JSON.parse(saved);
 
+    // If the backend can't be read we can't tell what already exists — skip
+    // the sync rather than risk overwriting anything.
+    const existingCodes = new Set(
+      (await fetchBackendEmployees()).map((e) => e.empCode.trim().toUpperCase())
+    );
+
     for (const emp of empList) {
       if (!emp.empCode || !emp.name || !emp.department || !emp.position) continue;
+      if (existingCodes.has(emp.empCode.trim().toUpperCase())) continue;
       await createBackendEmployee({
         empCode: emp.empCode,
         name: emp.name,
@@ -678,10 +689,6 @@ export async function syncLocalStorageEmployeesToBackend(): Promise<void> {
         position: emp.position,
         startingDate: emp.startingDate || new Date().toISOString().slice(0, 10),
         status: emp.status || 'PROBATION',
-        // Backend upserts on empCode and falls back to role='EMPLOYEE',
-        // avatar/supervisorId=null when these are omitted — leaving them out
-        // here silently reset every existing employee's role back to
-        // EMPLOYEE (and wiped avatar/supervisorId) on every sync.
         role: emp.role,
         avatar: emp.avatar,
         supervisorId: emp.supervisorId != null ? Number(emp.supervisorId) : null,
