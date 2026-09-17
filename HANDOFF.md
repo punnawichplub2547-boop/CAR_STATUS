@@ -1,7 +1,7 @@
 # 📋 คู่มือการส่งมอบและติดตั้งระบบ (Production & Developer Handoff Guide)
 **โครงการ:** CAR HR Skill Management Platform (บริษัท คอมพลีท โอโต รับเบอร์ จำกัด)  
 **วันที่อัปเดตล่าสุด:** 21 สิงหาคม 2026  
-**สถานะโปรเจกต์:** 🟢 **Full-Stack Production Ready** (Express 4 + Prisma 6 + MySQL 8.4 + React 19 Vite + Nginx Alpine)  
+**สถานะโปรเจกต์:** 🟢 **Full-Stack Production Ready** (Express 4 + Prisma 6 + PostgreSQL 17 + React 19 Vite + Nginx Alpine)  
 - **Dev Local Path:** `D:\HrSkill\app`
 - **Prod Server Path:** `D:\Skill\CAR_STATUS` (Server: `10.255.255.173`)
 - **GitHub Repository:** https://github.com/punnawichplub2547-boop/CAR_STATUS
@@ -33,7 +33,7 @@
 │  └───────────────────────┘        └──────────┬───────────┘  │
 │                                              │              │
 │                                   ┌──────────▼───────────┐  │
-│                                   │ MySQL 8.4 (3308)     │  │
+│                                   │ PostgreSQL 17 (5432) │  │
 │                                   └──────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -42,7 +42,7 @@
 |---|---|---|---|
 | **Frontend Web App** | `8088` (Dev: `5173`) | `80` | Nginx Alpine ให้บริการหน้าเว็บ + Reverse Proxy `/api/` |
 | **Backend API** | `4002` | `4000` | Express 4 RESTful API + JWT Auth Service |
-| **MySQL Database** | `3308` | `3306` | ฐานข้อมูล MySQL 8.4 สำหรับระบบ CAR Status |
+| **PostgreSQL Database** | `5432` | `5432` | ฐานข้อมูล PostgreSQL 17 สำหรับระบบ CAR Status (ย้ายจาก MySQL 8.4) |
 
 ---
 

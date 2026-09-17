@@ -66,7 +66,7 @@
 ```text
 ┌──────────────────────┐   fetch()    ┌──────────────────────┐
 │  Frontend (Vite)     │ ───────────► │  Backend (Express)   │
-│  React 19 + TS       │              │  Prisma + MySQL 8.4  │
+│  React 19 + TS       │              │  Prisma + Postgres 17│
 │  localStorage = หลัก │ ◄─────────── │  Phase 1 = F-HR-002  │
 └──────────────────────┘              └──────────▲───────────┘
          ▲                                       │ POST /api/webhook/exam-result
@@ -81,7 +81,7 @@
 
 ## 6. Backend & Database
 
-**ที่อยู่:** `app/backend/` — Express 4 + Prisma 6 + MySQL 8.4 (ESM, `"type": "module"` → import ต้องลงท้าย `.js`)
+**ที่อยู่:** `app/backend/` — Express 4 + Prisma 6 + PostgreSQL 17 (ESM, `"type": "module"` → import ต้องลงท้าย `.js`)
 
 ### Prisma models & Backend Modules
 - **Core Models:** `Employee` (พร้อม `role`, `passwordHash`, `avatar`, `supervisor`), `SkillStandard` (F-HR-005), `TrainingCourse`, `TrainingAttendance` (F-HR-002), `ExamSubmission`, `Certificate`
@@ -101,7 +101,7 @@
 | frontend (dev) | 5173 | — | ค่า default ของ Vite, ตรงกับ `CORS_ORIGIN` |
 | frontend (docker) | 8088 | 80 | nginx |
 | backend | **4001** | 4000 | 4000 ถูก Windows/WSL networking จองไว้แล้ว |
-| MySQL | **3307** | 3306 | เครื่องมี mysqld local ใช้ 3306 อยู่ |
+| PostgreSQL | **5432** | 5432 | container `car_status_postgres` (เดิม MySQL 3307/3308) |
 
 ⚠️ **จุดที่ต้องระวัง:** `.env.example` ตั้ง `VITE_API_BASE_URL=http://localhost:4000` ซึ่งถูกเฉพาะตอนรัน backend แบบ `npm run dev` — **ถ้ารันผ่าน Docker ต้องเปลี่ยนเป็น `4001`** ไม่งั้น frontend เรียก API ไม่เจอ
 
