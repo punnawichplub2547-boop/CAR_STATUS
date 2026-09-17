@@ -3,6 +3,7 @@ import { Mail, Lock, Eye, EyeOff, Check, LogIn, Shield, UserCheck, AlertCircle, 
 import type { Employee } from '../../types';
 import { ROLE_LABELS, LOGINABLE_ROLES } from '../../utils/roleLabels';
 import { loginApi } from '../../utils/api';
+import { DEMO_MODE_ENABLED } from '../../utils/demoMode';
 
 interface LoginViewProps {
   onLoginSuccess: (user: Employee) => void;
@@ -11,11 +12,16 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees }) => {
   const [authMode, setAuthMode] = useState<'demo' | 'production'>(() => {
-    return (localStorage.getItem('hrskill_auth_mode') as 'demo' | 'production') || 'demo';
+    if (!DEMO_MODE_ENABLED) return 'production';
+    try {
+      return (localStorage.getItem('hrskill_auth_mode') as 'demo' | 'production') || 'demo';
+    } catch {
+      return 'demo';
+    }
   });
 
-  const [email, setEmail] = useState(() => (authMode === 'demo' ? 'somying.j@example.com' : ''));
-  const [password, setPassword] = useState(() => (authMode === 'demo' ? 'admin1234' : ''));
+  const [email, setEmail] = useState(() => (DEMO_MODE_ENABLED && authMode === 'demo' ? 'somying.j@example.com' : ''));
+  const [password, setPassword] = useState(() => (DEMO_MODE_ENABLED && authMode === 'demo' ? 'admin1234' : ''));
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +32,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
     setAuthMode(mode);
     localStorage.setItem('hrskill_auth_mode', mode);
     setErrorAlert(null);
-    if (mode === 'demo') {
+    if (DEMO_MODE_ENABLED && mode === 'demo') {
       setEmail('somying.j@example.com');
       setPassword('admin1234');
     } else {
@@ -69,25 +75,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
         setIsLoading(false);
       }, 500);
     } catch (err: any) {
-      // If backend is offline, provide graceful fallback check
-      const cleanInput = identifier.trim().toLowerCase();
-      const localMatched = employees.find(
-        (u) =>
-          u.email?.trim().toLowerCase() === cleanInput ||
-          u.empCode.trim().toLowerCase() === cleanInput
+      // No offline fallback: letting someone in without the server checking
+      // the password would mean anyone could log in as anyone while the
+      // backend is down.
+      const isNetworkError =
+        err instanceof TypeError || /Failed to fetch|NetworkError/i.test(String(err?.message));
+      setErrorAlert(
+        isNetworkError
+          ? 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง หรือติดต่อฝ่าย IT'
+          : err.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบข้อมูล'
       );
-
-      if (localMatched && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
-        setLoginAlert(`เข้าสู่ระบบสำเร็จ (ออฟไลน์โหมด): ${localMatched.name} (${localMatched.role})`);
-        setTimeout(() => {
-          onLoginSuccess(localMatched);
-          setLoginAlert(null);
-          setIsLoading(false);
-        }, 500);
-        return;
-      }
-
-      setErrorAlert(err.message || 'ไม่สามารถเข้าสู่ระบบได้ กรุณาตรวจสอบข้อมูล');
       setIsLoading(false);
     }
   };
@@ -98,6 +95,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
   };
 
   const handleQuickDemoLogin = (user: Employee) => {
+    if (!DEMO_MODE_ENABLED) return;
     const defaultPassword =
       user.role === 'ADMIN'
         ? 'admin1234'
@@ -146,7 +144,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
           <h1 className="login-title">เข้าสู่ระบบ</h1>
         </div>
 
-        {/* Mode Switcher Toggle */}
+        {/* Mode Switcher Toggle — dev / explicit demo builds only */}
+        {DEMO_MODE_ENABLED && (
         <div className="login-mode-toggle">
           <button
             type="button"
@@ -163,6 +162,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
             <Sparkles size={15} /> โหมดทดสอบ (Demo)
           </button>
         </div>
+        )}
 
         <div className="login-mode-desc">
           {authMode === 'production'
@@ -272,7 +272,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onLoginSuccess, employees 
         </form>
 
         {/* Quick Demo Roles Section - Shown in Demo Mode */}
-        {authMode === 'demo' && (
+        {DEMO_MODE_ENABLED && authMode === 'demo' && (
           <div className="demo-roles-container">
             <div className="demo-roles-title">
               <Shield size={14} /> คลิกสลับสิทธิ์ทดลองเข้าใช้งาน (Quick Demo Accounts):
