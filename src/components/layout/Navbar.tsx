@@ -23,6 +23,7 @@ import type { NavTab } from './Sidebar';
 import type { DynamicNotificationItem } from '../../utils/notificationGenerator';
 import { ROLE_LABELS, LOGINABLE_ROLES } from '../../utils/roleLabels';
 import { SystemBackupModal } from '../modals/SystemBackupModal';
+import { DEMO_MODE_ENABLED } from '../../utils/demoMode';
 
 interface NavbarProps {
   currentUser: Employee;
@@ -614,6 +615,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 </div>
               </div>
 
+              {/* Switches identity with no password — dev / explicit demo builds only */}
+              {DEMO_MODE_ENABLED && (
+              <>
               <div className="dropdown-title" style={{ marginTop: 6, marginBottom: 6, fontSize: '0.75rem' }}>
                 สลับผู้ใช้งาน (Switch Role Demo)
               </div>
@@ -639,6 +643,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </div>
                 ))}
               </div>
+              </>
+              )}
 
               {onLogout && (
                 <div
