@@ -49,7 +49,11 @@ examResultsRouter.post('/webhook/exam-result', requireWebhookSecret, async (req,
   const percentage = (body.correctCount / body.totalQuestions) * 100;
   const isPassed = PASS_RULES[courseCategory](percentage, wrongCount);
 
-  const employee = await prisma.employee.findUnique({ where: { empCode: body.empCode } });
+  // Google Form input is typed by hand — Postgres string compare is
+  // case-sensitive (MySQL's default collation was not), so match explicitly.
+  const employee = await prisma.employee.findFirst({
+    where: { empCode: { equals: body.empCode.trim(), mode: 'insensitive' } },
+  });
   const course = await prisma.trainingCourse.findFirst({ where: { category: courseCategory } });
 
   const submission = await prisma.examSubmission.upsert({
@@ -58,7 +62,9 @@ examResultsRouter.post('/webhook/exam-result', requireWebhookSecret, async (req,
       formResponseId: body.formResponseId,
       courseCategory,
       courseId: course?.id,
-      empCode: body.empCode,
+      // Store the employee's canonical code (not the raw typed value, e.g.
+      // " emp-1002 ") so lookups by empCode find it later.
+      empCode: employee?.empCode ?? body.empCode.trim().toUpperCase(),
       employeeId: employee?.id,
       respondentName: body.respondentName,
       respondentEmail: body.respondentEmail,
@@ -106,7 +112,7 @@ async function hasPassedBothCourses(employeeId: number): Promise<boolean> {
 examResultsRouter.get('/exam-results', async (req, res) => {
   const empCode = typeof req.query.empCode === 'string' ? req.query.empCode : undefined;
   const submissions = await prisma.examSubmission.findMany({
-    where: empCode ? { empCode } : undefined,
+    where: empCode ? { empCode: { equals: empCode.trim(), mode: 'insensitive' } } : undefined,
     orderBy: { submittedAt: 'desc' },
     include: { employee: true },
   });
@@ -115,7 +121,7 @@ examResultsRouter.get('/exam-results', async (req, res) => {
 
 examResultsRouter.get('/exam-results/:empCode', async (req, res) => {
   const submissions = await prisma.examSubmission.findMany({
-    where: { empCode: req.params.empCode },
+    where: { empCode: { equals: req.params.empCode.trim(), mode: 'insensitive' } },
     orderBy: { submittedAt: 'desc' },
   });
   res.json(submissions);

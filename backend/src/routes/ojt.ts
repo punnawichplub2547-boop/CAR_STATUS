@@ -117,7 +117,9 @@ ojtRouter.post('/ojt-sessions', async (req, res) => {
         })),
       },
     },
-    include: { contentItems: true, participants: true },
+    // Explicit order: Postgres (unlike MySQL/InnoDB) doesn't return child
+    // rows in primary-key order, and F-HR-004 prints topics by sequence.
+    include: { contentItems: { orderBy: { sequence: 'asc' } }, participants: { orderBy: { id: 'asc' } } },
   });
 
   res.status(201).json(session);
@@ -129,7 +131,9 @@ ojtRouter.get('/ojt-sessions', async (req, res) => {
   const sessions = await prisma.ojtSession.findMany({
     where: empCode ? { participants: { some: { empCode } } } : undefined,
     orderBy: { createdAt: 'desc' },
-    include: { contentItems: true, participants: true },
+    // Explicit order: Postgres (unlike MySQL/InnoDB) doesn't return child
+    // rows in primary-key order, and F-HR-004 prints topics by sequence.
+    include: { contentItems: { orderBy: { sequence: 'asc' } }, participants: { orderBy: { id: 'asc' } } },
   });
   res.json(sessions);
 });

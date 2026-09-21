@@ -76,8 +76,14 @@ employeesRouter.get('/employees/pending-orientation', async (_req, res) => {
   res.json(withExamStatus);
 });
 
+// empCode is stored trimmed + upper-cased (same as certificates and the Excel
+// import) — Postgres compares strings case-sensitively, so "emp-1001" typed in
+// the add form would otherwise become a second employee next to "EMP-1001".
+const normalizeEmpCode = (value: unknown): string => (typeof value === 'string' ? value.trim().toUpperCase() : '');
+
 employeesRouter.post('/employees', async (req, res) => {
-  const { empCode, name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
+  const { name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
+  const empCode = normalizeEmpCode(req.body.empCode);
 
   if (!empCode || !name || !department || !position || !startingDate) {
     res.status(400).json({ error: 'empCode, name, department, position, startingDate are required' });
@@ -139,7 +145,8 @@ employeesRouter.put('/employees/:id', async (req, res) => {
     return;
   }
 
-  const { empCode, name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
+  const { name, email, department, section, position, startingDate, status, role, avatar, supervisorId } = req.body;
+  const empCode = normalizeEmpCode(req.body.empCode);
   if (!empCode || !name || !department || !position || !startingDate) {
     res.status(400).json({ error: 'empCode, name, department, position, startingDate are required' });
     return;

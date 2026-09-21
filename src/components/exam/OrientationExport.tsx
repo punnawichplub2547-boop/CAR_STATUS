@@ -378,7 +378,7 @@ export const OrientationExport: React.FC<{ onNavigateToExam?: (batchId?: string)
 
       {loadError && (
         <div className="badge badge-red" style={{ marginBottom: 14, padding: '10px 14px', width: '100%', justifyContent: 'flex-start' }}>
-          <AlertCircle size={14} /> {loadError} — ตรวจสอบว่า backend รันอยู่ (docker compose up -d car-status-mysql car-status-backend)
+          <AlertCircle size={14} /> {loadError} — ตรวจสอบว่า backend รันอยู่ (docker compose up -d car-status-postgres car-status-backend)
         </div>
       )}
 

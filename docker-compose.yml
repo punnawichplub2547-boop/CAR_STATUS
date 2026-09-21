@@ -16,35 +16,40 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: "mysql://car_user:car_password@car-status-mysql:3306/car_status"
+      # Credentials come from the root .env file (never committed) — see .env.example.
+      # If the password has URL-special characters (@ : / # ?), percent-encode them here.
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@car-status-postgres:5432/${POSTGRES_DB:-car_status}"
       PORT: 4000
     ports:
       # host 4002 — container listens on 4000 internally
       - "4002:4000"
     depends_on:
-      car-status-mysql:
+      car-status-postgres:
         condition: service_healthy
     restart: always
 
-  car-status-mysql:
-    image: mysql:8.4
-    container_name: car_status_mysql
+  car-status-postgres:
+    image: postgres:16.15-alpine
+    container_name: car_status_postgres
     environment:
-      MYSQL_DATABASE: car_status
-      MYSQL_USER: car_user
-      MYSQL_PASSWORD: car_password
-      MYSQL_ROOT_PASSWORD: change_me_root_password
+      POSTGRES_DB: ${POSTGRES_DB:-car_status}
+      # :? makes `docker compose up` stop with this message instead of
+      # silently starting a database with an empty/default password.
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env (copy .env.example)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env (copy .env.example)}
     ports:
-      # host 3308 (since 3306 and 3307 are used by local mysqld/other containers)
-      - "3308:3306"
+      # Bound to 127.0.0.1 only: the backend reaches Postgres over the internal
+      # Docker network, so no other machine on the LAN needs (or gets) direct
+      # database access. Tools like Prisma Studio/DBeaver still work on this host.
+      - "127.0.0.1:5432:5432"
     volumes:
-      - car_status_mysql_data:/var/lib/mysql
+      - car_status_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pchange_me_root_password"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
     restart: always
 
 volumes:
-  car_status_mysql_data:
+  car_status_pg_data:

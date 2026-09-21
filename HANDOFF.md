@@ -1,7 +1,7 @@
 # 📋 คู่มือการส่งมอบและติดตั้งระบบ (Production & Developer Handoff Guide)
 **โครงการ:** CAR HR Skill Management Platform (บริษัท คอมพลีท โอโต รับเบอร์ จำกัด)  
 **วันที่อัปเดตล่าสุด:** 21 สิงหาคม 2026  
-**สถานะโปรเจกต์:** 🟢 **Full-Stack Production Ready** (Express 4 + Prisma 6 + MySQL 8.4 + React 19 Vite + Nginx Alpine)  
+**สถานะโปรเจกต์:** 🟢 **Full-Stack Production Ready** (Express 4 + Prisma 6 + PostgreSQL 16.15 + React 19 Vite + Nginx Alpine)  
 - **Dev Local Path:** `D:\HrSkill\app`
 - **Prod Server Path:** `D:\Skill\CAR_STATUS` (Server: `10.255.255.173`)
 - **GitHub Repository:** https://github.com/punnawichplub2547-boop/CAR_STATUS
@@ -33,7 +33,7 @@
 │  └───────────────────────┘        └──────────┬───────────┘  │
 │                                              │              │
 │                                   ┌──────────▼───────────┐  │
-│                                   │ MySQL 8.4 (3308)     │  │
+│                                   │ PostgreSQL 16 (5432) │  │
 │                                   └──────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -42,7 +42,7 @@
 |---|---|---|---|
 | **Frontend Web App** | `8088` (Dev: `5173`) | `80` | Nginx Alpine ให้บริการหน้าเว็บ + Reverse Proxy `/api/` |
 | **Backend API** | `4002` | `4000` | Express 4 RESTful API + JWT Auth Service |
-| **MySQL Database** | `3308` | `3306` | ฐานข้อมูล MySQL 8.4 สำหรับระบบ CAR Status |
+| **PostgreSQL Database** | `5432` | `5432` | ฐานข้อมูล PostgreSQL 16.15 สำหรับระบบ CAR Status (ย้ายจาก MySQL 8.4) |
 
 ---
 
@@ -68,12 +68,19 @@ cd D:\Skill\CAR_STATUS
 # 2. ดึงโค้ดล่าสุดจาก GitHub
 git pull origin main
 
-# 3. สั่ง Build และเริ่มต้น Container ด้วย Docker Compose
+# 3. (ครั้งแรกเท่านั้น) สร้างไฟล์ .env สำหรับรหัสผ่านฐานข้อมูล แล้วตั้ง POSTGRES_PASSWORD ใหม่
+#    ไฟล์ .env ไม่ถูก commit ขึ้น Git — ถ้าไม่มีไฟล์นี้ docker compose จะไม่ยอมเริ่มทำงาน
+copy .env.example .env
+
+# 4. สั่ง Build และเริ่มต้น Container ด้วย Docker Compose
+#    (backend จะรัน prisma migrate deploy สร้าง/อัปเดตตารางให้อัตโนมัติ)
 docker compose build --no-cache
 docker compose up -d
 
-# 4. สั่ง Seed ข้อมูลเริ่มต้นและตรวจสอบความพร้อม
-docker compose exec car-status-backend npm run prisma:seed
+# ⚠️ ห้ามรัน prisma:seed บนระบบที่มีข้อมูลจริงแล้ว — seed จะรีเซ็ตรหัสผ่านและ role
+#    ของบัญชี EMP-1001..EMP-1005 กลับเป็นค่าเริ่มต้น (admin1234, hr1234, ...)
+#    ใช้เฉพาะตอนติดตั้งครั้งแรกบนฐานข้อมูลว่าง:
+#    docker compose exec car-status-backend npm run prisma:seed
 
 # 5. ตรวจสอบสถานะการทำงานของคอนเทนเนอร์
 docker compose ps

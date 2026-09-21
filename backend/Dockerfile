@@ -15,4 +15,6 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY prisma ./prisma
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma db push && node dist/server.js"]
+# migrate deploy applies the committed prisma/migrations in order (and records
+# them in _prisma_migrations) instead of db push diffing the schema live.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
