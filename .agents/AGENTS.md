@@ -66,7 +66,7 @@
 ```text
 ┌──────────────────────┐   fetch()    ┌──────────────────────┐
 │  Frontend (Vite)     │ ───────────► │  Backend (Express)   │
-│  React 19 + TS       │              │  Prisma + Postgres 17│
+│  React 19 + TS       │              │  Prisma + Postgres 16│
 │  localStorage = หลัก │ ◄─────────── │  Phase 1 = F-HR-002  │
 └──────────────────────┘              └──────────▲───────────┘
          ▲                                       │ POST /api/webhook/exam-result
@@ -81,7 +81,7 @@
 
 ## 6. Backend & Database
 
-**ที่อยู่:** `app/backend/` — Express 4 + Prisma 6 + PostgreSQL 17 (ESM, `"type": "module"` → import ต้องลงท้าย `.js`)
+**ที่อยู่:** `app/backend/` — Express 4 + Prisma 6 + PostgreSQL 16.15 (ESM, `"type": "module"` → import ต้องลงท้าย `.js`)
 
 ### Prisma models & Backend Modules
 - **Core Models:** `Employee` (พร้อม `role`, `passwordHash`, `avatar`, `supervisor`), `SkillStandard` (F-HR-005), `TrainingCourse`, `TrainingAttendance` (F-HR-002), `ExamSubmission`, `Certificate`

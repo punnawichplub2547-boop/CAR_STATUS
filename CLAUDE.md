@@ -76,7 +76,7 @@ d:\HrSkill\app\
 │   │   └── modals/               # SystemBackupModal, UserManualModal
 │   ├── App.tsx                   # Master State Manager & LocalStorage Persistence
 │   └── index.css                 # Global Design System Tokens & Glassmorphism Styles
-├── backend/                      # Express 4 + Prisma 6 + PostgreSQL 17
+├── backend/                      # Express 4 + Prisma 6 + PostgreSQL 16.15
 │   ├── prisma/
 │   │   ├── schema.prisma         # Prisma Data Models (Employee, Cert, SkillStandard, Exam)
 │   │   └── seed.ts               # Seed data with bcrypt passwords & roles
